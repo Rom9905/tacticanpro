@@ -1,0 +1,52 @@
+{
+  "name": "AnalyticsEvent",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "\u05de\u05d9\u05d9\u05dc \u05d4\u05de\u05e9\u05ea\u05de\u05e9"
+    },
+    "user_name": {
+      "type": "string",
+      "description": "\u05e9\u05dd \u05d4\u05de\u05e9\u05ea\u05de\u05e9"
+    },
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "login",
+        "open_dashboard",
+        "open_input",
+        "open_insights",
+        "open_coach_assistant",
+        "open_player_profile",
+        "open_game_prep",
+        "open_game_style",
+        "open_match_analysis",
+        "open_training_analytics",
+        "open_team_management",
+        "open_training_center",
+        "match_summary_started",
+        "match_summary_completed",
+        "match_summary_abandoned",
+        "training_summary_started",
+        "training_summary_completed",
+        "training_summary_abandoned",
+        "generate_insights"
+      ],
+      "description": "\u05e1\u05d5\u05d2 \u05d4\u05d0\u05d9\u05e8\u05d5\u05e2"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "\u05de\u05d9\u05d3\u05e2 \u05e0\u05d5\u05e1\u05e3 (\u05e9\u05d7\u05e7\u05df, \u05e7\u05d1\u05d5\u05e6\u05d4 \u05d5\u05db\u05d5')"
+    },
+    "session_date": {
+      "type": "string",
+      "format": "date",
+      "description": "\u05ea\u05d0\u05e8\u05d9\u05da \u05d4\u05d0\u05d9\u05e8\u05d5\u05e2"
+    }
+  },
+  "required": [
+    "user_email",
+    "event_type"
+  ]
+}

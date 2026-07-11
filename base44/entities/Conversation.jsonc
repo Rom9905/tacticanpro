@@ -1,0 +1,62 @@
+{
+  "name": "Conversation",
+  "type": "object",
+  "properties": {
+    "team_id": {
+      "type": "string",
+      "description": "\u05de\u05d6\u05d4\u05d4 \u05d4\u05e7\u05d1\u05d5\u05e6\u05d4"
+    },
+    "title": {
+      "type": "string",
+      "description": "\u05db\u05d5\u05ea\u05e8\u05ea \u05d4\u05e9\u05d9\u05d7\u05d4"
+    },
+    "messages": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "role": {
+            "type": "string"
+          },
+          "content": {
+            "type": "string"
+          },
+          "timestamp": {
+            "type": "string"
+          },
+          "solutions": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "title": {
+                  "type": "string"
+                },
+                "summary": {
+                  "type": "string"
+                },
+                "risk_level": {
+                  "type": "string"
+                },
+                "detailed_explanation": {
+                  "type": "string"
+                },
+                "tactical_animation": {
+                  "type": "object"
+                },
+                "training_drill": {
+                  "type": "object"
+                }
+              }
+            }
+          }
+        }
+      },
+      "description": "\u05d4\u05d5\u05d3\u05e2\u05d5\u05ea"
+    }
+  },
+  "required": [
+    "team_id",
+    "title"
+  ]
+}

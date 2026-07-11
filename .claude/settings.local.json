@@ -1,0 +1,15 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(npm install)",
+      "mcp__ca6a291c-26b5-4188-a79b-23b9aca7fd2a__list_user_apps",
+      "mcp__ca6a291c-26b5-4188-a79b-23b9aca7fd2a__create_base44_app",
+      "PowerShell(Remove-Item -Recurse -Force \"C:\\\\Users\\\\97253\\\\Downloads\\\\tactics-pro-coach \\(1\\)\\\\node_modules\\\\.vite\" -Confirm:$false)",
+      "PowerShell(Remove-Item -Recurse -Force \"C:\\\\Users\\\\97253\\\\Downloads\\\\tactics-pro-coach \\(1\\)\\\\node_modules\\\\.cache\" -Confirm:$false -ErrorAction SilentlyContinue)",
+      "Bash(npm install *)",
+      "Bash(npm ls *)",
+      "Bash(git init *)",
+      "Bash(git add *)"
+    ]
+  }
+}

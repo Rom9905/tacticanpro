@@ -1,0 +1,148 @@
+{
+  "name": "DrillLibrary",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "\u05e9\u05dd \u05d4\u05ea\u05e8\u05d2\u05d9\u05dc"
+    },
+    "primary_goal": {
+      "type": "string",
+      "description": "\u05de\u05d8\u05e8\u05d4 \u05e2\u05d9\u05e7\u05e8\u05d9\u05ea \u05e9\u05dc \u05d4\u05ea\u05e8\u05d2\u05d9\u05dc"
+    },
+    "weakness_tags": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "\u05de\u05d4\u05d9\u05e8\u05d5\u05ea",
+          "\u05db\u05d5\u05d7 \u05e4\u05d9\u05d6\u05d9",
+          "\u05e1\u05d9\u05d1\u05d5\u05dc\u05ea",
+          "\u05e9\u05dc\u05d9\u05d8\u05d4 \u05d1\u05db\u05d3\u05d5\u05e8",
+          "\u05d3\u05e8\u05d9\u05d1\u05dc\u05d9\u05dd",
+          "\u05de\u05e1\u05d9\u05e8\u05d5\u05ea \u05e7\u05e6\u05e8\u05d5\u05ea",
+          "\u05de\u05e1\u05d9\u05e8\u05d5\u05ea \u05d0\u05e8\u05d5\u05db\u05d5\u05ea",
+          "\u05d1\u05e2\u05d9\u05d8\u05d5\u05ea",
+          "\u05db\u05d5\u05ea\u05e8\u05d5\u05ea",
+          "\u05ea\u05d9\u05e7\u05d5\u05dc\u05d9\u05dd",
+          "\u05d9\u05d9\u05e8\u05d0\u05d5\u05d8\u05d9\u05dd",
+          "\u05de\u05d9\u05e7\u05d5\u05dd",
+          "\u05e8\u05d0\u05d9\u05d9\u05d4",
+          "\u05d4\u05d7\u05dc\u05d8\u05d5\u05ea",
+          "\u05e8\u05d9\u05db\u05d5\u05d6",
+          "\u05e8\u05d9\u05e6\u05d5\u05ea \u05e2\u05d5\u05de\u05e7",
+          "\u05e6\u05dc\u05d1\u05d5\u05ea",
+          "1 \u05e2\u05dc 1 \u05d4\u05ea\u05e7\u05e4\u05d9",
+          "1 \u05e2\u05dc 1 \u05d4\u05d2\u05e0\u05ea\u05d9",
+          "\u05de\u05e9\u05d7\u05e7 \u05d2\u05d1",
+          "\u05de\u05e9\u05d7\u05e7 \u05d1\u05dc\u05d7\u05e5",
+          "\u05e2\u05d1\u05d5\u05d3\u05d4 \u05d4\u05d2\u05e0\u05ea\u05d9\u05ea"
+        ]
+      },
+      "description": "\u05d7\u05d5\u05dc\u05e9\u05d5\u05ea \u05e9\u05d4\u05ea\u05e8\u05d2\u05d9\u05dc \u05de\u05d8\u05e4\u05dc \u05d1\u05d4\u05df"
+    },
+    "category": {
+      "type": "string",
+      "enum": [
+        "passing",
+        "finishing",
+        "1v1",
+        "movement",
+        "defending",
+        "first_touch",
+        "scanning",
+        "crossing",
+        "heading",
+        "pressing"
+      ],
+      "description": "\u05e7\u05d8\u05d2\u05d5\u05e8\u05d9\u05d4"
+    },
+    "position_fit": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "\u05e9\u05d5\u05e2\u05e8",
+          "\u05d1\u05dc\u05dd",
+          "\u05de\u05d2\u05df \u05d9\u05de\u05d9\u05df",
+          "\u05de\u05d2\u05df \u05e9\u05de\u05d0\u05dc",
+          "\u05e7\u05e9\u05e8 \u05d4\u05d2\u05e0\u05ea\u05d9",
+          "\u05e7\u05e9\u05e8 \u05de\u05e8\u05db\u05d6\u05d9",
+          "\u05e7\u05e9\u05e8 \u05d4\u05ea\u05e7\u05e4\u05d9",
+          "\u05db\u05e0\u05e3 \u05d9\u05de\u05d9\u05df",
+          "\u05db\u05e0\u05e3 \u05e9\u05de\u05d0\u05dc",
+          "\u05d7\u05dc\u05d5\u05e5"
+        ]
+      },
+      "description": "\u05e2\u05de\u05d3\u05d5\u05ea \u05de\u05ea\u05d0\u05d9\u05de\u05d5\u05ea"
+    },
+    "age_level": {
+      "type": "string",
+      "enum": [
+        "\u05d9\u05dc\u05d3\u05d9\u05dd",
+        "\u05e0\u05e2\u05e8\u05d9\u05dd",
+        "\u05e0\u05d5\u05e2\u05e8",
+        "\u05d1\u05d5\u05d2\u05e8\u05d9\u05dd"
+      ],
+      "description": "\u05e7\u05d1\u05d5\u05e6\u05ea \u05d2\u05d9\u05dc"
+    },
+    "difficulty": {
+      "type": "string",
+      "enum": [
+        "\u05e7\u05dc",
+        "\u05d1\u05d9\u05e0\u05d5\u05e0\u05d9",
+        "\u05e7\u05e9\u05d4"
+      ],
+      "default": "\u05d1\u05d9\u05e0\u05d5\u05e0\u05d9",
+      "description": "\u05e8\u05de\u05ea \u05e7\u05d5\u05e9\u05d9"
+    },
+    "duration_min": {
+      "type": "number",
+      "description": "\u05de\u05e9\u05da \u05d6\u05de\u05df \u05d1\u05de\u05d9\u05e0\u05d5\u05d8\u05d9\u05dd"
+    },
+    "setup": {
+      "type": "string",
+      "description": "\u05e1\u05d9\u05d3\u05d5\u05e8 \u05d5\u05e6\u05d9\u05d5\u05d3 \u05e0\u05d3\u05e8\u05e9"
+    },
+    "instructions": {
+      "type": "string",
+      "description": "\u05d4\u05d5\u05e8\u05d0\u05d5\u05ea \u05d1\u05d9\u05e6\u05d5\u05e2"
+    },
+    "sets_reps": {
+      "type": "string",
+      "description": "\u05e1\u05d8\u05d9\u05dd \u05d5\u05d7\u05d6\u05e8\u05d5\u05ea"
+    },
+    "coach_cues": {
+      "type": "string",
+      "description": "\u05e0\u05e7\u05d5\u05d3\u05d5\u05ea \u05ea\u05d9\u05e7\u05d5\u05df \u05dc\u05de\u05d0\u05de\u05df"
+    },
+    "common_mistakes": {
+      "type": "string",
+      "description": "\u05d8\u05e2\u05d5\u05d9\u05d5\u05ea \u05e0\u05e4\u05d5\u05e6\u05d5\u05ea"
+    },
+    "progression": {
+      "type": "string",
+      "description": "\u05d0\u05d9\u05da \u05dc\u05d4\u05e7\u05e9\u05d5\u05ea"
+    },
+    "regression": {
+      "type": "string",
+      "description": "\u05d0\u05d9\u05da \u05dc\u05d4\u05e7\u05dc"
+    },
+    "is_group_drill": {
+      "type": "boolean",
+      "default": false,
+      "description": "\u05d4\u05d0\u05dd \u05de\u05ea\u05d0\u05d9\u05dd \u05dc\u05e7\u05d1\u05d5\u05e6\u05d4"
+    },
+    "is_public": {
+      "type": "boolean",
+      "default": true,
+      "description": "\u05ea\u05e8\u05d2\u05d9\u05dc \u05e6\u05d9\u05d1\u05d5\u05e8\u05d9"
+    }
+  },
+  "required": [
+    "title",
+    "primary_goal",
+    "category",
+    "duration_min"
+  ]
+}

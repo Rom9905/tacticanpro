@@ -1,0 +1,124 @@
+{
+  "name": "Team",
+  "type": "object",
+  "properties": {
+    "name": {
+      "type": "string",
+      "description": "\u05e9\u05dd \u05d4\u05e7\u05d1\u05d5\u05e6\u05d4"
+    },
+    "age_group": {
+      "type": "string",
+      "enum": [
+        "\u05d9\u05dc\u05d3\u05d9\u05dd",
+        "\u05e0\u05e2\u05e8\u05d9\u05dd",
+        "\u05e0\u05d5\u05e2\u05e8",
+        "\u05d1\u05d5\u05d2\u05e8\u05d9\u05dd"
+      ],
+      "description": "\u05e7\u05d1\u05d5\u05e6\u05ea \u05d2\u05d9\u05dc"
+    },
+    "league": {
+      "type": "string",
+      "description": "\u05dc\u05d9\u05d2\u05d4"
+    },
+    "formation": {
+      "type": "string",
+      "enum": [
+        "4-4-2",
+        "4-3-3",
+        "4-2-3-1",
+        "3-5-2",
+        "3-4-3",
+        "5-3-2",
+        "5-4-1",
+        "4-1-4-1"
+      ],
+      "description": "\u05de\u05e2\u05e8\u05da \u05de\u05e9\u05d7\u05e7"
+    },
+    "playing_style": {
+      "type": "string",
+      "enum": [
+        "\u05d4\u05ea\u05e7\u05e4\u05d9",
+        "\u05de\u05d0\u05d5\u05d6\u05df",
+        "\u05d4\u05d2\u05e0\u05ea\u05d9",
+        "\u05d4\u05d7\u05d6\u05e7\u05ea \u05db\u05d3\u05d5\u05e8",
+        "\u05e7\u05d5\u05e0\u05d8\u05e8\u05d4"
+      ],
+      "description": "\u05e1\u05d2\u05e0\u05d5\u05df \u05de\u05e9\u05d7\u05e7"
+    },
+    "tactical_focus": {
+      "type": "string",
+      "description": "\u05d3\u05d2\u05e9 \u05d8\u05e7\u05d8\u05d9 \u05de\u05e8\u05db\u05d6\u05d9"
+    },
+    "logo_url": {
+      "type": "string",
+      "description": "\u05dc\u05d5\u05d2\u05d5 \u05d4\u05e7\u05d1\u05d5\u05e6\u05d4"
+    },
+    "game_style": {
+      "type": "object",
+      "description": "\u05d4\u05d2\u05d3\u05e8\u05d5\u05ea \u05e9\u05d9\u05d8\u05ea \u05de\u05e9\u05d7\u05e7 \u05de\u05e4\u05d5\u05e8\u05d8\u05d5\u05ea",
+      "properties": {
+        "buildup": {
+          "type": "string"
+        },
+        "tempo": {
+          "type": "string"
+        },
+        "width": {
+          "type": "string"
+        },
+        "depth": {
+          "type": "string"
+        },
+        "attack_focus": {
+          "type": "string"
+        },
+        "finishing_style": {
+          "type": "string"
+        },
+        "defensive_line": {
+          "type": "string"
+        },
+        "defensive_style": {
+          "type": "string"
+        },
+        "players_behind_ball": {
+          "type": "string"
+        },
+        "marking_style": {
+          "type": "string"
+        },
+        "press_on_ball": {
+          "type": "string"
+        },
+        "set_piece_defense": {
+          "type": "string"
+        },
+        "recovery_response": {
+          "type": "string"
+        },
+        "transition_players": {
+          "type": "string"
+        },
+        "transition_direction": {
+          "type": "string"
+        },
+        "loss_response": {
+          "type": "string"
+        },
+        "press_zone": {
+          "type": "string"
+        },
+        "reorganize_time": {
+          "type": "string"
+        }
+      }
+    },
+    "game_style_notes": {
+      "type": "string",
+      "description": "\u05d4\u05e2\u05e8\u05d5\u05ea \u05e0\u05d5\u05e1\u05e4\u05d5\u05ea \u05e2\u05dc \u05e9\u05d9\u05d8\u05ea \u05d4\u05de\u05e9\u05d7\u05e7"
+    }
+  },
+  "required": [
+    "name"
+  ]
+}

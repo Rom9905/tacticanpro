@@ -1,0 +1,499 @@
+{
+  "name": "Player",
+  "type": "object",
+  "properties": {
+    "team_id": {
+      "type": "string",
+      "description": "\u05de\u05d6\u05d4\u05d4 \u05d4\u05e7\u05d1\u05d5\u05e6\u05d4"
+    },
+    "name": {
+      "type": "string",
+      "description": "\u05e9\u05dd \u05d4\u05e9\u05d7\u05e7\u05df"
+    },
+    "number": {
+      "type": "number",
+      "description": "\u05de\u05e1\u05e4\u05e8 \u05d7\u05d5\u05dc\u05e6\u05d4"
+    },
+    "photo_url": {
+      "type": "string",
+      "description": "\u05ea\u05de\u05d5\u05e0\u05ea \u05d4\u05e9\u05d7\u05e7\u05df"
+    },
+    "position": {
+      "type": "string",
+      "enum": [
+        "\u05e9\u05d5\u05e2\u05e8",
+        "\u05d1\u05dc\u05dd",
+        "\u05de\u05d2\u05df \u05d9\u05de\u05d9\u05df",
+        "\u05de\u05d2\u05df \u05e9\u05de\u05d0\u05dc",
+        "\u05e7\u05e9\u05e8 \u05d4\u05d2\u05e0\u05ea\u05d9",
+        "\u05e7\u05e9\u05e8 \u05de\u05e8\u05db\u05d6\u05d9",
+        "\u05e7\u05e9\u05e8 \u05d4\u05ea\u05e7\u05e4\u05d9",
+        "\u05db\u05e0\u05e3 \u05d9\u05de\u05d9\u05df",
+        "\u05db\u05e0\u05e3 \u05e9\u05de\u05d0\u05dc",
+        "\u05d7\u05dc\u05d5\u05e5"
+      ],
+      "description": "\u05e2\u05de\u05d3\u05d4 \u05e8\u05d0\u05e9\u05d9\u05ea"
+    },
+    "position_secondary": {
+      "type": "string",
+      "enum": [
+        "\u05e9\u05d5\u05e2\u05e8",
+        "\u05d1\u05dc\u05dd",
+        "\u05de\u05d2\u05df \u05d9\u05de\u05d9\u05df",
+        "\u05de\u05d2\u05df \u05e9\u05de\u05d0\u05dc",
+        "\u05e7\u05e9\u05e8 \u05d4\u05d2\u05e0\u05ea\u05d9",
+        "\u05e7\u05e9\u05e8 \u05de\u05e8\u05db\u05d6\u05d9",
+        "\u05e7\u05e9\u05e8 \u05d4\u05ea\u05e7\u05e4\u05d9",
+        "\u05db\u05e0\u05e3 \u05d9\u05de\u05d9\u05df",
+        "\u05db\u05e0\u05e3 \u05e9\u05de\u05d0\u05dc",
+        "\u05d7\u05dc\u05d5\u05e5"
+      ],
+      "description": "\u05e2\u05de\u05d3\u05ea \u05de\u05e9\u05e0\u05d4"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "\u05e9\u05d5\u05e2\u05e8 \u05d9\u05d5\u05d6\u05dd",
+        "\u05e9\u05d5\u05e2\u05e8 \u05e9\u05d5\u05de\u05e8",
+        "\u05d1\u05dc\u05dd \u05de\u05d5\u05d1\u05d9\u05dc",
+        "\u05d1\u05dc\u05dd \u05db\u05d9\u05e1\u05d5\u05d9",
+        "\u05d1\u05dc\u05dd \u05de\u05d4\u05d9\u05e8",
+        "\u05de\u05d2\u05df \u05ea\u05d5\u05de\u05da",
+        "\u05de\u05d2\u05df \u05de\u05db\u05e1\u05d4",
+        "\u05d0\u05e0\u05e7\u05e8 \u05d4\u05d2\u05e0\u05ea\u05d9",
+        "\u05e7\u05e9\u05e8 \u05de\u05d0\u05d6\u05df",
+        "\u05e7\u05e9\u05e8 \u05de\u05d7\u05d1\u05e8",
+        "\u05e7\u05e9\u05e8 \u05e2\u05de\u05d5\u05e7",
+        "\u05d1\u05d5\u05e7\u05e1 \u05d8\u05d5 \u05d1\u05d5\u05e7\u05e1",
+        "\u05d9\u05d5\u05e6\u05e8 \u05de\u05e9\u05d7\u05e7",
+        "\u05e2\u05e9\u05e8 \u05e7\u05dc\u05d0\u05e1\u05d9",
+        "\u05db\u05e0\u05e3 \u05e8\u05d7\u05d1",
+        "\u05db\u05e0\u05e3 \u05d7\u05d5\u05d3\u05e8\u05e0\u05d9",
+        "\u05db\u05e0\u05e3 \u05d7\u05d5\u05ea\u05da",
+        "\u05d7\u05dc\u05d5\u05e5 \u05de\u05e1\u05d9\u05d9\u05dd",
+        "\u05d7\u05dc\u05d5\u05e5 \u05de\u05d8\u05e8\u05d4",
+        "\u05d7\u05dc\u05d5\u05e5 \u05e0\u05d5\u05e4\u05dc",
+        "\u05e9\u05e0\u05d9 \u05d7\u05d5\u05d3\u05d9\u05dd"
+      ],
+      "description": "\u05ea\u05e4\u05e7\u05d9\u05d3 \u05d8\u05e7\u05d8\u05d9 \u05d1\u05de\u05e2\u05e8\u05da"
+    },
+    "squad_status": {
+      "type": "string",
+      "enum": [
+        "\u05d4\u05e8\u05db\u05d1",
+        "\u05e8\u05d5\u05d8\u05e6\u05d9\u05d4",
+        "\u05e1\u05e4\u05e1\u05dc",
+        "\u05e0\u05d5\u05e2\u05e8"
+      ],
+      "default": "\u05e1\u05e4\u05e1\u05dc",
+      "description": "\u05e1\u05d8\u05d8\u05d5\u05e1 \u05d1\u05e1\u05d2\u05dc"
+    },
+    "availability": {
+      "type": "string",
+      "enum": [
+        "\u05d6\u05de\u05d9\u05df",
+        "\u05e4\u05e6\u05d5\u05e2",
+        "\u05de\u05d5\u05e9\u05e2\u05d4",
+        "\u05dc\u05d0 \u05d6\u05de\u05d9\u05df"
+      ],
+      "default": "\u05d6\u05de\u05d9\u05df",
+      "description": "\u05d6\u05de\u05d9\u05e0\u05d5\u05ea \u05dc\u05de\u05e9\u05d7\u05e7"
+    },
+    "dominant_foot": {
+      "type": "string",
+      "enum": [
+        "\u05d9\u05de\u05d9\u05df",
+        "\u05e9\u05de\u05d0\u05dc",
+        "\u05e9\u05ea\u05d9\u05d4\u05df"
+      ],
+      "description": "\u05e8\u05d2\u05dc \u05d3\u05d5\u05de\u05d9\u05e0\u05e0\u05d8\u05d9\u05ea"
+    },
+    "skill_ratings": {
+      "type": "object",
+      "properties": {
+        "passing": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "\u05de\u05e1\u05d9\u05e8\u05d4"
+        },
+        "dribbling": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "\u05d3\u05e8\u05d9\u05d1\u05dc"
+        },
+        "finishing": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "\u05e1\u05d9\u05d5\u05de\u05ea"
+        },
+        "tackling": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "\u05ea\u05d9\u05e7\u05d5\u05dc"
+        },
+        "defensive_positioning": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "\u05de\u05d9\u05e7\u05d5\u05dd \u05d4\u05d2\u05e0\u05ea\u05d9"
+        },
+        "speed": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "\u05de\u05d4\u05d9\u05e8\u05d5\u05ea"
+        },
+        "strength": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "\u05db\u05d5\u05d7"
+        },
+        "heading": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "\u05de\u05e9\u05d7\u05e7 \u05e8\u05d0\u05e9"
+        },
+        "vision": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "\u05e8\u05d0\u05d9\u05d9\u05d4"
+        },
+        "decision_making": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "\u05e7\u05d1\u05dc\u05ea \u05d4\u05d7\u05dc\u05d8\u05d5\u05ea"
+        },
+        "reflexes": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "\u05e8\u05e4\u05dc\u05e7\u05e1\u05d9\u05dd (\u05e9\u05d5\u05e2\u05e8)"
+        },
+        "shot_stopping": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "\u05e2\u05e6\u05d9\u05e8\u05d5\u05ea \u05e7\u05d5 (\u05e9\u05d5\u05e2\u05e8)"
+        },
+        "one_on_one": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "\u05d0\u05d7\u05d3 \u05e2\u05dc \u05d0\u05d7\u05d3 (\u05e9\u05d5\u05e2\u05e8)"
+        },
+        "high_balls": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "\u05d9\u05e6\u05d9\u05d0\u05d4 \u05dc\u05db\u05d3\u05d5\u05e8\u05d9 \u05d2\u05d5\u05d1\u05d4 (\u05e9\u05d5\u05e2\u05e8)"
+        },
+        "positioning": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "\u05de\u05d9\u05e7\u05d5\u05dd (\u05e9\u05d5\u05e2\u05e8)"
+        },
+        "timing": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "\u05ea\u05d6\u05de\u05d5\u05df \u05d9\u05e6\u05d9\u05d0\u05d4 (\u05e9\u05d5\u05e2\u05e8)"
+        },
+        "box_control": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "\u05e9\u05dc\u05d9\u05d8\u05d4 \u05d1\u05e8\u05d7\u05d1\u05d4 (\u05e9\u05d5\u05e2\u05e8)"
+        },
+        "short_passing": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "\u05de\u05e1\u05d9\u05e8\u05d4 \u05e7\u05e6\u05e8\u05d4 (\u05e9\u05d5\u05e2\u05e8)"
+        },
+        "long_passing": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "\u05de\u05e1\u05d9\u05e8\u05d4 \u05d0\u05e8\u05d5\u05db\u05d4/\u05d3\u05d9\u05d5\u05e7 \u05e4\u05ea\u05d9\u05d7\u05d4 (\u05e9\u05d5\u05e2\u05e8)"
+        },
+        "decision_under_pressure": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "\u05e7\u05d1\u05dc\u05ea \u05d4\u05d7\u05dc\u05d8\u05d5\u05ea \u05ea\u05d7\u05ea \u05dc\u05d7\u05e5 (\u05e9\u05d5\u05e2\u05e8)"
+        },
+        "agility": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "\u05d6\u05e8\u05d9\u05d6\u05d5\u05ea (\u05e9\u05d5\u05e2\u05e8)"
+        },
+        "jumping": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "\u05e7\u05e4\u05d9\u05e6\u05d4 (\u05e9\u05d5\u05e2\u05e8)"
+        },
+        "physical_strength": {
+          "type": "number",
+          "minimum": 1,
+          "maximum": 5,
+          "description": "\u05db\u05d5\u05d7 \u05d2\u05d5\u05e3 (\u05e9\u05d5\u05e2\u05e8)"
+        }
+      },
+      "description": "\u05d3\u05d9\u05e8\u05d5\u05d2\u05d9 \u05d9\u05db\u05d5\u05dc\u05d5\u05ea \u05db\u05d3\u05d5\u05e8\u05d2\u05dc (1-5)"
+    },
+    "strengths": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "\u05de\u05d4\u05d9\u05e8\u05d5\u05ea",
+          "\u05db\u05d5\u05d7 \u05e4\u05d9\u05d6\u05d9",
+          "\u05e1\u05d9\u05d1\u05d5\u05dc\u05ea",
+          "\u05e9\u05dc\u05d9\u05d8\u05d4 \u05ea\u05d7\u05ea \u05dc\u05d7\u05e5",
+          "\u05d3\u05e8\u05d9\u05d1\u05dc\u05d9\u05dd",
+          "\u05de\u05e1\u05d9\u05e8\u05d5\u05ea \u05e7\u05e6\u05e8\u05d5\u05ea",
+          "\u05de\u05e1\u05d9\u05e8\u05d5\u05ea \u05d0\u05e8\u05d5\u05db\u05d5\u05ea",
+          "\u05d1\u05e2\u05d9\u05d8\u05d5\u05ea",
+          "\u05de\u05e9\u05d7\u05e7 \u05e8\u05d0\u05e9",
+          "\u05ea\u05d9\u05e7\u05d5\u05dc\u05d9\u05dd",
+          "\u05e7\u05e8\u05d9\u05d0\u05ea \u05de\u05e1\u05d9\u05e8\u05d4",
+          "\u05d7\u05d9\u05ea\u05d5\u05da \u05e7\u05d5\u05d5\u05d9 \u05de\u05e1\u05d9\u05e8\u05d4",
+          "\u05de\u05d9\u05e7\u05d5\u05dd \u05d4\u05d2\u05e0\u05ea\u05d9",
+          "\u05de\u05d9\u05e7\u05d5\u05dd \u05d4\u05ea\u05e7\u05e4\u05d9",
+          "\u05e8\u05d0\u05d9\u05d9\u05ea \u05de\u05e9\u05d7\u05e7",
+          "\u05d4\u05d7\u05dc\u05d8\u05d5\u05ea",
+          "\u05de\u05e0\u05d4\u05d9\u05d2\u05d5\u05ea",
+          "\u05e8\u05d9\u05e6\u05d5\u05ea \u05e2\u05d5\u05de\u05e7",
+          "1 \u05e2\u05dc 1 \u05d4\u05ea\u05e7\u05e4\u05d9",
+          "1 \u05e2\u05dc 1 \u05d4\u05d2\u05e0\u05ea\u05d9",
+          "\u05de\u05e9\u05d7\u05e7 \u05d2\u05d1",
+          "\u05d1\u05e0\u05d9\u05d9\u05d4 \u05de\u05e9\u05d5\u05e2\u05e8",
+          "\u05ea\u05e0\u05d5\u05e2\u05d4 \u05dc\u05dc\u05d0 \u05db\u05d3\u05d5\u05e8",
+          "\u05e7\u05d1\u05dc\u05ea \u05d4\u05d7\u05dc\u05d8\u05d5\u05ea \u05ea\u05d7\u05ea \u05dc\u05d7\u05e5",
+          "\u05d6\u05d9\u05d4\u05d5\u05d9 \u05d9\u05ea\u05e8\u05d5\u05df \u05de\u05e1\u05e4\u05e8\u05d9",
+          "\u05e9\u05de\u05d9\u05e8\u05d4 \u05e2\u05dc \u05de\u05d1\u05e0\u05d4",
+          "\u05ea\u05d6\u05de\u05d5\u05df \u05d9\u05e6\u05d9\u05d0\u05d4 \u05dc\u05dc\u05d7\u05e5",
+          "\u05ea\u05d2\u05d5\u05d1\u05d4 \u05dc\u05d0\u05d9\u05d1\u05d5\u05d3 \u05db\u05d3\u05d5\u05e8",
+          "\u05d4\u05d2\u05e0\u05d4 \u05e2\u05dc \u05d7\u05e6\u05d9 \u05de\u05e8\u05d7\u05d1",
+          "\u05e1\u05d2\u05d9\u05e8\u05ea \u05e7\u05d5 \u05de\u05e1\u05d9\u05e8\u05d4 \u05d0\u05d7\u05d5\u05e8\u05d9",
+          "\u05e9\u05de\u05d9\u05e8\u05d4 \u05d1\u05d0\u05d7\u05d3 \u05e2\u05dc \u05d0\u05d7\u05d3",
+          "\u05d7\u05d9\u05e4\u05d5\u05d9 \u05d4\u05d2\u05e0\u05ea\u05d9",
+          "\u05e4\u05ea\u05d9\u05d7\u05ea \u05e7\u05d5\u05d5\u05d9 \u05de\u05e1\u05d9\u05e8\u05d4",
+          "\u05de\u05e9\u05d7\u05e7 \u05d1\u05d9\u05df \u05d4\u05e7\u05d5\u05d5\u05d9\u05dd",
+          "\u05d4\u05e6\u05d8\u05e8\u05e4\u05d5\u05ea \u05de\u05d0\u05d5\u05d7\u05e8\u05ea \u05dc\u05e8\u05d7\u05d1\u05d4",
+          "\u05d0\u05d7\u05e8\u05d9\u05d5\u05ea \u05d8\u05e7\u05d8\u05d9\u05ea",
+          "\u05e8\u05d9\u05db\u05d5\u05d6 \u05dc\u05d0\u05d5\u05e8\u05da \u05de\u05e9\u05d7\u05e7",
+          "\u05ea\u05d2\u05d5\u05d1\u05d4 \u05dc\u05d8\u05e2\u05d5\u05d9\u05d5\u05ea",
+          "\u05de\u05e9\u05de\u05e2\u05ea \u05e7\u05d1\u05d5\u05e6\u05ea\u05d9\u05ea",
+          "\u05d0\u05d9\u05e0\u05d8\u05e0\u05e1\u05d9\u05d1\u05d9\u05d5\u05ea",
+          "\u05e7\u05e6\u05d1 \u05de\u05e9\u05d7\u05e7",
+          "\u05d9\u05db\u05d5\u05dc\u05ea \u05d7\u05d6\u05e8\u05d4 \u05dc\u05d4\u05d2\u05e0\u05d4",
+          "\u05e2\u05de\u05d9\u05d3\u05d5\u05ea \u05d1\u05e2\u05d5\u05de\u05e1 \u05de\u05e9\u05d7\u05e7"
+        ]
+      },
+      "maxItems": 5,
+      "description": "\u05d7\u05d5\u05d6\u05e7\u05d5\u05ea \u05de\u05e8\u05db\u05d6\u05d9\u05d5\u05ea"
+    },
+    "improvements": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "enum": [
+          "\u05de\u05d4\u05d9\u05e8\u05d5\u05ea",
+          "\u05db\u05d5\u05d7 \u05e4\u05d9\u05d6\u05d9",
+          "\u05e1\u05d9\u05d1\u05d5\u05dc\u05ea",
+          "\u05e9\u05dc\u05d9\u05d8\u05d4 \u05ea\u05d7\u05ea \u05dc\u05d7\u05e5",
+          "\u05d3\u05e8\u05d9\u05d1\u05dc\u05d9\u05dd",
+          "\u05de\u05e1\u05d9\u05e8\u05d5\u05ea \u05e7\u05e6\u05e8\u05d5\u05ea",
+          "\u05de\u05e1\u05d9\u05e8\u05d5\u05ea \u05d0\u05e8\u05d5\u05db\u05d5\u05ea",
+          "\u05d1\u05e2\u05d9\u05d8\u05d5\u05ea",
+          "\u05de\u05e9\u05d7\u05e7 \u05e8\u05d0\u05e9",
+          "\u05ea\u05d9\u05e7\u05d5\u05dc\u05d9\u05dd",
+          "\u05e7\u05e8\u05d9\u05d0\u05ea \u05de\u05e1\u05d9\u05e8\u05d4",
+          "\u05d7\u05d9\u05ea\u05d5\u05da \u05e7\u05d5\u05d5\u05d9 \u05de\u05e1\u05d9\u05e8\u05d4",
+          "\u05de\u05d9\u05e7\u05d5\u05dd \u05d4\u05d2\u05e0\u05ea\u05d9",
+          "\u05de\u05d9\u05e7\u05d5\u05dd \u05d4\u05ea\u05e7\u05e4\u05d9",
+          "\u05e8\u05d0\u05d9\u05d9\u05ea \u05de\u05e9\u05d7\u05e7",
+          "\u05d4\u05d7\u05dc\u05d8\u05d5\u05ea",
+          "\u05e8\u05d9\u05db\u05d5\u05d6",
+          "\u05e8\u05d9\u05e6\u05d5\u05ea \u05e2\u05d5\u05de\u05e7",
+          "1 \u05e2\u05dc 1 \u05d4\u05ea\u05e7\u05e4\u05d9",
+          "1 \u05e2\u05dc 1 \u05d4\u05d2\u05e0\u05ea\u05d9",
+          "\u05de\u05e9\u05d7\u05e7 \u05d2\u05d1",
+          "\u05ea\u05e0\u05d5\u05e2\u05d4 \u05dc\u05dc\u05d0 \u05db\u05d3\u05d5\u05e8",
+          "\u05e7\u05d1\u05dc\u05ea \u05d4\u05d7\u05dc\u05d8\u05d5\u05ea \u05ea\u05d7\u05ea \u05dc\u05d7\u05e5",
+          "\u05d6\u05d9\u05d4\u05d5\u05d9 \u05d9\u05ea\u05e8\u05d5\u05df \u05de\u05e1\u05e4\u05e8\u05d9",
+          "\u05e9\u05de\u05d9\u05e8\u05d4 \u05e2\u05dc \u05de\u05d1\u05e0\u05d4",
+          "\u05ea\u05d6\u05de\u05d5\u05df \u05d9\u05e6\u05d9\u05d0\u05d4 \u05dc\u05dc\u05d7\u05e5",
+          "\u05ea\u05d2\u05d5\u05d1\u05d4 \u05dc\u05d0\u05d9\u05d1\u05d5\u05d3 \u05db\u05d3\u05d5\u05e8",
+          "\u05d4\u05d2\u05e0\u05d4 \u05e2\u05dc \u05d7\u05e6\u05d9 \u05de\u05e8\u05d7\u05d1",
+          "\u05e1\u05d2\u05d9\u05e8\u05ea \u05e7\u05d5 \u05de\u05e1\u05d9\u05e8\u05d4 \u05d0\u05d7\u05d5\u05e8\u05d9",
+          "\u05e9\u05de\u05d9\u05e8\u05d4 \u05d1\u05d0\u05d7\u05d3 \u05e2\u05dc \u05d0\u05d7\u05d3",
+          "\u05d7\u05d9\u05e4\u05d5\u05d9 \u05d4\u05d2\u05e0\u05ea\u05d9",
+          "\u05e4\u05ea\u05d9\u05d7\u05ea \u05e7\u05d5\u05d5\u05d9 \u05de\u05e1\u05d9\u05e8\u05d4",
+          "\u05de\u05e9\u05d7\u05e7 \u05d1\u05d9\u05df \u05d4\u05e7\u05d5\u05d5\u05d9\u05dd",
+          "\u05d4\u05e6\u05d8\u05e8\u05e4\u05d5\u05ea \u05de\u05d0\u05d5\u05d7\u05e8\u05ea \u05dc\u05e8\u05d7\u05d1\u05d4",
+          "\u05d0\u05d7\u05e8\u05d9\u05d5\u05ea \u05d8\u05e7\u05d8\u05d9\u05ea",
+          "\u05e8\u05d9\u05db\u05d5\u05d6 \u05dc\u05d0\u05d5\u05e8\u05da \u05de\u05e9\u05d7\u05e7",
+          "\u05ea\u05d2\u05d5\u05d1\u05d4 \u05dc\u05d8\u05e2\u05d5\u05d9\u05d5\u05ea",
+          "\u05de\u05e9\u05de\u05e2\u05ea \u05e7\u05d1\u05d5\u05e6\u05ea\u05d9\u05ea",
+          "\u05d0\u05d9\u05e0\u05d8\u05e0\u05e1\u05d9\u05d1\u05d9\u05d5\u05ea",
+          "\u05e7\u05e6\u05d1 \u05de\u05e9\u05d7\u05e7",
+          "\u05d9\u05db\u05d5\u05dc\u05ea \u05d7\u05d6\u05e8\u05d4 \u05dc\u05d4\u05d2\u05e0\u05d4",
+          "\u05e2\u05de\u05d9\u05d3\u05d5\u05ea \u05d1\u05e2\u05d5\u05de\u05e1 \u05de\u05e9\u05d7\u05e7",
+          "\u05de\u05e9\u05d7\u05e7 \u05d1\u05dc\u05d7\u05e5",
+          "\u05e2\u05d1\u05d5\u05d3\u05d4 \u05d4\u05d2\u05e0\u05ea\u05d9\u05ea"
+        ]
+      },
+      "maxItems": 5,
+      "description": "\u05e0\u05e7\u05d5\u05d3\u05d5\u05ea \u05dc\u05e9\u05d9\u05e4\u05d5\u05e8"
+    },
+    "coach_professional_notes": {
+      "type": "string",
+      "description": "\u05d4\u05e2\u05e8\u05d5\u05ea \u05de\u05e7\u05e6\u05d5\u05e2\u05d9\u05d5\u05ea \u05e9\u05dc \u05d4\u05de\u05d0\u05de\u05df \u05e2\u05dc \u05d4\u05e9\u05d7\u05e7\u05df - \u05d4\u05d1\u05e0\u05d4 \u05d8\u05e7\u05d8\u05d9\u05ea, \u05e7\u05d1\u05dc\u05ea \u05d4\u05d7\u05dc\u05d8\u05d5\u05ea, \u05d4\u05ea\u05e0\u05d4\u05dc\u05d5\u05ea \u05d1\u05d0\u05d9\u05de\u05d5\u05e0\u05d9\u05dd \u05d5\u05db\u05d5\u05f3"
+    },
+    "decision_profile": {
+      "type": "object",
+      "properties": {
+        "risk_taking": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "default": 50
+        },
+        "pressure_handling": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "default": 50
+        },
+        "tempo_control": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "default": 50
+        },
+        "final_third_decisions": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "default": 50
+        },
+        "defensive_decisions": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "default": 50
+        },
+        "discipline": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 100,
+          "default": 70
+        }
+      },
+      "description": "\u05e4\u05e8\u05d5\u05e4\u05d9\u05dc \u05e7\u05d1\u05dc\u05ea \u05d4\u05d7\u05dc\u05d8\u05d5\u05ea"
+    },
+    "professional_status": {
+      "type": "string",
+      "enum": [
+        "\u05d1\u05d4\u05ea\u05e7\u05d3\u05de\u05d5\u05ea",
+        "\u05d9\u05e6\u05d9\u05d1",
+        "\u05d1\u05d9\u05e8\u05d9\u05d3\u05d4"
+      ],
+      "default": "\u05d9\u05e6\u05d9\u05d1",
+      "description": "\u05e1\u05d8\u05d8\u05d5\u05e1 \u05de\u05e7\u05e6\u05d5\u05e2\u05d9"
+    },
+    "season_goals": {
+      "type": "number",
+      "default": 0,
+      "description": "\u05d2\u05d5\u05dc\u05d9\u05dd \u05e2\u05d5\u05e0\u05ea\u05d9\u05d9\u05dd"
+    },
+    "season_assists": {
+      "type": "number",
+      "default": 0,
+      "description": "\u05d1\u05d9\u05e9\u05d5\u05dc\u05d9\u05dd \u05e2\u05d5\u05e0\u05ea\u05d9\u05d9\u05dd"
+    },
+    "games_played": {
+      "type": "number",
+      "default": 0,
+      "description": "\u05de\u05e9\u05d7\u05e7\u05d9\u05dd \u05e9\u05e9\u05d9\u05d7\u05e7"
+    },
+    "minutes_played": {
+      "type": "number",
+      "default": 0,
+      "description": "\u05d3\u05e7\u05d5\u05ea \u05de\u05e9\u05d7\u05e7"
+    },
+    "match_history": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "match_id": {
+            "type": "string"
+          },
+          "date": {
+            "type": "string"
+          },
+          "opponent": {
+            "type": "string"
+          },
+          "focus_appeared": {
+            "type": "boolean"
+          },
+          "note": {
+            "type": "string"
+          },
+          "trend": {
+            "type": "string",
+            "enum": [
+              "\u05d4\u05ea\u05e7\u05d3\u05de\u05d5\u05ea",
+              "\u05dc\u05dc\u05d0 \u05e9\u05d9\u05e0\u05d5\u05d9",
+              "\u05d9\u05e8\u05d9\u05d3\u05d4"
+            ]
+          },
+          "goals": {
+            "type": "number"
+          },
+          "assists": {
+            "type": "number"
+          }
+        }
+      },
+      "description": "\u05d4\u05d9\u05e1\u05d8\u05d5\u05e8\u05d9\u05d9\u05ea \u05de\u05e9\u05d7\u05e7\u05d9\u05dd"
+    },
+    "is_starter": {
+      "type": "boolean",
+      "default": false,
+      "description": "\u05e9\u05d7\u05e7\u05df \u05d4\u05e8\u05db\u05d1"
+    },
+    "lineup_position": {
+      "type": "object",
+      "properties": {
+        "x": {
+          "type": "number"
+        },
+        "y": {
+          "type": "number"
+        }
+      },
+      "description": "\u05de\u05d9\u05e7\u05d5\u05dd \u05d1\u05d4\u05e8\u05db\u05d1"
+    }
+  },
+  "required": [
+    "team_id",
+    "name",
+    "position"
+  ]
+}

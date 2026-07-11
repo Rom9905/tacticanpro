@@ -1,0 +1,78 @@
+{
+  "name": "TrainingSession",
+  "type": "object",
+  "properties": {
+    "program_id": {
+      "type": "string",
+      "description": "\u05de\u05d6\u05d4\u05d4 \u05ea\u05d5\u05db\u05e0\u05d9\u05ea \u05d4\u05d0\u05d9\u05de\u05d5\u05e0\u05d9\u05dd"
+    },
+    "player_id": {
+      "type": "string",
+      "description": "\u05de\u05d6\u05d4\u05d4 \u05d4\u05e9\u05d7\u05e7\u05df"
+    },
+    "session_number": {
+      "type": "number",
+      "description": "\u05de\u05e1\u05e4\u05e8 \u05d4\u05d0\u05d9\u05de\u05d5\u05df"
+    },
+    "planned_date": {
+      "type": "string",
+      "format": "date",
+      "description": "\u05ea\u05d0\u05e8\u05d9\u05da \u05de\u05ea\u05d5\u05db\u05e0\u05df"
+    },
+    "actual_date": {
+      "type": "string",
+      "format": "date",
+      "description": "\u05ea\u05d0\u05e8\u05d9\u05da \u05d1\u05d9\u05e6\u05d5\u05e2 \u05d1\u05e4\u05d5\u05e2\u05dc"
+    },
+    "completion_status": {
+      "type": "string",
+      "enum": [
+        "planned",
+        "completed",
+        "partial",
+        "skipped"
+      ],
+      "default": "planned",
+      "description": "\u05e1\u05d8\u05d8\u05d5\u05e1 \u05d1\u05d9\u05e6\u05d5\u05e2"
+    },
+    "drills": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "drill_id": {
+            "type": "string"
+          },
+          "completed": {
+            "type": "boolean"
+          },
+          "performance_rating": {
+            "type": "number",
+            "minimum": 1,
+            "maximum": 5
+          }
+        }
+      },
+      "description": "\u05ea\u05e8\u05d2\u05d9\u05dc\u05d9\u05dd \u05d1\u05d0\u05d9\u05de\u05d5\u05df"
+    },
+    "coach_notes": {
+      "type": "string",
+      "description": "\u05d4\u05e2\u05e8\u05d5\u05ea \u05d4\u05de\u05d0\u05de\u05df"
+    },
+    "performance_rating": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 5,
+      "description": "\u05d3\u05d9\u05e8\u05d5\u05d2 \u05d1\u05d9\u05e6\u05d5\u05e2 \u05db\u05dc\u05dc\u05d9"
+    },
+    "metric_value": {
+      "type": "string",
+      "description": "\u05e2\u05e8\u05da \u05de\u05d3\u05d3 \u05d4\u05d4\u05e6\u05dc\u05d7\u05d4"
+    }
+  },
+  "required": [
+    "program_id",
+    "player_id",
+    "session_number"
+  ]
+}

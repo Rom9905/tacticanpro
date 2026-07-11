@@ -1,0 +1,74 @@
+{
+  "name": "TrainingProgram",
+  "type": "object",
+  "properties": {
+    "team_id": {
+      "type": "string",
+      "description": "\u05de\u05d6\u05d4\u05d4 \u05d4\u05e7\u05d1\u05d5\u05e6\u05d4"
+    },
+    "player_id": {
+      "type": "string",
+      "description": "\u05de\u05d6\u05d4\u05d4 \u05d4\u05e9\u05d7\u05e7\u05df"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "paused",
+        "completed"
+      ],
+      "default": "active",
+      "description": "\u05e1\u05d8\u05d8\u05d5\u05e1 \u05d4\u05ea\u05d5\u05db\u05e0\u05d9\u05ea"
+    },
+    "focus_title": {
+      "type": "string",
+      "description": "\u05e9\u05dd \u05d4\u05ea\u05d5\u05db\u05e0\u05d9\u05ea"
+    },
+    "work_topics": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "\u05e0\u05d5\u05e9\u05d0\u05d9 \u05d4\u05e2\u05d1\u05d5\u05d3\u05d4 \u05e9\u05dc \u05d4\u05e9\u05d7\u05e7\u05df - \u05e8\u05e9\u05d9\u05de\u05d4 \u05d3\u05d9\u05e0\u05de\u05d9\u05ea"
+    },
+    "progress_percentage": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100,
+      "default": 0,
+      "description": "\u05d0\u05d7\u05d5\u05d6 \u05d4\u05ea\u05e7\u05d3\u05de\u05d5\u05ea (0-100)"
+    },
+    "goal_statement": {
+      "type": "string",
+      "description": "\u05de\u05d8\u05e8\u05ea \u05d4\u05ea\u05d5\u05db\u05e0\u05d9\u05ea"
+    },
+    "start_date": {
+      "type": "string",
+      "format": "date",
+      "description": "\u05ea\u05d0\u05e8\u05d9\u05da \u05d4\u05ea\u05d7\u05dc\u05d4"
+    },
+    "end_date": {
+      "type": "string",
+      "format": "date",
+      "description": "\u05ea\u05d0\u05e8\u05d9\u05da \u05e1\u05d9\u05d5\u05dd \u05de\u05e9\u05d5\u05e2\u05e8"
+    },
+    "notes_for_coach": {
+      "type": "string",
+      "description": "\u05d4\u05e2\u05e8\u05d5\u05ea \u05dc\u05de\u05d0\u05de\u05df"
+    },
+    "ai_generated": {
+      "type": "boolean",
+      "default": false,
+      "description": "\u05e0\u05d5\u05e6\u05e8 \u05d1\u05d0\u05de\u05e6\u05e2\u05d5\u05ea AI"
+    },
+    "ai_rationale": {
+      "type": "string",
+      "description": "\u05e0\u05d9\u05de\u05d5\u05e7 \u05dc\u05d9\u05e6\u05d9\u05e8\u05ea \u05d4\u05ea\u05d5\u05db\u05e0\u05d9\u05ea"
+    }
+  },
+  "required": [
+    "team_id",
+    "player_id",
+    "focus_title"
+  ]
+}

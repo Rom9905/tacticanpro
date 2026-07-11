@@ -1,0 +1,51 @@
+{
+  "name": "TrainingSessionEvaluation",
+  "type": "object",
+  "properties": {
+    "team_id": {
+      "type": "string",
+      "description": "\u05de\u05d6\u05d4\u05d4 \u05d4\u05e7\u05d1\u05d5\u05e6\u05d4"
+    },
+    "player_id": {
+      "type": "string",
+      "description": "\u05de\u05d6\u05d4\u05d4 \u05d4\u05e9\u05d7\u05e7\u05df"
+    },
+    "training_event_id": {
+      "type": "string",
+      "description": "\u05de\u05d6\u05d4\u05d4 \u05d0\u05d9\u05e8\u05d5\u05e2 \u05d4\u05d0\u05d9\u05de\u05d5\u05df \u05de\u05d4-GameSchedule"
+    },
+    "training_date": {
+      "type": "string",
+      "format": "date",
+      "description": "\u05ea\u05d0\u05e8\u05d9\u05da \u05d4\u05d0\u05d9\u05de\u05d5\u05df"
+    },
+    "rating": {
+      "type": "number",
+      "minimum": 1,
+      "maximum": 10,
+      "description": "\u05e6\u05d9\u05d5\u05df \u05db\u05dc\u05dc\u05d9 \u05dc\u05d0\u05d9\u05de\u05d5\u05df (1-10)"
+    },
+    "coach_note": {
+      "type": "string",
+      "description": "\u05d4\u05e2\u05e8\u05d4 \u05de\u05e7\u05e6\u05d5\u05e2\u05d9\u05ea \u05e7\u05e6\u05e8\u05d4 \u05de\u05d4\u05de\u05d0\u05de\u05df"
+    },
+    "focus_areas": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "\u05e0\u05d5\u05e9\u05d0\u05d9\u05dd \u05e9\u05e2\u05dc\u05d9\u05d4\u05dd \u05d4\u05ea\u05de\u05e7\u05d3 \u05d1\u05d0\u05d9\u05de\u05d5\u05df"
+    },
+    "improvement_observed": {
+      "type": "boolean",
+      "default": false,
+      "description": "\u05d4\u05d0\u05dd \u05e0\u05e6\u05e4\u05d4 \u05e9\u05d9\u05e4\u05d5\u05e8"
+    }
+  },
+  "required": [
+    "team_id",
+    "player_id",
+    "training_date",
+    "rating"
+  ]
+}
