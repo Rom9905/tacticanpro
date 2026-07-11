@@ -19,9 +19,10 @@ export default function Login() {
     setError('');
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      setError(error.message === 'Invalid login credentials'
-        ? 'אימייל או סיסמה שגויים'
-        : error.message);
+      const msg = error.message;
+      if (msg === 'Invalid login credentials') setError('אימייל או סיסמה שגויים');
+      else if (msg.includes('Email not confirmed')) setError('האימייל לא אומת עדיין. בדוק את תיבת הדואר שלך.');
+      else setError(msg);
     } else {
       window.location.href = '/';
     }
@@ -37,13 +38,20 @@ export default function Login() {
       setLoading(false);
       return;
     }
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
-      options: { data: { full_name: fullName } }
+      options: {
+        data: { full_name: fullName },
+        emailRedirectTo: window.location.origin,
+      }
     });
     if (error) {
       setError(error.message);
+    } else if (data?.user?.identities?.length === 0) {
+      setError('כתובת האימייל כבר רשומה במערכת. נסה להתחבר.');
+    } else if (data?.session) {
+      window.location.href = '/';
     } else {
       setMessage('נרשמת בהצלחה! בדוק את האימייל לאישור החשבון.');
       setMode('login');
