@@ -15,6 +15,8 @@ import Terms from '@/pages/Terms';
 import CancellationPolicy from '@/pages/CancellationPolicy';
 import AccessibilityStatement from '@/pages/AccessibilityStatement';
 import UserManagement from '@/pages/UserManagement';
+import Admin from '@/pages/Admin';
+import SubscriptionBlocked from '@/pages/SubscriptionBlocked';
 import Login from '@/pages/Login';
 
 const { Pages, Layout, mainPage } = pagesConfig;
@@ -26,7 +28,7 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
   : <>{children}</>;
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, isAuthenticated, authError, navigateToLogin } = useAuth();
+  const { isLoadingAuth, isLoadingPublicSettings, isAuthenticated, authError, navigateToLogin, subscriptionStatus, user } = useAuth();
 
   // Show loading spinner while checking auth
   if (isLoadingPublicSettings || isLoadingAuth) {
@@ -58,10 +60,22 @@ const AuthenticatedApp = () => {
     );
   }
 
+  // Subscription check — admin always passes, others need active subscription
+  const isAdmin = user?.email === 'romfranko99@gmail.com';
+  if (!isAdmin && subscriptionStatus !== 'active') {
+    return (
+      <Routes>
+        <Route path="/admin" element={<Admin />} />
+        <Route path="*" element={<SubscriptionBlocked />} />
+      </Routes>
+    );
+  }
+
   // Authenticated — render the full app
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/admin" element={<Admin />} />
       <Route path="/" element={
         <LayoutWrapper currentPageName={mainPageKey}>
           <MainPage />

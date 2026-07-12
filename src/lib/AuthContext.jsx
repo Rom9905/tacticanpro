@@ -10,6 +10,7 @@ export const AuthProvider = ({ children }) => {
   const [isLoadingPublicSettings, setIsLoadingPublicSettings] = useState(false);
   const [authError, setAuthError] = useState(null);
   const [appPublicSettings, setAppPublicSettings] = useState({ id: 'local', public_settings: {} });
+  const [subscriptionStatus, setSubscriptionStatus] = useState(null);
 
   useEffect(() => {
     checkSession();
@@ -60,6 +61,15 @@ export const AuthProvider = ({ children }) => {
         setup_team_id: profile?.setup_team_id || null,
       };
 
+      // Check subscription status
+      const { data: sub } = await supabase
+        .from('subscriptions')
+        .select('status')
+        .eq('user_id', authUser.id)
+        .single();
+
+      const subStatus = sub?.status || 'inactive';
+      setSubscriptionStatus(subStatus);
       setUser(userData);
       setIsAuthenticated(true);
     } catch (e) {
@@ -96,6 +106,7 @@ export const AuthProvider = ({ children }) => {
       isLoadingPublicSettings,
       authError,
       appPublicSettings,
+      subscriptionStatus,
       logout,
       navigateToLogin,
       checkAppState: checkSession
