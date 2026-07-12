@@ -3,6 +3,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { base44 } from '@/api/base44Client';
+import { syncMatchRatingsToPlayers } from '@/lib/playerRatingSync';
 import { Save, Star } from 'lucide-react';
 
 export default function EditPlayerRatingsModal({ open, onClose, analysis, onSave }) {
@@ -57,6 +58,7 @@ export default function EditPlayerRatingsModal({ open, onClose, analysis, onSave
       await base44.entities.MatchAnalysis.update(analysis.id, {
         player_ratings: cleanedRatings
       });
+      await syncMatchRatingsToPlayers(analysis, cleanedRatings);
       onSave && onSave(cleanedRatings);
     } catch (error) {
       console.error('Error saving ratings:', error);

@@ -136,6 +136,7 @@ export default function TrainingProgramModal({
       coach_note: evalNote,
       improvement_observed: overallRating >= 7,
       focus_areas: selectedTopics,
+      topic_scores: scores,
     });
 
     onRefresh?.();

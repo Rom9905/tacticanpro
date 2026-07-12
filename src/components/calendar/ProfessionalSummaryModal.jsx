@@ -111,13 +111,21 @@ export default function ProfessionalSummaryModal({ open, onClose, event, onSaved
       issues_found: issuesFound,
       tactical_insights: tacticalInsights,
       decisions_next: decisionsNext,
-      satisfaction,
+      satisfaction: satisfaction || null,
       ...((!isTraining && resultOur !== '') ? { result_our: Number(resultOur), result_opponent: Number(resultOpponent) } : {}),
       ...((!isTraining && opponentFormation) ? { opponent_formation: opponentFormation } : {}),
       ...((!isTraining && opponentStyle) ? { opponent_attack_style: opponentStyle } : {}),
     };
 
-    const savedSummary = await base44.entities.ProfessionalSummary.create(summaryData);
+    let savedSummary;
+    try {
+      savedSummary = await base44.entities.ProfessionalSummary.create(summaryData);
+    } catch (e) {
+      console.error('Failed to save summary:', e);
+      alert('שגיאה בשמירת הסיכום: ' + (e.message || ''));
+      setSaving(false);
+      return;
+    }
     await base44.entities.GameSchedule.update(event.id, { status: 'completed' });
 
     if (!isTraining && event.opponent) {

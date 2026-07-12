@@ -272,11 +272,27 @@ function buildStubFromSchema(schema) {
 const integrations = {
   Core: {
     async InvokeLLM({ prompt, response_json_schema } = {}) {
-      // TODO: Replace with real LLM API call (OpenAI / Supabase Edge Function)
-      if (response_json_schema) {
-        return buildStubFromSchema(response_json_schema);
+      try {
+        const { data, error } = await supabase.functions.invoke('invoke-llm', {
+          body: { prompt, response_json_schema: response_json_schema || null },
+        });
+        if (error) throw error;
+        if (data?.error) throw new Error(data.error);
+        // Edge function wraps the result in { data }
+        const result = data?.data ?? data;
+        if (response_json_schema) {
+          return typeof result === 'object' && result !== null
+            ? result
+            : buildStubFromSchema(response_json_schema);
+        }
+        return typeof result === 'string' ? result : (result?.response ?? '');
+      } catch (e) {
+        console.error('InvokeLLM failed, returning empty stub:', e);
+        if (response_json_schema) {
+          return buildStubFromSchema(response_json_schema);
+        }
+        return { response: '' };
       }
-      return { response: 'AI analysis is not available yet.' };
     },
     async UploadFile({ file } = {}) {
       if (!file) return { file_url: '' };

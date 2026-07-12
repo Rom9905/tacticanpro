@@ -70,7 +70,7 @@ export default function GamePrepForm({ teamId, players, generalPreps, onClose, o
       name,
       date,
       ...(showTacticalFields && { opponent_formation: formation, opponent_attack_style: attackStyle, opponent_defense_style: defenseStyle }),
-      opponent_strength_level: strengthLevel,
+      opponent_strength_level: strengthLevel || null,
       additional_notes: notes,
       ...(prepType === 'opponent' && { opponent_name: opponentName, opponent_key_strength: keyStrength, opponent_key_weakness: keyWeakness, opponent_dangerous_players: dangerousPlayers, opponent_patterns: patterns }),
       ...(basedOnId && { based_on_prep_id: basedOnId }),

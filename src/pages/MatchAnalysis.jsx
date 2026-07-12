@@ -32,6 +32,7 @@ import FreeFormAnalysis from '../components/analysis/FreeFormAnalysis';
 import WeeklySummary from '../components/analysis/WeeklySummary';
 import ProblemHeatmap from '../components/analysis/ProblemHeatmap';
 import MatchAnalysisModal from '../components/analysis/MatchAnalysisModal';
+import { syncMatchRatingsToPlayers } from '@/lib/playerRatingSync';
 
 export default function MatchAnalysis() {
   const hasPlan = useSubscriptionGuard();
@@ -177,7 +178,7 @@ export default function MatchAnalysis() {
     if (addingToMatch) {
       // If this is a summary-only record (no real MatchAnalysis), create a new one instead
       if (addingToMatch._summaryOnly) {
-        await base44.entities.MatchAnalysis.create({
+        const created = await base44.entities.MatchAnalysis.create({
           ...data,
           team_id: selectedTeamId,
           summary_id: addingToMatch._summary?.id,
@@ -185,6 +186,7 @@ export default function MatchAnalysis() {
           date: addingToMatch.date,
           result: addingToMatch.result,
         });
+        await syncMatchRatingsToPlayers(created, data.player_ratings || []);
         setAddingToMatch(null);
         loadAnalyses(selectedTeamId);
         setShowNewAnalysis(false);
@@ -254,13 +256,15 @@ export default function MatchAnalysis() {
           recommendations: [...(existing.report?.recommendations || []), ...(data.report?.recommendations || [])],
         }
       });
+      await syncMatchRatingsToPlayers(addingToMatch, data.player_ratings || []);
       setAddingToMatch(null);
     } else {
       // Create new match analysis
-      await base44.entities.MatchAnalysis.create({
+      const created = await base44.entities.MatchAnalysis.create({
         ...data,
         team_id: selectedTeamId,
       });
+      await syncMatchRatingsToPlayers(created, data.player_ratings || []);
     }
     // Create TacticalGoal entries from training_actions and report.issues
     const goalSources = [
@@ -576,6 +580,7 @@ export default function MatchAnalysis() {
                     await base44.entities.MatchAnalysis.update(editingRatings.id, {
                       player_ratings: updatedRatings
                     });
+                    await syncMatchRatingsToPlayers(editingRatings, updatedRatings);
                     loadAnalyses(selectedTeamId);
                     setEditingRatings(null);
                     if (selectedAnalysis?.id === editingRatings.id) {

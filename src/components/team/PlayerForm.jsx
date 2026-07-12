@@ -210,7 +210,14 @@ export default function PlayerForm({ isOpen, onClose, player, onSave }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave({ ...formData, strengths, improvements, skill_ratings: skillRatings });
+    onSave({
+      ...formData,
+      number: formData.number === '' ? null : formData.number,
+      availability: formData.status,
+      strengths,
+      improvements,
+      skill_ratings: skillRatings,
+    });
   };
 
   return (

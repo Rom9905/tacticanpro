@@ -33,7 +33,7 @@ export default function DrillActionCard({ drill, teamId, relatedIssue, nextGame,
     try {
       await base44.entities.TrainingAction.create({
         team_id: teamId,
-        action_type: 'team',
+        action_type: 'drill',
         pattern_situation: relatedIssue || drill.name,
         pattern_category: drill.category || 'אימון כללי',
         priority,

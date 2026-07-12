@@ -131,7 +131,7 @@ export default function MatchAnalysisLink({ teamId, onCreateFromAnalysis }) {
 
     await base44.entities.TrainingAction.create({
       team_id: teamId,
-      action_type: 'team',
+      action_type: 'tactical_session',
       pattern_situation: 'מלוח טקטי',
       priority: 'high',
       notes: `תרגול מצב מלוח טקטי`,

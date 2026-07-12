@@ -73,6 +73,7 @@ export default function AddEventModal({ open, onClose, teamId, defaultType = 'tr
       onClose();
     } catch (e) {
       console.error(e);
+      alert('שגיאה בשמירת האירוע: ' + (e.message || ''));
     }
     setSaving(false);
   };

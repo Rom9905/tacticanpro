@@ -49,7 +49,7 @@ export default function GameDayPrepModule({ prep, teamId, nextGame, onAdded }) {
 
         await base44.entities.TrainingAction.create({
           team_id: teamId,
-          action_type: 'team',
+          action_type: 'tactical_session',
           pattern_situation: `הכנה למשחק - ${name}`,
           pattern_category: 'הכנה למשחק',
           priority: 'high',
