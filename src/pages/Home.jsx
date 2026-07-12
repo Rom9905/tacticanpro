@@ -86,16 +86,17 @@ export default function Home() {
   const loadDashboard = async (teamId = selectedTeamId, currentUser = user) => {
     if (!teamId || !currentUser) return;
     try {
+      const safeQuery = (promise, label) => promise.catch(e => { console.warn(`Dashboard query failed [${label}]:`, e.message); return []; });
       const [trainingActions, decisionSummaries, situations, trainingPrograms, matchAnalyses, players, gameSchedules, goals, profSummaries] = await Promise.all([
-        base44.entities.TrainingAction.filter({ team_id: teamId, status: 'pending', created_by: currentUser.email }),
-        base44.entities.MatchDecisionSummary.filter({ team_id: teamId, created_by: currentUser.email }, '-created_date', 20),
-        base44.entities.KeyMatchSituation.filter({ team_id: teamId, status: 'active', created_by: currentUser.email }),
-        base44.entities.TrainingProgram.filter({ team_id: teamId, status: 'active', created_by: currentUser.email }),
-        base44.entities.MatchAnalysis.filter({ team_id: teamId, created_by: currentUser.email }, '-date', 50),
-        base44.entities.Player.filter({ team_id: teamId, created_by: currentUser.email }),
-        base44.entities.GameSchedule.filter({ team_id: teamId, created_by: currentUser.email }, 'game_date', 100),
-        base44.entities.TacticalGoal.filter({ team_id: teamId }, '-created_date', 30),
-        base44.entities.ProfessionalSummary.filter({ team_id: teamId }, '-event_date', 50),
+        safeQuery(base44.entities.TrainingAction.filter({ team_id: teamId, status: 'pending' }), 'TrainingAction'),
+        safeQuery(base44.entities.MatchDecisionSummary.filter({ team_id: teamId }, '-created_date', 20), 'MatchDecisionSummary'),
+        safeQuery(base44.entities.KeyMatchSituation.filter({ team_id: teamId, status: 'active' }), 'KeyMatchSituation'),
+        safeQuery(base44.entities.TrainingProgram.filter({ team_id: teamId, status: 'active' }), 'TrainingProgram'),
+        safeQuery(base44.entities.MatchAnalysis.filter({ team_id: teamId }, '-date', 50), 'MatchAnalysis'),
+        safeQuery(base44.entities.Player.filter({ team_id: teamId }), 'Player'),
+        safeQuery(base44.entities.GameSchedule.filter({ team_id: teamId }, 'game_date', 100), 'GameSchedule'),
+        safeQuery(base44.entities.TacticalGoal.filter({ team_id: teamId }, '-created_date', 30), 'TacticalGoal'),
+        safeQuery(base44.entities.ProfessionalSummary.filter({ team_id: teamId }, '-event_date', 50), 'ProfessionalSummary'),
       ]);
 
       // Player completeness check (merged — reuses already-fetched players)
