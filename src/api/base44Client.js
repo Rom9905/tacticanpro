@@ -45,10 +45,14 @@ function resolveField(field) {
 
 // Map old field names to new (Base44 → Supabase)
 function mapFieldsForWrite(data) {
-  const cleaned = { ...data };
-  EXCLUDED_FIELDS.forEach(f => delete cleaned[f]);
-  // Map created_date reads to created_at
-  delete cleaned.id; // never send id on create
+  const cleaned = {};
+  for (const [key, value] of Object.entries(data)) {
+    if (EXCLUDED_FIELDS.includes(key)) continue;
+    if (key === 'id') continue;
+    if (key === 'created_at' || key === 'updated_at') continue;
+    if (key.startsWith('_')) continue;
+    cleaned[key] = value;
+  }
   return cleaned;
 }
 
