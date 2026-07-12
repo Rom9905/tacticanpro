@@ -171,7 +171,11 @@ ${momentsText}
     });
 
     setGenerating(false);
-    
+
+    if (response?.__ai_error) {
+      alert(`${response.__ai_error}\nהרגעים שתיעדת יישמרו ללא ניתוח AI.`);
+    }
+
     // Convert to legacy format
     const legacyReport = {
       summary: response.summary,

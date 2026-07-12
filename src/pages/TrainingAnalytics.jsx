@@ -145,9 +145,14 @@ The "status" field in period_comparison must be one of: "שיפור", "שימו�
         }
       });
 
-      setTeamAnalysis(result);
+      if (result?.__ai_error) {
+        alert(result.__ai_error);
+      } else {
+        setTeamAnalysis(result);
+      }
     } catch (error) {
       console.error('Error analyzing team trainings:', error);
+      alert('שגיאה בניתוח האימונים. נסה שוב מאוחר יותר.');
     }
     setAnalyzingTeam(false);
   };

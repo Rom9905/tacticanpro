@@ -82,9 +82,10 @@ ${recentMatches.map(m => `- מול ${m.opponent} (${m.date}): ${m.player_ratings
         }
       });
 
-      setTips(result);
+      setTips(result?.__ai_error ? { error: result.__ai_error } : result);
     } catch (error) {
       console.error('Error generating tips:', error);
+      setTips({ error: 'שגיאה בהפקת הטיפים. נסה שוב מאוחר יותר.' });
     }
     setGenerating(false);
   };
@@ -114,6 +115,11 @@ ${recentMatches.map(m => `- מול ${m.opponent} (${m.date}): ${m.player_ratings
             <div className="w-8 h-8 border-4 rounded-full animate-spin mx-auto mb-3"
               style={{ borderColor: 'rgba(42,112,80,0.2)', borderTopColor: '#2A7050' }} />
             <p className="text-sm" style={{ color: '#7A6B57' }}>מייצר טיפים מקצועיים...</p>
+          </div>
+        ) : tips?.error ? (
+          <div className="py-8 text-center">
+            <p className="text-sm font-semibold mb-1" style={{ color: '#D97706' }}>⚠ שירות ה-AI אינו זמין</p>
+            <p className="text-xs" style={{ color: '#7A6B57' }}>{tips.error}</p>
           </div>
         ) : tips ? (
           <div className="space-y-4">

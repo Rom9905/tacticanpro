@@ -272,26 +272,34 @@ function buildStubFromSchema(schema) {
 const integrations = {
   Core: {
     async InvokeLLM({ prompt, response_json_schema } = {}) {
+      const errorResult = (message) => {
+        if (response_json_schema) {
+          return { ...buildStubFromSchema(response_json_schema), __ai_error: message };
+        }
+        return { response: '', __ai_error: message };
+      };
       try {
         const { data, error } = await supabase.functions.invoke('invoke-llm', {
           body: { prompt, response_json_schema: response_json_schema || null },
         });
         if (error) throw error;
-        if (data?.error) throw new Error(data.error);
+        if (data?.error) {
+          const message = data.error_code === 'quota_exceeded'
+            ? 'מכסת ה-AI היומית נוצלה במלואה. נסה שוב מאוחר יותר.'
+            : 'שירות ה-AI אינו זמין כרגע. נסה שוב בעוד מספר דקות.';
+          return errorResult(message);
+        }
         // Edge function wraps the result in { data }
         const result = data?.data ?? data;
         if (response_json_schema) {
           return typeof result === 'object' && result !== null
             ? result
-            : buildStubFromSchema(response_json_schema);
+            : errorResult('שירות ה-AI החזיר תשובה לא תקינה. נסה שוב.');
         }
         return typeof result === 'string' ? result : (result?.response ?? '');
       } catch (e) {
-        console.error('InvokeLLM failed, returning empty stub:', e);
-        if (response_json_schema) {
-          return buildStubFromSchema(response_json_schema);
-        }
-        return { response: '' };
+        console.error('InvokeLLM failed:', e);
+        return errorResult('שירות ה-AI אינו זמין כרגע. נסה שוב בעוד מספר דקות.');
       }
     },
     async UploadFile({ file } = {}) {

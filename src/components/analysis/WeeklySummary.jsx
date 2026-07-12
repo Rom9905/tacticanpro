@@ -68,7 +68,12 @@ Be concise and specific. Focus on patterns, not individual games. Reply in ${isH
       },
     });
 
-    setSummary(response);
+    if (response?.__ai_error) {
+      alert(response.__ai_error);
+      setSummary(null);
+    } else {
+      setSummary(response);
+    }
     setGenerating(false);
   };
 

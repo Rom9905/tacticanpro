@@ -92,7 +92,11 @@ ${skillText || 'לא הוזנו'}
 
     try {
       const result = await base44.integrations.Core.InvokeLLM({ prompt });
-      setReport(typeof result === 'string' ? result : result?.response || JSON.stringify(result));
+      if (result?.__ai_error) {
+        setReport(result.__ai_error);
+      } else {
+        setReport(typeof result === 'string' ? result : result?.response || JSON.stringify(result));
+      }
     } catch (e) {
       setReport('שגיאה בהפקת הדוח. נסה שוב.');
     }

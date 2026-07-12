@@ -244,9 +244,9 @@ ${playersInfo}
 
     const assistantMessage = {
       role: 'assistant',
-      short_answer: response.short_answer || '',
-      key_point: response.key_point || null,
-      detailed: response.detailed || null,
+      short_answer: response.__ai_error || response.short_answer || 'לא הצלחתי להפיק תשובה. נסה לנסח את השאלה מחדש.',
+      key_point: response.__ai_error ? null : (response.key_point || null),
+      detailed: response.__ai_error ? null : (response.detailed || null),
       timestamp: new Date().toISOString(),
     };
 

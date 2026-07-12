@@ -130,7 +130,7 @@ export default function InputTab({ teamId, allEvents, needsSummaryEvents, onRefr
             <div className="space-y-2">
               {weekEvents.map(ev => {
                 const isTraining = (() => { try { return JSON.parse(ev.notes || '{}')?.type === 'training'; } catch { return false; } })();
-                const isSummarized = !needsSummaryEvents?.find(nse => nse.id === ev.id);
+                const isSummarized = ev.status === 'completed';
                 const d = new Date(ev.game_date);
                 const dayLabel = d.toLocaleDateString('he-IL', { weekday: 'short', day: '2-digit', month: 'short' });
                 const timeLabel = d.toLocaleTimeString('he-IL', { hour: '2-digit', minute: '2-digit' });

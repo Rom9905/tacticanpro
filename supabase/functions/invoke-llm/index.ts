@@ -55,7 +55,12 @@ ${JSON.stringify(response_json_schema)}`;
 
     if (!response.ok) {
       const err = await response.text();
-      return jsonResponse({ error: `Gemini API error: ${response.status}`, details: err }, 502);
+      // Return 200 with a structured error so the client can show a friendly message
+      return jsonResponse({
+        error: `Gemini API error: ${response.status}`,
+        error_code: response.status === 429 ? "quota_exceeded" : "llm_unavailable",
+        details: err,
+      });
     }
 
     const result = await response.json();

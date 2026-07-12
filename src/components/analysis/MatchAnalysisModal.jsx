@@ -144,10 +144,16 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
         }
       });
 
-      const summaryText = typeof summary === 'string' ? summary : summary?.response || '';
-      setAiSummary({ summary: summaryText, insights });
+      const aiError = summary?.__ai_error || insights?.__ai_error;
+      if (aiError) {
+        setAiSummary({ error: aiError });
+      } else {
+        const summaryText = typeof summary === 'string' ? summary : summary?.response || '';
+        setAiSummary({ summary: summaryText, insights });
+      }
     } catch (error) {
       console.error('Error generating AI summary:', error);
+      setAiSummary({ error: 'שגיאה בהפקת ניתוח ה-AI. נסה לפתוח את המשחק שוב.' });
     }
     setLoading(false);
   };
@@ -332,8 +338,17 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
                 <Loader2 className="w-8 h-8 animate-spin mb-2" style={{ color: 'var(--brand-green-dark)' }} />
                 <p className="text-sm" style={{ color: 'var(--text-muted)' }}>מכין תמונת משחק...</p>
               </div>
+            ) : aiSummary?.error ? (
+              <div className="p-4 rounded-xl flex items-center gap-3" style={{ backgroundColor: 'var(--warning-bg)', border: '1px solid rgba(217,119,6,0.25)' }}>
+                <AlertTriangle className="w-5 h-5 flex-shrink-0" style={{ color: 'var(--warning)' }} />
+                <div>
+                  <p className="text-sm font-semibold" style={{ color: 'var(--warning)' }}>ניתוח ה-AI אינו זמין</p>
+                  <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>{aiSummary.error}</p>
+                </div>
+              </div>
             ) : aiSummary ? (
               <>
+                {aiSummary.summary && (
                 <div className="p-4 rounded-xl" style={{ backgroundColor: 'var(--success-bg)', border: '1px solid rgba(22,163,74,0.18)' }}>
                   <h3 className="text-sm font-bold mb-2 flex items-center gap-2" style={{ color: 'var(--brand-green-dark)' }}>
                     <Lightbulb className="w-4 h-4" /> תמונת המשחק
@@ -342,8 +357,10 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
                     {aiSummary.summary}
                   </p>
                 </div>
+                )}
 
                 {/* Three Key Insights */}
+                {(aiSummary.insights?.critical_issue || aiSummary.insights?.improvement_area || aiSummary.insights?.positive_point) && (
                 <div>
                   <SectionHeader icon={TrendingUp}>שלוש תובנות מרכזיות</SectionHeader>
                   <div className="grid md:grid-cols-3 gap-3">
@@ -370,6 +387,7 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
                     />
                   </div>
                 </div>
+                )}
               </>
             ) : null}
 

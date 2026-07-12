@@ -54,10 +54,14 @@ ${JSON.stringify(dataForAI, null, 2).slice(0, 2000)}${gameStyleCtx}
         }
       });
 
-      const text = result?.insight || '';
-      if (text) {
-        cacheRef.current[key] = { insight: text, action: result?.action };
-        setInsight({ insight: text, action: result?.action });
+      if (result?.__ai_error) {
+        setInsight({ insight: result.__ai_error, isError: true });
+      } else {
+        const text = result?.insight || '';
+        if (text) {
+          cacheRef.current[key] = { insight: text, action: result?.action };
+          setInsight({ insight: text, action: result?.action });
+        }
       }
     } catch (e) {
       console.error('BottomLine AI error:', e);
@@ -102,8 +106,10 @@ ${JSON.stringify(dataForAI, null, 2).slice(0, 2000)}${gameStyleCtx}
             </div>
           ) : (
             <>
-              <p className="text-sm leading-relaxed" style={{ color: 'var(--text-primary)' }}>
-                <span className="font-semibold" style={{ color: 'var(--brand-green-dark)' }}>⬤ </span>
+              <p className="text-sm leading-relaxed" style={{ color: insight?.isError ? 'var(--warning)' : 'var(--text-primary)' }}>
+                <span className="font-semibold" style={{ color: insight?.isError ? 'var(--warning)' : 'var(--brand-green-dark)' }}>
+                  {insight?.isError ? '⚠ ' : '⬤ '}
+                </span>
                 {insightText}
               </p>
               {actionText && (

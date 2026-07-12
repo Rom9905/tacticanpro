@@ -186,7 +186,7 @@ export default function PlayerProfile() {
   };
 
   const handleAddMatch = async () => {
-    let matchEntry = { ...newMatch };
+    let matchEntry = { ...newMatch, rating: newMatch.rating ? parseFloat(newMatch.rating) : null };
 
     if (matchMode === 'existing' && selectedAnalysisId) {
       const analysis = existingAnalyses.find(a => a.id === selectedAnalysisId);
@@ -218,7 +218,14 @@ export default function PlayerProfile() {
       }
     }
 
-    const updatedHistory = [...(player.match_history || []), matchEntry];
+    // Replace an existing entry for the same match instead of duplicating it
+    const existingHistory = player.match_history || [];
+    const dupIdx = matchEntry.match_id
+      ? existingHistory.findIndex(h => h.match_id === matchEntry.match_id)
+      : -1;
+    const updatedHistory = dupIdx >= 0
+      ? existingHistory.map((h, i) => (i === dupIdx ? { ...h, ...matchEntry } : h))
+      : [...existingHistory, matchEntry];
     await base44.entities.Player.update(playerId, {
       match_history: updatedHistory,
       season_goals: (player.season_goals || 0) + (matchEntry.goals || 0),

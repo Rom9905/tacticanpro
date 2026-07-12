@@ -739,9 +739,10 @@ Write clearly and simply, no special characters or asterisks. Plain readable tex
           }
         }
       });
-      setGuide(response);
+      setGuide(response?.__ai_error ? { error: response.__ai_error } : response);
     } catch (error) {
       console.error('Error generating guide:', error);
+      setGuide({ error: 'שגיאה בהפקת ההנחיות. נסה שוב מאוחר יותר.' });
     }
     setLoading(false);
   };
@@ -760,6 +761,11 @@ Write clearly and simply, no special characters or asterisks. Plain readable tex
           <div className="flex flex-col items-center justify-center py-12">
             <Loader2 className="w-10 h-10 animate-spin text-emerald-500 mb-4" />
             <span className="text-slate-400">{gIsHe ? 'מכינים הנחיות מדויקות...' : 'Preparing precise guidance...'}</span>
+          </div>
+        ) : guide?.error ? (
+          <div className="text-center py-8">
+            <p className="text-amber-400 font-semibold mb-1">⚠ {gIsHe ? 'שירות ה-AI אינו זמין' : 'AI service unavailable'}</p>
+            <p className="text-slate-400 text-sm">{guide.error}</p>
           </div>
         ) : guide ? (
           <div className="space-y-5">
@@ -789,7 +795,7 @@ Write clearly and simply, no special characters or asterisks. Plain readable tex
                 </h3>
               </div>
               <div className="text-slate-200 leading-relaxed text-[15px] space-y-3">
-                {guide.main_drill.split('\n').map((line, i) => (
+                {(guide.main_drill || '').split('\n').map((line, i) => (
                   <p key={i}>{line}</p>
                 ))}
               </div>
@@ -806,7 +812,7 @@ Write clearly and simply, no special characters or asterisks. Plain readable tex
                 </h3>
               </div>
               <div className="text-slate-200 leading-relaxed text-[15px] space-y-3">
-                {guide.mental_focus.split('\n').map((line, i) => (
+                {(guide.mental_focus || '').split('\n').map((line, i) => (
                   <p key={i}>{line}</p>
                 ))}
               </div>

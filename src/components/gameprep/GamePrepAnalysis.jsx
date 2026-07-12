@@ -96,8 +96,13 @@ ${prep.additional_notes ? `- הערות: ${prep.additional_notes}` : ''}
       }
     });
 
+    if (result?.__ai_error) {
+      alert(result.__ai_error);
+      setGenerating(false);
+      return;
+    }
     // Save to entity
-    const updated = await base44.entities.GamePrep.update(prep.id, { ai_analysis: result });
+    await base44.entities.GamePrep.update(prep.id, { ai_analysis: result });
     setAnalysis(result);
     setGenerating(false);
     onUpdated && onUpdated({ ...prep, ai_analysis: result });
