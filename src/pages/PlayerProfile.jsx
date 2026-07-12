@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { createPageUrl } from '@/utils';
 import { base44 } from '@/api/base44Client';
+import { supabase } from '@/lib/supabaseClient';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   ArrowRight,
@@ -20,6 +21,8 @@ import {
   ChevronDown,
   CheckCircle2,
   XCircle,
+  Sparkles,
+  X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -71,6 +74,7 @@ export default function PlayerProfile() {
   const [editingNoteId, setEditingNoteId] = useState(null);
   const [editingNoteText, setEditingNoteText] = useState('');
   const [savingNote, setSavingNote] = useState(false);
+  const [aiInsight, setAiInsight] = useState(null);
 
   const queryClient = useQueryClient();
 
@@ -221,6 +225,18 @@ export default function PlayerProfile() {
       season_assists: (player.season_assists || 0) + (matchEntry.assists || 0),
     });
 
+    // Trigger AI attribute evaluation every 5th match
+    if (updatedHistory.length >= 5 && updatedHistory.length % 5 === 0) {
+      supabase.functions.invoke('evaluate-player-attributes', {
+        body: { player_id: playerId },
+      }).then(({ data }) => {
+        if (data?.adjusted) {
+          setAiInsight(data);
+          loadPlayer();
+        }
+      }).catch(e => console.warn('AI evaluation failed:', e));
+    }
+
     loadPlayer();
     setShowAddMatch(false);
     setSelectedAnalysisId('');
@@ -322,6 +338,56 @@ export default function PlayerProfile() {
             השווה לשחקנים אחרים
           </Button>
         </div>
+
+        {/* ── AI Insight Notification ── */}
+        <AnimatePresence>
+          {aiInsight && aiInsight.adjusted && (
+            <motion.div
+              initial={{ opacity: 0, y: -12 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -12 }}
+              className="rounded-2xl p-4 mb-5 relative"
+              style={{ backgroundColor: '#F0FDF4', border: '1px solid rgba(74,222,128,0.3)' }}
+            >
+              <button
+                onClick={() => setAiInsight(null)}
+                className="absolute top-3 left-3 text-gray-400 hover:text-gray-600 transition-colors"
+              >
+                <X className="w-4 h-4" />
+              </button>
+              <div className="flex items-start gap-3">
+                <div className="rounded-full p-2 flex-shrink-0" style={{ backgroundColor: 'rgba(74,222,128,0.2)' }}>
+                  <Sparkles className="w-5 h-5" style={{ color: '#16A34A' }} />
+                </div>
+                <div className="flex-1 min-w-0">
+                  <h4 className="font-bold text-sm mb-1" style={{ color: '#15803D' }}>
+                    הערכת AI — עדכון יכולות
+                  </h4>
+                  <p className="text-sm mb-3" style={{ color: '#166534' }}>
+                    {aiInsight.summary}
+                  </p>
+                  <div className="space-y-1.5">
+                    {aiInsight.adjustments?.map((adj, i) => (
+                      <div key={i} className="flex items-center gap-2 text-sm" style={{ color: '#1E3A2F' }}>
+                        <span
+                          className="font-bold text-xs px-1.5 py-0.5 rounded"
+                          style={{
+                            backgroundColor: adj.change > 0 ? 'rgba(74,222,128,0.2)' : 'rgba(245,158,11,0.2)',
+                            color: adj.change > 0 ? '#16A34A' : '#D97706',
+                          }}
+                        >
+                          {adj.change > 0 ? '↑' : '↓'} {adj.old_value} → {adj.new_value}
+                        </span>
+                        <span className="font-medium">{adj.attribute_name}</span>
+                        <span style={{ color: '#4B5563' }}>— {adj.reasoning}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* ── Player Header ── */}
         <div

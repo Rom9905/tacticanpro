@@ -1,4 +1,9 @@
--- Subscriptions table
+-- =============================================
+-- Run this in Supabase SQL Editor
+-- Safe to re-run (uses IF NOT EXISTS / DROP IF EXISTS)
+-- =============================================
+
+-- 1. Create subscriptions table
 CREATE TABLE IF NOT EXISTS subscriptions (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
@@ -11,16 +16,19 @@ CREATE TABLE IF NOT EXISTS subscriptions (
   UNIQUE(user_id)
 );
 
--- RLS: users can only read their own subscription
+-- 2. Enable RLS
 ALTER TABLE subscriptions ENABLE ROW LEVEL SECURITY;
 
+-- 3. Drop old policies (safe if they don't exist)
 DROP POLICY IF EXISTS "Users can read own subscription" ON subscriptions;
+DROP POLICY IF EXISTS "Admin full access to subscriptions" ON subscriptions;
+
+-- 4. Users can read their own subscription row
 CREATE POLICY "Users can read own subscription"
   ON subscriptions FOR SELECT
   USING (auth.uid() = user_id);
 
--- Admin full access (covers INSERT/UPDATE/DELETE and SELECT)
-DROP POLICY IF EXISTS "Admin full access to subscriptions" ON subscriptions;
+-- 5. Admin (romfranko99@gmail.com) has full access to all rows
 CREATE POLICY "Admin full access to subscriptions"
   ON subscriptions FOR ALL
   USING (
@@ -29,7 +37,7 @@ CREATE POLICY "Admin full access to subscriptions"
     )
   );
 
--- Auto-create subscription row on user signup (inactive by default)
+-- 6. Auto-create inactive subscription when a new user signs up
 CREATE OR REPLACE FUNCTION create_subscription_on_signup()
 RETURNS TRIGGER AS $$
 BEGIN
@@ -46,9 +54,16 @@ CREATE TRIGGER on_auth_user_created_subscription
   FOR EACH ROW
   EXECUTE FUNCTION create_subscription_on_signup();
 
--- Make your own account active
+-- 7. Set admin account as active
 INSERT INTO subscriptions (user_id, status, plan)
 SELECT id, 'active', 'annual'
 FROM auth.users
 WHERE email = 'romfranko99@gmail.com'
 ON CONFLICT (user_id) DO UPDATE SET status = 'active';
+
+-- 8. Create subscription rows for any existing users who don't have one
+INSERT INTO subscriptions (user_id, status, plan)
+SELECT id, 'inactive', 'monthly'
+FROM auth.users
+WHERE id NOT IN (SELECT user_id FROM subscriptions)
+ON CONFLICT (user_id) DO NOTHING;
