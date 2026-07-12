@@ -293,66 +293,22 @@ const integrations = {
 // ============================================================
 // FUNCTIONS (serverless function invocations)
 // ============================================================
-function handleAnalyzeMatchFile(params) {
-  if (params?.mode === 'identify_teams') {
-    return {
-      data: {
-        team_a: params?.our_team_name || 'קבוצה א׳',
-        team_b: params?.opponent_name || 'קבוצה ב׳',
-      }
-    };
+async function handleAnalyzeMatchFile(params) {
+  const { data, error } = await supabase.functions.invoke('analyze-match-file', {
+    body: {
+      mode: params?.mode || 'full',
+      file_content: params?.file_content || '',
+      our_team_name: params?.our_team_name || '',
+      opponent_name: params?.opponent_name || '',
+      question: params?.question || '',
+    },
+  });
+
+  if (error) {
+    throw new Error(error.message || 'Edge Function call failed');
   }
-  if (params?.mode === 'deep_dive') {
-    return {
-      data: {
-        title: params?.question || 'תשובה',
-        blocks: [{
-          subtitle: 'ניתוח',
-          content: 'ניתוח קבצים מפורט אינו זמין כרגע. ניתן להשתמש בניתוח ידני בדף ניתוח המשחקים.',
-          highlights: []
-        }],
-        no_data: true
-      }
-    };
-  }
-  const ourTeam = params?.our_team_name || 'הקבוצה שלי';
-  const opponent = params?.opponent_name || 'היריבה';
-  const today = new Date().toISOString().split('T')[0];
-  return {
-    data: {
-      analysis_type: 'full',
-      match_details: { date: today, our_score: 0, opponent_score: 0, location: 'בית' },
-      full_report: {
-        tactical_overview: `ניתוח טקטי של ${ourTeam} מול ${opponent}. הנתונים מבוססים על הקובץ שהועלה.`,
-        possession_passing_summary: 'נתוני החזקת כדור ומסירות מתוך הקובץ.',
-        possession_passing_stats: [
-          { label: 'החזקת כדור', our_value: '50%', opponent_value: '50%', our_pct: 50, opponent_pct: 50, advantage: 'none' },
-          { label: 'מסירות', our_value: '0', opponent_value: '0', our_pct: null, opponent_pct: null, advantage: 'none' },
-          { label: 'דיוק מסירות', our_value: '0%', opponent_value: '0%', our_pct: null, opponent_pct: null, advantage: 'none' },
-        ],
-        defense_pressure_summary: 'נתוני הגנה ולחץ מתוך הקובץ.',
-        defense_pressure_stats: [
-          { label: 'תיקולים', our_value: '0', opponent_value: '0', our_pct: null, opponent_pct: null, advantage: 'none' },
-          { label: 'חסימות', our_value: '0', opponent_value: '0', our_pct: null, opponent_pct: null, advantage: 'none' },
-        ],
-        duels_transitions_summary: 'נתוני דו-קרבות ומעברים מתוך הקובץ.',
-        duels_transitions_stats: [
-          { label: 'דו-קרבות קרקע', our_value: '0', opponent_value: '0', our_pct: null, opponent_pct: null, advantage: 'none' },
-          { label: 'דו-קרבות אוויר', our_value: '0', opponent_value: '0', our_pct: null, opponent_pct: null, advantage: 'none' },
-        ],
-        key_issues: ['יש להשלים את הנתונים ידנית'],
-        training_topics: [{ topic: 'השלמת נתוני משחק', urgency: 'רגיל', rationale: 'מומלץ להוסיף נתונים ידנית' }],
-        standout_players: [],
-        executive_summary: `סיכום המשחק של ${ourTeam} מול ${opponent}.`,
-      },
-      summary_report: {
-        what_happened: `משחק של ${ourTeam} מול ${opponent}.`,
-        what_went_well: ['הקובץ עלה בהצלחה ונשמר במערכת'],
-        what_went_poorly: ['יש להשלים את הנתונים ידנית'],
-        training_topics: ['השלמת נתוני משחק ידנית']
-      }
-    }
-  };
+
+  return data;
 }
 
 const FUNCTION_STUBS = {
@@ -367,7 +323,7 @@ const FUNCTION_STUBS = {
 
 const functions = {
   async invoke(functionName, params) {
-    if (functionName === 'analyzeMatchFile') return handleAnalyzeMatchFile(params);
+    if (functionName === 'analyzeMatchFile') return await handleAnalyzeMatchFile(params);
     return FUNCTION_STUBS[functionName] || { success: true };
   },
 };
