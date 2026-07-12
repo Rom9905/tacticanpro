@@ -37,12 +37,12 @@ export default function ProgramReviewDialog({ isOpen, onClose, program, player, 
       
       if (improvementMatches >= 2) {
         aiImpactLevel = 'גבוה';
-        aiDetectedChanges = `זוהתה מגמת שיפור ברורה: ${improvementMatches} משחקים עם התקדמות. השחקן מראה עליה עקבית בביצועים הקשורים ל-${program.primary_weakness}.`;
+        aiDetectedChanges = `זוהתה מגמת שיפור ברורה: ${improvementMatches} משחקים עם התקדמות. השחקן מראה עליה עקבית בביצועים הקשורים ל-${program.focus_title}.`;
       } else if (improvementMatches > declineMatches) {
         aiImpactLevel = 'בינוני';
         aiDetectedChanges = `זוהה שיפור מתון: ${improvementMatches} משחקים חיוביים מול ${declineMatches} שליליים. יש התקדמות אך לא עקבית.`;
       } else {
-        aiDetectedChanges = `לא זוהה שינוי משמעותי בדפוסי המשחק הקשורים ל-${program.primary_weakness}. ייתכן שהתוכנית זקוקה להתאמה.`;
+        aiDetectedChanges = `לא זוהה שינוי משמעותי בדפוסי המשחק הקשורים ל-${program.focus_title}. ייתכן שהתוכנית זקוקה להתאמה.`;
       }
 
       // Determine outcome status
@@ -85,9 +85,8 @@ export default function ProgramReviewDialog({ isOpen, onClose, program, player, 
         review_id: review.id,
         program_data: {
           focus_title: program.focus_title,
-          primary_weakness: program.primary_weakness,
           duration_weeks: durationWeeks,
-          sessions_completed: program.sessions_log?.filter(s => s.completed).length || 0
+          sessions_completed: 0
         }
       });
 
@@ -103,8 +102,8 @@ export default function ProgramReviewDialog({ isOpen, onClose, program, player, 
     setSubmitting(false);
   };
 
-  const completedSessions = program.sessions_log?.filter(s => s.completed).length || 0;
-  const totalSessions = program.review_after_games || 3;
+  const completedSessions = program.progress_percentage ? Math.round(program.progress_percentage / 100 * 3) : 0;
+  const totalSessions = 3;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

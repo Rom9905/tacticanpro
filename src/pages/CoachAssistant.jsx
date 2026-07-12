@@ -105,11 +105,9 @@ export default function CoachAssistant() {
   const messagesEndRef = useRef(null);
 
   useEffect(() => {
-    base44.auth.me().then(user => {
-      base44.entities.Team.filter({ created_by: user.email }).then(data => {
-        setTeams(data);
-        if (data.length > 0) setSelectedTeamId(data[0].id);
-      });
+    base44.entities.Team.list().then(data => {
+      setTeams(data);
+      if (data.length > 0) setSelectedTeamId(data[0].id);
     });
   }, []);
 
@@ -117,7 +115,7 @@ export default function CoachAssistant() {
     if (selectedTeamId) {
       loadConversations();
       base44.auth.me().then(user =>
-        base44.entities.Player.filter({ team_id: selectedTeamId, created_by: user.email }).then(setPlayers)
+        base44.entities.Player.filter({ team_id: selectedTeamId }).then(setPlayers)
       );
     }
   }, [selectedTeamId]);
@@ -128,7 +126,7 @@ export default function CoachAssistant() {
 
   const loadConversations = async () => {
     const user = await base44.auth.me();
-    const data = await base44.entities.Conversation.filter({ team_id: selectedTeamId, created_by: user.email }, '-updated_date');
+    const data = await base44.entities.Conversation.filter({ team_id: selectedTeamId }, '-updated_date');
     setConversations(data);
   };
 

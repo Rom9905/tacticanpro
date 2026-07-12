@@ -507,6 +507,7 @@ export default function MatchFileAnalysis() {
             situation_name: issue.substring(0, 80),
             situation_category: 'ניהול משחק',
             description: issue,
+            status: 'active',
             severity: 'medium',
             source_match_id: game.id,
             occurrence_count: 1

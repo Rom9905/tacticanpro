@@ -46,7 +46,7 @@ export default function TrainingCenter() {
     (async () => {
       const userData = await base44.auth.me();
       setUser(userData);
-      const teamsData = await base44.entities.Team.filter({ created_by: userData.email });
+      const teamsData = await base44.entities.Team.list();
       setTeams(teamsData);
       setLoading(false);
     })();
@@ -57,13 +57,12 @@ export default function TrainingCenter() {
   }, [selectedTeamId]);
 
   const loadData = async () => {
-    const user = await base44.auth.me();
     const [topicsData, summariesData, playersData, programsData, analysesData, evalsData] = await Promise.all([
       base44.entities.TacticalGoal.filter({ team_id: selectedTeamId }, '-created_date', 100),
       base44.entities.ProfessionalSummary.filter({ team_id: selectedTeamId }, '-event_date', 60),
       base44.entities.Player.filter({ team_id: selectedTeamId }),
       base44.entities.TrainingProgram.filter({ team_id: selectedTeamId }),
-      base44.entities.MatchAnalysis.filter({ team_id: selectedTeamId, created_by: user.email }, '-date', 50),
+      base44.entities.MatchAnalysis.filter({ team_id: selectedTeamId }, '-date', 50),
       base44.entities.TrainingSessionEvaluation.filter({ team_id: selectedTeamId }, '-training_date', 200),
     ]);
     setTopics(topicsData);

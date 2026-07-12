@@ -39,7 +39,7 @@ export default function TrainingAnalytics() {
     (async () => {
       const userData = await base44.auth.me();
       setUser(userData);
-      const teamsData = await base44.entities.Team.filter({ created_by: userData.email });
+      const teamsData = await base44.entities.Team.list();
       setTeams(teamsData);
       setLoading(false);
     })();

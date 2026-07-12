@@ -66,8 +66,7 @@ export default function TeamManagement({ initialTab, initialPreselect } = {}) {
 
   const loadTeams = async () => {
     setLoading(true);
-    const user = await base44.auth.me();
-    const data = await base44.entities.Team.filter({ created_by: user.email });
+    const data = await base44.entities.Team.list();
     setTeams(data);
     if (data.length > 0 && !selectedTeamId) {
       selectTeam(data[0].id);
@@ -76,8 +75,7 @@ export default function TeamManagement({ initialTab, initialPreselect } = {}) {
   };
 
   const loadPlayers = async (teamId) => {
-    const user = await base44.auth.me();
-    const data = await base44.entities.Player.filter({ team_id: teamId, created_by: user.email });
+    const data = await base44.entities.Player.filter({ team_id: teamId });
     setPlayers(data);
     
     // Load training programs for all players
@@ -154,8 +152,8 @@ export default function TeamManagement({ initialTab, initialPreselect } = {}) {
     if (statusFilter === 'active_program') {
       matchesStatus = trainingPrograms.some(p => p.player_id === player.id);
     } else if (statusFilter === 'needs_attention') {
-      matchesStatus = player.professional_status === 'בירידה' || 
-                      (player.improvements?.length > 0 && !player.development_goal);
+      matchesStatus = player.professional_status === 'בירידה' ||
+                      (player.improvements?.length > 0 && !trainingPrograms.some(p => p.player_id === player.id));
     } else if (statusFilter === 'progressing') {
       matchesStatus = player.professional_status === 'בהתקדמות';
     }

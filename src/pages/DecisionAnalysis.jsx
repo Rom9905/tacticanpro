@@ -50,8 +50,7 @@ export default function DecisionAnalysisPage() {
   const { data: teams = [] } = useQuery({
     queryKey: ['teams'],
     queryFn: async () => {
-      const user = await base44.auth.me();
-      return base44.entities.Team.filter({ created_by: user.email });
+      return base44.entities.Team.list();
     },
   });
 
@@ -59,8 +58,7 @@ export default function DecisionAnalysisPage() {
   const { data: situations = [] } = useQuery({
     queryKey: ['situations', selectedTeamId],
     queryFn: async () => {
-      const user = await base44.auth.me();
-      return base44.entities.KeyMatchSituation.filter({ team_id: selectedTeamId, status: 'active', created_by: user.email });
+      return base44.entities.KeyMatchSituation.filter({ team_id: selectedTeamId, status: 'active' });
     },
     enabled: !!selectedTeamId,
   });
@@ -69,8 +67,7 @@ export default function DecisionAnalysisPage() {
   const { data: players = [] } = useQuery({
     queryKey: ['players', selectedTeamId],
     queryFn: async () => {
-      const user = await base44.auth.me();
-      return base44.entities.Player.filter({ team_id: selectedTeamId, created_by: user.email });
+      return base44.entities.Player.filter({ team_id: selectedTeamId });
     },
     enabled: !!selectedTeamId,
   });
@@ -79,8 +76,7 @@ export default function DecisionAnalysisPage() {
   const { data: profiles = [] } = useQuery({
     queryKey: ['profiles', selectedTeamId],
     queryFn: async () => {
-      const user = await base44.auth.me();
-      return base44.entities.PlayerDecisionProfile.filter({ team_id: selectedTeamId, created_by: user.email });
+      return base44.entities.PlayerDecisionProfile.filter({ team_id: selectedTeamId });
     },
     enabled: !!selectedTeamId,
   });
@@ -89,8 +85,7 @@ export default function DecisionAnalysisPage() {
   const { data: recentSummaries = [] } = useQuery({
     queryKey: ['summaries', selectedTeamId],
     queryFn: async () => {
-      const user = await base44.auth.me();
-      return base44.entities.MatchDecisionSummary.filter({ team_id: selectedTeamId, created_by: user.email }, '-created_date', 20);
+      return base44.entities.MatchDecisionSummary.filter({ team_id: selectedTeamId }, '-created_date', 20);
     },
     enabled: !!selectedTeamId,
   });
@@ -99,8 +94,7 @@ export default function DecisionAnalysisPage() {
   const { data: matchAnalyses = [] } = useQuery({
     queryKey: ['matches', selectedTeamId],
     queryFn: async () => {
-      const user = await base44.auth.me();
-      return base44.entities.MatchAnalysis.filter({ team_id: selectedTeamId, created_by: user.email }, '-date', 20);
+      return base44.entities.MatchAnalysis.filter({ team_id: selectedTeamId }, '-date', 20);
     },
     enabled: !!selectedTeamId,
   });

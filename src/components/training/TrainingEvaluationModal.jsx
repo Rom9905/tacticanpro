@@ -55,6 +55,7 @@ export default function TrainingEvaluationModal({ open, onClose, trainingEvent, 
           const evalData = {
             team_id: teamId,
             player_id: playerId,
+            program_id: data.program_id || null,
             training_event_id: trainingEvent.id,
             training_date: trainingEvent.game_date.split('T')[0],
             rating: parseFloat(data.rating),

@@ -178,7 +178,7 @@ export default function Home() {
         professionalStatus, statusIcon, statusColor, successRate, openIssues,
         pendingTraining, newInsights, criticalIssue, trendData,
         actionPriorities: actionPriorities.slice(0, 5), nextGame, urgentIssuesCount,
-        weeklySchedule: currentUser.weekly_schedule || []
+        weeklySchedule: []
       });
     } catch (e) { console.error(e); }
   };

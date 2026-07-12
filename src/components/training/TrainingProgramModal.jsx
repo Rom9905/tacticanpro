@@ -129,13 +129,13 @@ export default function TrainingProgramModal({
     await base44.entities.TrainingSessionEvaluation.create({
       team_id: player.team_id,
       player_id: player.id,
+      program_id: program?.id || null,
       training_event_id: selectedSessionId,
       training_date: trainingDate,
       rating: overallRating,
       coach_note: evalNote,
       improvement_observed: overallRating >= 7,
       focus_areas: selectedTopics,
-      topic_scores: scores,
     });
 
     onRefresh?.();

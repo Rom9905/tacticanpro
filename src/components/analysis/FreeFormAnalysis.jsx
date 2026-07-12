@@ -14,7 +14,6 @@ export default function FreeFormAnalysis({ isOpen, onClose, onSave, team, existi
     result: { our_score: 0, opponent_score: 0 },
     free_notes: '',
     player_ratings: {},
-    team_structure_impact: '',
     key_phrases: [],
   });
   const [players, setPlayers] = useState([]);

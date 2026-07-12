@@ -51,8 +51,7 @@ export default function MatchAnalysis() {
   const [trainingGuideAction, setTrainingGuideAction] = useState(null);
 
   const loadTeams = async () => {
-    const user = await base44.auth.me();
-    const data = await base44.entities.Team.filter({ created_by: user.email });
+    const data = await base44.entities.Team.list();
     setTeams(data);
     if (data.length > 0) {
       setSelectedTeamId(data[0].id);
@@ -61,9 +60,8 @@ export default function MatchAnalysis() {
 
   const loadAnalyses = async (teamId) => {
     setLoading(true);
-    const user = await base44.auth.me();
     const [analysesData, summariesData] = await Promise.all([
-      base44.entities.MatchAnalysis.filter({ team_id: teamId, created_by: user.email }, '-date', 50),
+      base44.entities.MatchAnalysis.filter({ team_id: teamId }, '-date', 50),
       base44.entities.ProfessionalSummary.filter({ team_id: teamId, event_type: 'match' }, '-event_date', 50),
     ]);
 
