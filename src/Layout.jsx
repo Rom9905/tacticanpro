@@ -178,39 +178,12 @@ function LayoutInner({ children, currentPageName }) {
   useEffect(() => {
     base44.auth.me().then((u) => {
       setUser(u);
-      if (!u) return;
-      // Admin is always approved; regular users need explicit approval
-      if (u.role !== 'admin' && u.is_approved === false) {
-        setUser({ ...u, _blocked: true });
-      }
     }).catch(() => {});
   }, [navigate]);
 
   const showSidebar = SIDEBAR_PAGES.includes(currentPageName);
 
   const navItems = NAV_ITEMS_CONFIG.map(item => ({ ...item, label: t.nav[item.key] }));
-
-  if (user?._blocked) {
-    return (
-      <div dir={dir} className="min-h-screen flex items-center justify-center bg-slate-950 text-white">
-        <style>{creamTheme}</style>
-        <div className="text-center p-8 max-w-md">
-          <div className="w-16 h-16 rounded-full flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: 'rgba(185,64,64,0.15)', border: '1px solid rgba(185,64,64,0.3)' }}>
-            <span style={{ fontSize: 28 }}>🔒</span>
-          </div>
-          <h2 className="text-xl font-bold mb-2" style={{ color: '#2C2416' }}>{t.setup.approvalPending}</h2>
-          <p className="text-sm" style={{ color: '#7A6B57' }}>{t.setup.approvalMsg}</p>
-          <button
-            onClick={() => base44.auth.logout()}
-            className="mt-6 px-4 py-2 rounded-lg text-sm"
-            style={{ backgroundColor: 'rgba(139,115,85,0.12)', color: '#7A6B57', border: '1px solid rgba(139,115,85,0.2)' }}
-          >
-            {t.setup.logout}
-          </button>
-        </div>
-      </div>
-    );
-  }
 
   if (!showSidebar) {
     return (
