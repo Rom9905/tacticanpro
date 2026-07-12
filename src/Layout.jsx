@@ -179,11 +179,6 @@ function LayoutInner({ children, currentPageName }) {
     base44.auth.me().then((u) => {
       setUser(u);
       if (!u) return;
-      // Redirect to pricing if user has no access
-      if (u.role !== 'admin' && u.access_status !== 'paid' && u.access_status !== 'manual_access') {
-        navigate('/pricing-plans', { replace: true });
-        return;
-      }
       // Admin is always approved; regular users need explicit approval
       if (u.role !== 'admin' && u.is_approved === false) {
         setUser({ ...u, _blocked: true });

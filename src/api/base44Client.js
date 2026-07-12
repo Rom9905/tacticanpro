@@ -188,6 +188,7 @@ const auth = {
       .single();
 
     return {
+      ...profile,
       id: user.id,
       email: user.email,
       full_name: profile?.full_name || user.user_metadata?.full_name || '',
@@ -196,7 +197,6 @@ const auth = {
       is_approved: profile?.is_approved ?? true,
       setup_complete: profile?.setup_complete ?? false,
       setup_team_id: profile?.setup_team_id || null,
-      ...profile,
     };
   },
 
