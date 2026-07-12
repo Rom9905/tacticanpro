@@ -12,7 +12,6 @@ import {
   Brain,
   BarChart3,
   Clipboard,
-  MessageSquare,
   LogOut,
   Menu,
   X,
@@ -33,7 +32,6 @@ const NAV_ITEMS_CONFIG = [
   { name: 'DecisionAnalysis', key: 'decisionAnalysis', icon: BarChart3 },
   { name: 'TacticalBoard', key: 'tacticalBoard', icon: Clipboard },
   { name: 'MatchAnalysis', key: 'matchAnalysis', icon: BarChart3 },
-  { name: 'CoachAssistant', key: 'coachAssistant', icon: MessageSquare },
 ];
 
 const SIDEBAR_PAGES = [];

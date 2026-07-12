@@ -70,7 +70,7 @@ export default function MatchAnalysisModal({ open, onClose, analysis, teamName, 
 
   useEffect(() => {
     if (open && analysis) {
-      if (!analysis._summaryOnly) generateAISummary();
+      if (!analysis._summaryOnly) loadOrGenerateAISummary();
       if (analysis.team_id) {
         base44.entities.Player.filter({ team_id: analysis.team_id }).then(players => {
           const map = {};
@@ -87,6 +87,14 @@ export default function MatchAnalysisModal({ open, onClose, analysis, teamName, 
       }
     }
   }, [open, analysis]);
+
+  const loadOrGenerateAISummary = async (forceRegenerate = false) => {
+    if (!forceRegenerate && analysis.ai_summary) {
+      setAiSummary(analysis.ai_summary);
+      return;
+    }
+    await generateAISummary();
+  };
 
   const generateAISummary = async () => {
     setLoading(true);
@@ -120,7 +128,7 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
 צור תמונה מקצועית של המשחק ב-3-5 שורות בלבד. אל תכתוב "תמונת המשחק" או כותרות - רק טקסט רצוף על הביצועים הכדורגליים.${gameStyleCtx ? '\nאם זיהית פערים בין השיטה שהוגדרה לביצוע — ציין אותם.' : ''}`;
 
       const summary = await base44.integrations.Core.InvokeLLM({ prompt });
-      
+
       const insightsPrompt = `אתה מנתח משחקי כדורגל מקצועי. התמקד אך ורק בנושאי כדורגל.
 
 נתוני המשחק:${matchContext}
@@ -149,7 +157,11 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
         setAiSummary({ error: aiError });
       } else {
         const summaryText = typeof summary === 'string' ? summary : summary?.response || '';
-        setAiSummary({ summary: summaryText, insights });
+        const cached = { summary: summaryText, insights };
+        setAiSummary(cached);
+        try {
+          await base44.entities.MatchAnalysis.update(analysis.id, { ai_summary: cached });
+        } catch (e) { console.warn('Failed to cache AI summary:', e); }
       }
     } catch (error) {
       console.error('Error generating AI summary:', error);
@@ -388,6 +400,16 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
                   </div>
                 </div>
                 )}
+                <div className="flex justify-end">
+                  <button
+                    onClick={() => loadOrGenerateAISummary(true)}
+                    disabled={loading}
+                    className="text-xs px-3 py-1.5 rounded-lg transition-colors"
+                    style={{ color: 'var(--text-muted)', border: '1px solid var(--border-light)' }}
+                  >
+                    {loading ? 'מייצר...' : 'ייצר מחדש'}
+                  </button>
+                </div>
               </>
             ) : null}
 

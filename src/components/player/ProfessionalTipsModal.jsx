@@ -82,7 +82,14 @@ ${recentMatches.map(m => `- מול ${m.opponent} (${m.date}): ${m.player_ratings
         }
       });
 
-      setTips(result?.__ai_error ? { error: result.__ai_error } : result);
+      if (result?.__ai_error) {
+        setTips({ error: result.__ai_error });
+      } else {
+        setTips(result);
+        try {
+          await base44.entities.Player.update(player.id, { ai_tips: result, ai_tips_updated_at: new Date().toISOString() });
+        } catch (e) { console.warn('Failed to cache player tips:', e); }
+      }
     } catch (error) {
       console.error('Error generating tips:', error);
       setTips({ error: 'שגיאה בהפקת הטיפים. נסה שוב מאוחר יותר.' });
@@ -92,7 +99,11 @@ ${recentMatches.map(m => `- מול ${m.opponent} (${m.date}): ${m.player_ratings
 
   useEffect(() => {
     if (open && !tips) {
-      generateDetailedTips();
+      if (player?.ai_tips && !player.ai_tips.error) {
+        setTips(player.ai_tips);
+      } else {
+        generateDetailedTips();
+      }
     }
   }, [open]);
 
@@ -173,6 +184,18 @@ ${recentMatches.map(m => `- מול ${m.opponent} (${m.date}): ${m.player_ratings
                 </div>
               </div>
             )}
+
+            {/* Regenerate button */}
+            <div className="flex justify-end">
+              <button
+                onClick={() => { setTips(null); generateDetailedTips(); }}
+                disabled={generating}
+                className="text-xs px-3 py-1.5 rounded-lg transition-colors"
+                style={{ color: '#7A6B57', border: '1px solid rgba(139,115,85,0.25)' }}
+              >
+                {generating ? 'מייצר...' : 'ייצר מחדש'}
+              </button>
+            </div>
 
             {/* Contextual Analysis */}
             {tips.contextual_analysis && (

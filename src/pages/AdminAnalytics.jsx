@@ -7,7 +7,6 @@ const EVENT_LABELS = {
   open_dashboard: 'פתיחת תמונת מצב',
   open_input: 'פתיחת הזנה',
   open_insights: 'פתיחת תובנות',
-  open_coach_assistant: 'עוזר מאמן AI',
   open_player_profile: 'פרופיל שחקן',
   open_game_prep: 'הכנה למשחק',
   open_game_style: 'שיטת משחק',

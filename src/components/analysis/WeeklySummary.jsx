@@ -73,12 +73,29 @@ Be concise and specific. Focus on patterns, not individual games. Reply in ${isH
       setSummary(null);
     } else {
       setSummary(response);
+      if (teamId) {
+        try {
+          await base44.entities.Team.update(teamId, {
+            weekly_summary_cache: { data: response, timeRange, analysis_count: recentGames.length, updated_at: new Date().toISOString() }
+          });
+        } catch (e) { console.warn('Failed to cache weekly summary:', e); }
+      }
     }
     setGenerating(false);
   };
 
   useEffect(() => {
     setSummary(null);
+    // Load cached summary
+    if (teamId) {
+      base44.entities.Team.filter({ id: teamId }).then(teams => {
+        const cache = teams[0]?.weekly_summary_cache;
+        const recentCount = getRecentAnalyses().length;
+        if (cache?.data && cache.timeRange === timeRange && cache.analysis_count === recentCount) {
+          setSummary(cache.data);
+        }
+      }).catch(() => {});
+    }
   }, [timeRange, analyses]);
 
   const recentGames = getRecentAnalyses();

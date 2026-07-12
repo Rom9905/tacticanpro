@@ -599,6 +599,7 @@ export default function MatchAnalysis() {
           <TrainingGuideModal
             action={trainingGuideAction}
             matchOpponent={selectedAnalysis?.opponent}
+            analysis={selectedAnalysis}
             onClose={() => setTrainingGuideAction(null)}
           />
         )}
@@ -701,15 +702,21 @@ function EditRatingsForm({ match, onSave, onCancel }) {
 }
 
 // Training Guide Modal Component
-function TrainingGuideModal({ action, matchOpponent, onClose }) {
+function TrainingGuideModal({ action, matchOpponent, analysis, onClose }) {
   const [guide, setGuide] = useState(null);
   const [loading, setLoading] = useState(true);
   const { t: gLangT } = useLang();
   const gIsHe = gLangT.lang === 'he';
-  // Note: useLang is called inside generateGuide via gLangT
 
   useEffect(() => {
-    generateGuide();
+    const cacheKey = action.focus;
+    const cached = analysis?.training_guides?.[cacheKey];
+    if (cached && !cached.error) {
+      setGuide(cached);
+      setLoading(false);
+    } else {
+      generateGuide();
+    }
   }, [action]);
 
   const generateGuide = async () => {
@@ -739,7 +746,16 @@ Write clearly and simply, no special characters or asterisks. Plain readable tex
           }
         }
       });
-      setGuide(response?.__ai_error ? { error: response.__ai_error } : response);
+      const result = response?.__ai_error ? { error: response.__ai_error } : response;
+      setGuide(result);
+      if (!result.error && analysis?.id) {
+        try {
+          const existingGuides = analysis.training_guides || {};
+          await base44.entities.MatchAnalysis.update(analysis.id, {
+            training_guides: { ...existingGuides, [action.focus]: result }
+          });
+        } catch (e) { console.warn('Failed to cache training guide:', e); }
+      }
     } catch (error) {
       console.error('Error generating guide:', error);
       setGuide({ error: 'שגיאה בהפקת ההנחיות. נסה שוב מאוחר יותר.' });

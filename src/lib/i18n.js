@@ -13,7 +13,6 @@ export const translations = {
       decisionAnalysis: 'ניתוח החלטות',
       tacticalBoard: 'לוח טקטי',
       matchAnalysis: 'ניתוח משחקים',
-      coachAssistant: 'עוזר מאמן',
       logout: 'יציאה',
       selectTeam: 'בחר קבוצה',
       newTeam: 'קבוצה חדשה',
@@ -189,7 +188,6 @@ export const translations = {
       matchAnalysis: 'ניתוח משחקים',
       trainingAnalytics: 'ניתוח אימונים',
       team: 'שחקנים',
-      assistant: 'עוזר מאמן',
     },
 
     dir: 'rtl',

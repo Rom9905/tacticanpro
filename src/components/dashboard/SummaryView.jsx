@@ -13,7 +13,6 @@ import { trackEvent } from '@/hooks/useAnalytics';
 // ── Sub‑pages loaded inline ──────────────────────────────────────────────────
 import MatchAnalysisPage from '@/pages/MatchAnalysis';
 import TrainingAnalyticsPage from '@/pages/TrainingAnalytics';
-import CoachAssistantPage from '@/pages/CoachAssistant';
 import TeamManagementPage from '@/pages/TeamManagement';
 import TrainingCenterPage from '@/pages/TrainingCenter';
 
@@ -22,7 +21,6 @@ const INSIGHT_VIEWS_CONFIG = [
   { id: 'match',           labelKey: 'matchAnalysis',  icon: Swords,    color: '#2A5FA8', bg: 'rgba(41,82,168,0.09)',  border: 'rgba(41,82,168,0.22)',  Component: MatchAnalysisPage },
   { id: 'training',        labelKey: 'trainingAnalytics', icon: BarChart3, color: '#B97A2A', bg: 'rgba(185,122,42,0.09)', border: 'rgba(185,122,42,0.22)', Component: TrainingAnalyticsPage },
   { id: 'team',            labelKey: 'team',           icon: Users,     color: '#7A2A8A', bg: 'rgba(122,42,138,0.09)', border: 'rgba(122,42,138,0.22)', Component: TeamManagementPage },
-  { id: 'assistant',       labelKey: 'assistant',      icon: Brain,     color: '#B94040', bg: 'rgba(185,64,64,0.09)',  border: 'rgba(185,64,64,0.22)',  Component: CoachAssistantPage },
 ];
 
 const slideVariants = {
@@ -193,7 +191,7 @@ export default function SummaryView({
                       return (
                         <button
                           key={v.id}
-                          onClick={() => { setInsightView(v.id); trackEvent(`open_${v.id === 'training_center' ? 'training_center' : v.id === 'match' ? 'match_analysis' : v.id === 'training' ? 'training_analytics' : v.id === 'team' ? 'team_management' : v.id === 'assistant' ? 'coach_assistant' : v.id}`); }}
+                          onClick={() => { setInsightView(v.id); trackEvent(`open_${v.id === 'training_center' ? 'training_center' : v.id === 'match' ? 'match_analysis' : v.id === 'training' ? 'training_analytics' : v.id === 'team' ? 'team_management' : v.id}`); }}
                           className="flex flex-col items-center gap-1.5 py-4 px-2 rounded-xl transition-all"
                           style={{ backgroundColor: 'rgba(139,115,85,0.05)', border: '1.5px solid rgba(139,115,85,0.15)' }}
                           onMouseEnter={e => { e.currentTarget.style.backgroundColor = v.bg; e.currentTarget.style.borderColor = v.border; }}

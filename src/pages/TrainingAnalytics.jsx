@@ -63,6 +63,16 @@ export default function TrainingAnalytics() {
     setPlayers(playersData);
     setPrograms(programsData);
     setTrainingEvaluations(evalsData);
+
+    // Load cached training analysis if data hasn't changed
+    try {
+      const teams = await base44.entities.Team.filter({ id: selectedTeamId });
+      const team = teams[0];
+      const cache = team?.training_analysis_cache;
+      if (cache?.data && cache.timeRange === timeRange && cache.training_count === summariesData.length) {
+        setTeamAnalysis(cache.data);
+      }
+    } catch (e) {}
   };
 
   const analyzeTeamTrainings = async () => {
@@ -149,6 +159,11 @@ The "status" field in period_comparison must be one of: "שיפור", "שימו�
         alert(result.__ai_error);
       } else {
         setTeamAnalysis(result);
+        try {
+          await base44.entities.Team.update(selectedTeamId, {
+            training_analysis_cache: { data: result, timeRange, updated_at: new Date().toISOString(), training_count: summaries.length }
+          });
+        } catch (e) { console.warn('Failed to cache training analysis:', e); }
       }
     } catch (error) {
       console.error('Error analyzing team trainings:', error);

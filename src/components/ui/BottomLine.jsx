@@ -21,6 +21,15 @@ export default function BottomLine({ dataForAI, context, staticInsight, color = 
       setInsight(cacheRef.current[key]);
       return;
     }
+    try {
+      const stored = localStorage.getItem(`bl_${key}`);
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        cacheRef.current[key] = parsed;
+        setInsight(parsed);
+        return;
+      }
+    } catch (e) {}
 
     generateInsight(key);
   }, [cacheKey, staticInsight]);
@@ -59,8 +68,10 @@ ${JSON.stringify(dataForAI, null, 2).slice(0, 2000)}${gameStyleCtx}
       } else {
         const text = result?.insight || '';
         if (text) {
-          cacheRef.current[key] = { insight: text, action: result?.action };
-          setInsight({ insight: text, action: result?.action });
+          const cached = { insight: text, action: result?.action };
+          cacheRef.current[key] = cached;
+          setInsight(cached);
+          try { localStorage.setItem(`bl_${key}`, JSON.stringify(cached)); } catch (e) {}
         }
       }
     } catch (e) {

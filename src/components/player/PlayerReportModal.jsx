@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
@@ -8,6 +8,12 @@ export default function PlayerReportModal({ open, onClose, player, matchAnalyses
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  useEffect(() => {
+    if (open && player?.ai_report && !report) {
+      setReport(player.ai_report);
+    }
+  }, [open, player]);
 
   const generateReport = async () => {
     setLoading(true);
@@ -95,7 +101,11 @@ ${skillText || 'לא הוזנו'}
       if (result?.__ai_error) {
         setReport(result.__ai_error);
       } else {
-        setReport(typeof result === 'string' ? result : result?.response || JSON.stringify(result));
+        const text = typeof result === 'string' ? result : result?.response || JSON.stringify(result);
+        setReport(text);
+        try {
+          await base44.entities.Player.update(player.id, { ai_report: text, ai_report_updated_at: new Date().toISOString() });
+        } catch (e) { console.warn('Failed to cache player report:', e); }
       }
     } catch (e) {
       setReport('שגיאה בהפקת הדוח. נסה שוב.');

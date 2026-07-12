@@ -1,7 +1,7 @@
 import React from 'react';
 import {
   LayoutDashboard, Calendar, BarChart3, TrendingUp,
-  MessageSquare, Clipboard, Users, Brain, Target
+  Clipboard, Users, Brain, Target
 } from 'lucide-react';
 
 export const VIEWS = [
@@ -11,7 +11,6 @@ export const VIEWS = [
   { id: 'match',         label: 'ניתוח משחקים',    icon: BarChart3 },
   { id: 'trainingcenter',label: 'מרכז אימונים',    icon: Target },
   { id: 'training',      label: 'ניתוח אימונים',   icon: TrendingUp },
-  { id: 'assistant',     label: 'עוזר מאמן',        icon: MessageSquare },
   { id: 'tactical',      label: 'לוח טקטי',         icon: Clipboard },
   { id: 'team',          label: 'ניהול קבוצה',      icon: Users },
 ];
