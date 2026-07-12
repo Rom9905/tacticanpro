@@ -63,7 +63,7 @@ export default function PricingPlans() {
   const [selectedPlan, setSelectedPlan] = useState('');
 
   const handleCTA = (planName) => {
-    if (user && (user.role === 'admin' || user.access_status === 'paid' || user.access_status === 'manual_access')) {
+    if (user) {
       window.location.href = '/';
       return;
     }
@@ -71,7 +71,7 @@ export default function PricingPlans() {
     setLeadFormOpen(true);
   };
 
-  const isBlocked = user && user.role !== 'admin' && user.access_status === 'no_access';
+  const isBlocked = false;
 
   return (
     <div dir="rtl" className="pricing-page min-h-screen flex flex-col" style={{ backgroundColor: '#0D1A12', color: '#E8F5EC' }}>

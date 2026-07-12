@@ -47,19 +47,13 @@ export default function Home() {
         const userData = await base44.auth.me();
         setUser(userData);
         trackEvent('login', { email: userData.email });
-        const hasAccess = userData.role === 'admin' || userData.access_status === 'paid' || userData.access_status === 'manual_access';
-        if (!hasAccess) {
-          setHasPlan(false);
-          setLoading(false);
-          return;
-        }
         setHasPlan(true);
-        const teamsData = await base44.entities.Team.filter({ created_by: userData.email });
+        const teamsData = await base44.entities.Team.list();
         setTeams(teamsData);
         if (teamsData.length === 0) { setSetupRequired(true); setLoading(false); return; }
         const teamId = selectedTeamId || teamsData[0].id;
         if (!selectedTeamId) selectTeam(teamsData[0].id);
-        const players = await base44.entities.Player.filter({ team_id: teamId, created_by: userData.email });
+        const players = await base44.entities.Player.filter({ team_id: teamId });
         if (players.length < 15) { setSetupRequired(true); setLoading(false); return; }
         setSetupRequired(false);
         setLoading(false);
@@ -82,7 +76,7 @@ export default function Home() {
       setShowNewTeamWizard(false);
       return;
     }
-    const teamsData = await base44.entities.Team.filter({ created_by: user.email });
+    const teamsData = await base44.entities.Team.list();
     setTeams(teamsData);
     selectTeam(teamId);
     setSetupRequired(false);
@@ -247,7 +241,7 @@ export default function Home() {
         onNewTeam={() => setShowNewTeamWizard(true)}
         teamId={selectedTeamId}
         onTeamDeleted={async () => {
-          const teamsData = await base44.entities.Team.filter({ created_by: user.email });
+          const teamsData = await base44.entities.Team.list();
           setTeams(teamsData);
           if (teamsData.length === 0) {
             setSetupRequired(true);
