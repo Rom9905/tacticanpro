@@ -61,15 +61,6 @@ export const AuthProvider = ({ children }) => {
         setup_team_id: profile?.setup_team_id || null,
       };
 
-      // Check subscription status
-      const { data: sub } = await supabase
-        .from('subscriptions')
-        .select('status')
-        .eq('user_id', authUser.id)
-        .single();
-
-      const subStatus = sub?.status || 'inactive';
-      setSubscriptionStatus(subStatus);
       setUser(userData);
       setIsAuthenticated(true);
     } catch (e) {
@@ -84,6 +75,20 @@ export const AuthProvider = ({ children }) => {
         setup_complete: false,
       });
       setIsAuthenticated(true);
+    }
+
+    // Fetch subscription separately so a missing row doesn't break auth
+    try {
+      const { data: sub } = await supabase
+        .from('subscriptions')
+        .select('status')
+        .eq('user_id', authUser.id)
+        .maybeSingle();
+
+      setSubscriptionStatus(sub?.status || 'inactive');
+    } catch (e) {
+      console.error('Subscription check failed:', e);
+      setSubscriptionStatus('inactive');
     }
     setIsLoadingAuth(false);
   };
