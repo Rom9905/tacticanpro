@@ -33,6 +33,16 @@ const TABLE_MAP = {
 // Fields that should be excluded when sending to Supabase (auto-managed)
 const EXCLUDED_FIELDS = ['created_date', 'created_by', 'updated_date'];
 
+const FIELD_ALIASES = {
+  created_date: 'created_at',
+  updated_date: 'updated_at',
+  created_by: 'user_id',
+};
+
+function resolveField(field) {
+  return FIELD_ALIASES[field] || field;
+}
+
 // Map old field names to new (Base44 → Supabase)
 function mapFieldsForWrite(data) {
   const cleaned = { ...data };
@@ -71,7 +81,7 @@ function createEntityAccessor(entityName) {
 
       if (sortField) {
         const desc = sortField.startsWith('-');
-        const field = desc ? sortField.slice(1) : sortField;
+        const field = resolveField(desc ? sortField.slice(1) : sortField);
         query = query.order(field, { ascending: !desc });
       } else {
         query = query.order('created_at', { ascending: false });
@@ -91,19 +101,19 @@ function createEntityAccessor(entityName) {
 
       if (filterObj && typeof filterObj === 'object') {
         for (const [key, value] of Object.entries(filterObj)) {
-          // Skip created_by filter — RLS handles user isolation
           if (key === 'created_by') continue;
+          const col = resolveField(key);
           if (Array.isArray(value)) {
-            query = query.in(key, value);
+            query = query.in(col, value);
           } else {
-            query = query.eq(key, value);
+            query = query.eq(col, value);
           }
         }
       }
 
       if (sortField) {
         const desc = sortField.startsWith('-');
-        const field = desc ? sortField.slice(1) : sortField;
+        const field = resolveField(desc ? sortField.slice(1) : sortField);
         query = query.order(field, { ascending: !desc });
       } else {
         query = query.order('created_at', { ascending: false });
