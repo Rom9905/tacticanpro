@@ -291,10 +291,13 @@ export default function PlayerProfile() {
 
   const recentMatches = (player.match_history || []).slice(-5).reverse();
 
-  // Get ratings from matchAnalyses for this player — include DNP entries for display, mark them
+  // Get ratings from matchAnalyses for this player — match by player_id or player_name fallback
   const playerRatingsFromAnalyses = matchAnalyses
     .map(a => {
-      const r = a.player_ratings?.find(r => r.player_id === playerId);
+      const r = a.player_ratings?.find(r =>
+        r.player_id === playerId ||
+        (!r.player_id && player?.name && r.player_name && r.player_name.toLowerCase() === player.name.toLowerCase())
+      );
       if (!r) return null;
       return { opponent: a.opponent, date: a.date, rating: r.did_not_play ? null : r.rating, note: r.did_not_play ? null : r.note, did_not_play: !!r.did_not_play, id: a.id };
     })
