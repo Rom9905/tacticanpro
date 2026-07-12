@@ -1,18 +1,105 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Edit3, Save, X, Sparkles } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
+import { supabase } from '@/lib/supabaseClient';
 import { suggestRatingsFromSkills, getRelevantSkills, isGoalkeeper } from './AutoSuggestRatings';
+
+function TrendArrow({ current, previous }) {
+  if (previous == null || current === previous) return null;
+  if (current > previous) {
+    return <span style={{ color: '#4ADE80', fontSize: 12, fontWeight: 700, marginRight: 4 }}>↑</span>;
+  }
+  return <span style={{ color: '#F59E0B', fontSize: 12, fontWeight: 700, marginRight: 4 }}>↓</span>;
+}
+
+function MiniSparkline({ history }) {
+  if (!history || history.length < 2) return null;
+  const pts = history.slice(-8);
+  const min = 0.5, max = 5.5;
+  const w = 80, h = 28, pad = 2;
+  const points = pts.map((v, i) => {
+    const x = pad + (i / (pts.length - 1)) * (w - pad * 2);
+    const y = h - pad - ((v.rating - min) / (max - min)) * (h - pad * 2);
+    return `${x},${y}`;
+  }).join(' ');
+  const lastPt = pts[pts.length - 1];
+  const prevPt = pts[pts.length - 2];
+  const color = lastPt.rating > prevPt.rating ? '#4ADE80' : lastPt.rating < prevPt.rating ? '#F59E0B' : '#94A3B8';
+
+  return (
+    <svg width={w} height={h} style={{ display: 'block' }}>
+      <polyline points={points} fill="none" stroke={color} strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+      {pts.map((v, i) => {
+        const x = pad + (i / (pts.length - 1)) * (w - pad * 2);
+        const y = h - pad - ((v.rating - min) / (max - min)) * (h - pad * 2);
+        return <circle key={i} cx={x} cy={y} r={i === pts.length - 1 ? 2.5 : 1.5} fill={i === pts.length - 1 ? color : '#64748B'} />;
+      })}
+    </svg>
+  );
+}
+
+function SparklineTooltip({ history, visible, anchorRef }) {
+  if (!visible || !history || history.length < 2) return null;
+  return (
+    <div style={{
+      position: 'absolute', bottom: '100%', left: '50%', transform: 'translateX(-50%)',
+      marginBottom: 6, background: '#1E293B', border: '1px solid #334155',
+      borderRadius: 8, padding: '8px 12px', zIndex: 50, minWidth: 100,
+      boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
+    }}>
+      <MiniSparkline history={history} />
+      <div style={{ fontSize: 10, color: '#94A3B8', marginTop: 4, textAlign: 'center' }}>
+        {history.length} דגימות
+      </div>
+    </div>
+  );
+}
 
 export default function SkillRatingsEditor({ player, onUpdate }) {
   const [isEditing, setIsEditing] = useState(false);
   const [ratings, setRatings] = useState(player.skill_ratings || {});
   const [saving, setSaving] = useState(false);
+  const [historyMap, setHistoryMap] = useState({});
+  const [previousMap, setPreviousMap] = useState({});
+  const [hoveredSkill, setHoveredSkill] = useState(null);
 
   const skillDefinitions = getRelevantSkills(player);
   const isGK = isGoalkeeper(player);
+
+  useEffect(() => {
+    loadHistory();
+  }, [player.id]);
+
+  const loadHistory = async () => {
+    try {
+      const { data } = await supabase
+        .from('player_attribute_history')
+        .select('attribute_name, rating, recorded_at')
+        .eq('player_id', player.id)
+        .order('recorded_at', { ascending: true });
+
+      if (!data) return;
+
+      const grouped = {};
+      const prev = {};
+      data.forEach(row => {
+        if (!grouped[row.attribute_name]) grouped[row.attribute_name] = [];
+        grouped[row.attribute_name].push({ rating: row.rating, recorded_at: row.recorded_at });
+      });
+      Object.entries(grouped).forEach(([attr, entries]) => {
+        if (entries.length > 0) {
+          prev[attr] = entries[entries.length - 1].rating;
+        }
+      });
+      setHistoryMap(grouped);
+      setPreviousMap(prev);
+    } catch (e) {
+      console.warn('Failed to load attribute history:', e.message);
+    }
+  };
 
   const handleAutoSuggest = () => {
     const suggested = suggestRatingsFromSkills(player);
@@ -21,17 +108,33 @@ export default function SkillRatingsEditor({ player, onUpdate }) {
 
   const handleSave = async () => {
     setSaving(true);
-    console.log('About to save ratings:', ratings);
-    console.log('Player ID:', player.id);
-    console.log('Full update object:', { skill_ratings: ratings });
     try {
-      const updated = await base44.entities.Player.update(player.id, { skill_ratings: ratings });
-      console.log('Saved skill ratings - server response:', updated);
-      console.log('Server returned skill_ratings:', updated.skill_ratings);
-      setIsEditing(false);
-      if (onUpdate) {
-        onUpdate(ratings);
+      const oldRatings = player.skill_ratings || {};
+      const { data: { user } } = await supabase.auth.getUser();
+      const userId = user?.id;
+
+      const historyRows = [];
+      for (const skill of skillDefinitions) {
+        const oldVal = oldRatings[skill.key];
+        const newVal = ratings[skill.key];
+        if (oldVal != null && oldVal !== newVal) {
+          historyRows.push({
+            player_id: player.id,
+            user_id: userId,
+            attribute_name: skill.key,
+            rating: oldVal,
+          });
+        }
       }
+
+      if (historyRows.length > 0) {
+        await supabase.from('player_attribute_history').insert(historyRows);
+      }
+
+      const updated = await base44.entities.Player.update(player.id, { skill_ratings: ratings });
+      setIsEditing(false);
+      await loadHistory();
+      if (onUpdate) onUpdate(ratings);
     } catch (error) {
       console.error('Error saving skill ratings:', error);
       alert('שגיאה בשמירת הדירוגים: ' + error.message);
@@ -134,18 +237,30 @@ export default function SkillRatingsEditor({ player, onUpdate }) {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {skillDefinitions.map(skill => {
             const rating = isEditing ? ratings[skill.key] : player.skill_ratings?.[skill.key];
-            
+            const prevRating = previousMap[skill.key];
+            const history = historyMap[skill.key];
+            const currentForTrend = player.skill_ratings?.[skill.key];
+
             return (
-              <div key={skill.key} className="space-y-2">
+              <div
+                key={skill.key}
+                className="space-y-2 relative"
+                onMouseEnter={() => setHoveredSkill(skill.key)}
+                onMouseLeave={() => setHoveredSkill(null)}
+                style={{ cursor: history?.length >= 2 ? 'pointer' : 'default' }}
+              >
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-slate-300">{skill.label}</span>
+                  <div className="flex items-center gap-1">
+                    <span className="text-sm text-slate-300">{skill.label}</span>
+                    {!isEditing && <TrendArrow current={currentForTrend} previous={prevRating} />}
+                  </div>
                   {rating && (
                     <Badge className="bg-slate-700 text-white text-xs">
                       {rating}/5
                     </Badge>
                   )}
                 </div>
-                
+
                 {isEditing ? (
                   <div className="flex gap-1">
                     {[1, 2, 3, 4, 5].map(value => (
@@ -177,6 +292,11 @@ export default function SkillRatingsEditor({ player, onUpdate }) {
                     ))}
                   </div>
                 )}
+
+                <SparklineTooltip
+                  history={history}
+                  visible={hoveredSkill === skill.key && !isEditing}
+                />
               </div>
             );
           })}

@@ -26,6 +26,7 @@ const TABLE_MAP = {
   ProgramOutcome: 'program_outcomes',
   DrillLibrary: 'drill_library',
   AnalyticsEvent: 'analytics_events',
+  PlayerAttributeHistory: 'player_attribute_history',
   User: 'profiles',
 };
 
