@@ -144,7 +144,8 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
         }
       });
 
-      setAiSummary({ summary, insights });
+      const summaryText = typeof summary === 'string' ? summary : summary?.response || '';
+      setAiSummary({ summary: summaryText, insights });
     } catch (error) {
       console.error('Error generating AI summary:', error);
     }
