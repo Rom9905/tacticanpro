@@ -218,21 +218,26 @@ export default function PlayerProfile() {
       }
     }
 
-    // Replace an existing entry for the same match instead of duplicating it
-    const existingHistory = player.match_history || [];
-    const dupIdx = matchEntry.match_id
-      ? existingHistory.findIndex(h => h.match_id === matchEntry.match_id)
-      : -1;
-    const updatedHistory = dupIdx >= 0
-      ? existingHistory.map((h, i) => (i === dupIdx ? { ...h, ...matchEntry } : h))
-      : [...existingHistory, matchEntry];
-    await base44.entities.Player.update(playerId, {
-      match_history: updatedHistory,
-      season_goals: (player.season_goals || 0) + (matchEntry.goals || 0),
-      season_assists: (player.season_assists || 0) + (matchEntry.assists || 0),
-    });
+    if (matchMode === 'existing' && selectedAnalysisId) {
+      // The DB trigger on match_analyses already synced players.match_history
+      // and player_attribute_history — only update season stats here.
+      await base44.entities.Player.update(playerId, {
+        season_goals: (player.season_goals || 0) + (matchEntry.goals || 0),
+        season_assists: (player.season_assists || 0) + (matchEntry.assists || 0),
+      });
+    } else {
+      // Free-form match without an analysis — maintain history manually
+      const existingHistory = player.match_history || [];
+      await base44.entities.Player.update(playerId, {
+        match_history: [...existingHistory, matchEntry],
+        season_goals: (player.season_goals || 0) + (matchEntry.goals || 0),
+        season_assists: (player.season_assists || 0) + (matchEntry.assists || 0),
+      });
+    }
 
-    // Trigger AI attribute evaluation every 5th match
+    // Trigger AI attribute evaluation every 5th match (count from fresh state)
+    const freshPlayers = await base44.entities.Player.filter({ id: playerId });
+    const updatedHistory = freshPlayers[0]?.match_history || [];
     if (updatedHistory.length >= 5 && updatedHistory.length % 5 === 0) {
       supabase.functions.invoke('evaluate-player-attributes', {
         body: { player_id: playerId },

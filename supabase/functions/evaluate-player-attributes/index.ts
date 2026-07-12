@@ -207,6 +207,8 @@ ${attributeNames.map(a => `${a}: ${playerContext.current_ratings[a] ?? "לא מ�
         user_id: user.id,
         attribute_name: attr,
         rating: oldVal,
+        source: "ai",
+        note: adj.reasoning || null,
       });
 
       currentRatings[attr] = newVal;
