@@ -18,8 +18,8 @@ function _getUrgencyColor(sev) {
   return { bg: 'rgba(139,115,85,0.06)', border: 'rgba(139,115,85,0.20)', badge: '#9A8672' };
 }
 
-const _SOURCE_LABELSSOURCE_LABELS = { match: 'ניתוח משחק', training: 'אימון', manual: 'הוזן ידנית' };
-const _CATEGORY_LABELSCATEGORY_LABELS = { התקפה: 'התקפה', הגנה: 'הגנה', מעברים: 'מעברים', 'מצבים ניייחים': 'מצבים נייחים', לחץ: 'לחץ', כללי: 'כללי' };
+const _SOURCE_LABELS = { match: 'ניתוח משחק', training: 'אימון', manual: 'הוזן ידנית' };
+const _CATEGORY_LABELS = { התקפה: 'התקפה', הגנה: 'הגנה', מעברים: 'מעברים', 'מצבים ניייחים': 'מצבים נייחים', לחץ: 'לחץ', כללי: 'כללי' };
 
 function IssuesModal({ open, onClose, issues, onGoInsight, professionalSummaries }) {
   const { t, dir } = useLang();

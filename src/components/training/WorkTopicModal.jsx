@@ -39,7 +39,7 @@ export default function WorkTopicModal({ open, topic, teamId, summaries, onClose
 
   const PRIORITIES = isHe ? PRIORITIES_HE : PRIORITIES_EN;
   const _CATEGORIES = isHe ? CATEGORIES_HE : CATEGORIES_EN;
-  const _TACTICAL_TOPICSTACTICAL_TOPICS = isHe ? TACTICAL_TOPICS_HE : TACTICAL_TOPICS_EN;
+  const _TACTICAL_TOPICS = isHe ? TACTICAL_TOPICS_HE : TACTICAL_TOPICS_EN;
 
   const isNew = !topic?.id;
   const [title, setTitle] = useState('');

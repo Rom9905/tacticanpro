@@ -98,25 +98,33 @@ report.issues[], phase_analysis.buildup.issues[], phase_analysis.transitions.att
 
 5. data_richness: "rich" או "sparse".
 
-חלק 6 — בעיות טקטיות (Tactical Issues)
+חלק 6 — בעיות טקטיות ונושאי עבודה (Tactical Issues / TacticalGoal)
+
+בעיה טקטית = דפוס כדורגלי שזוהה במשחק או אימון שדורש טיפול. כל בעיה נשמרת כנושא עבודה (TacticalGoal) עם השדות: title (הנושא הטקטי), description, category, source (match/training/manual), status (active/resolved/paused), priority (critical/high/medium/low), progress_pct (0-100), progress_note, linked_topics (מהרשימה הסגורה של 13 נושאים), occurrence_count, last_seen_date, source_summaries.
 
 שלב 1 — איסוף: אסוף בעיות מכל המקורות (כמו בחלק 5), הסר כפילויות, הצג מקסימום 5 בעיות מרכזיות.
 
-שלב 2 — סיווג קטגוריה:
-- התקפה: שליטה במרכז, משחק אורכי, כדורים גבוהים, בנייה מהלחץ, יציאה מלחץ
+שלב 2 — סיווג קטגוריה (אחת מ-6):
+- לחץ: לחץ גבוה, בנייה מהלחץ, יציאה מלחץ
 - הגנה: בנייה מהגנה, תיאום הגנתי, הגנה ארגונית, שחקן נגד שחקן
 - מעברים: מעברים התקפיים, מעברים הגנתיים
 - מצבים נייחים: מצבים נייחים
-- לחץ: לחץ גבוה, בנייה מהלחץ, יציאה מלחץ
+- התקפה: שליטה במרכז, משחק אורכי, כדורים גבוהים
 - כללי: כל מה שלא נכנס למעלה
 
 שלב 3 — סריקת טקסט חופשי, מילות מפתח: "לחץ" → בנייה מהלחץ, "מעבר" → מעברים התקפיים, "הגנ"/"מרחקים" → תיאום הגנתי, "בנייה" → בנייה מהגנה, "נייח" → מצבים נייחים, "מרכז" → שליטה במרכז.
 
-שלב 4 — בדיקת הישנות: לכל בעיה, בדוק האם קיימת כמטרה טקטית (TacticalGoal) לפי linked_topics או title. אם קיימת — עדכן occurrence_count++, last_seen_date, הוסף מזהה סיכום ל-source_summaries. אם לא — צור חדשה.
+שלב 4 — בדיקת הישנות: לכל בעיה, בדוק האם קיימת כמטרה טקטית (TacticalGoal) לפי linked_topics או title. אם קיימת — עדכן occurrence_count++, last_seen_date, הוסף מזהה סיכום ל-source_summaries (בלי כפילויות). אם לא — צור חדשה. נושא שמופיע 2+ פעמים ב-issues_found הופך למטרה אוטומטית.
 
 שלב 5 — קביעת עדיפות: occurrence_count >= 4 → critical, >= 3 → high, >= 2 → medium, 1 → low. מקור match > training > manual מעלה עדיפות. severity מ-KeyMatchSituation אם קיים.
 
-שלב 6 — יצירת/עדכון TacticalGoal: title (הנושא הטקטי), description ("זוהתה אוטומטית — הופיעה X פעמים בסיכומים"), category, source (match/training/manual), status=active, priority, progress_pct=0, linked_topics, occurrence_count, last_seen_date, source_summaries.
+שלב 6 — יצירת/עדכון TacticalGoal: title (הנושא הטקטי), description ("זוהתה אוטומטית — הופיעה X פעמים בסיכומים"), category (שלב 2), source (match אם אחד הסיכומים הוא משחק, אחרת training), status=active, priority, progress_pct=0, linked_topics, occurrence_count, last_seen_date, source_summaries.
+
+רמת השפעה (Impact) לתצוגה: occurrence_count >= 5 → "גבוהה מאוד" (9/10), >= 3 → "גבוהה" (7/10), >= 2 → "בינונית" (5/10), אחרת "נמוכה" (3/10).
+
+ניהול סטטוס: בעיה שנפתרה מסומנת resolved (progress 100% רק ידנית) — לא נמחקת, ההיסטוריה חשובה לזיהוי חזרתיות. אם הבעיה חוזרת אחרי סגירה — נפתחת מחדש (active). progress_note נבנה רק מהחלקים הרלוונטיים: "{X} אימונים טיפלו בנושא. עדיין מופיעה ב-{Y} סיכומים. {Z} סיכומים ללא הבעיה."
+
+כשהמאמן שואל על בעיה ספציפית — תאר: מקור, קטגוריה, עדיפות, מספר הופעות, תאריך זיהוי אחרון, אחוז התקדמות והסברו, נושאים מקושרים, והפעולות המחוברות (פעולת אימון / תוכנית / תרגילים).
 
 חלק 7 — איך הבעיות מתקשרות לשאר האתר
 

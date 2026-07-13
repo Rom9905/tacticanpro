@@ -23,6 +23,26 @@ function priorityFromCount(count) {
 
 const SEVERITY_BUMP = { high: 'medium', medium: 'low', low: 'low' };
 
+// spec part 3 step 5 — auto category classification
+export function guessCategoryFromTopic(topic) {
+  if (!topic) return 'כללי';
+  if (/לחץ גבוה|בנייה מהלחץ|יציאה מלחץ|^לחץ$/.test(topic)) return 'לחץ';
+  if (/בנייה מהגנה|בנייה מאחור|תיאום הגנתי|הגנה ארגונית|שחקן נגד שחקן/.test(topic)) return 'הגנה';
+  if (/מעברים התקפיים|מעברים הגנתיים|מעבר התקפי|מעבר הגנתי|קונטרה|אובדן כדור/.test(topic)) return 'מעברים';
+  if (/מצבים נייחים|כדור קבוע/.test(topic)) return 'מצבים נייחים';
+  if (/שליטה במרכז|משחק אורכי|כדורים גבוהים|שליש אחרון/.test(topic)) return 'התקפה';
+  return 'כללי';
+}
+
+// spec part 5 — progress note built only from non-zero parts
+function buildProgressNote(trainingSessions, issueStillPresent, issueReduced) {
+  let note = '';
+  if (trainingSessions > 0) note += `${trainingSessions} אימונים טיפלו בנושא. `;
+  if (issueStillPresent > 0) note += `עדיין מופיעה ב-${issueStillPresent} סיכומים. `;
+  if (issueReduced > 0) note += `${issueReduced} סיכומים ללא הבעיה.`;
+  return note.trim();
+}
+
 /**
  * Creates/updates TacticalGoals from a match's tactical problems.
  * One goal per problem category; occurrence counted once per match.
@@ -62,7 +82,7 @@ export async function syncTacticalProblemsToGoals(analysis, problems) {
         team_id: analysis.team_id,
         title: category,
         description: `זוהתה אוטומטית מהמשחק מול ${analysis.opponent || '?'}: ${worst.text?.slice(0, 180) || ''}`,
-        category: 'general',
+        category: guessCategoryFromTopic(category),
         source: 'match',
         status: 'active',
         priority: SEVERITY_BUMP[worst.severity] || 'low',
@@ -129,8 +149,8 @@ export async function analyzeTeamProgress(teamId) {
         team_id: teamId,
         title: topic,
         description: `זוהתה אוטומטית — הופיעה ${hits.length} פעמים בסיכומים`,
-        category: 'general',
-        source: hits[0]?.event_type === 'training' ? 'training' : 'match',
+        category: guessCategoryFromTopic(topic),
+        source: hits.some(h => h.event_type === 'match') ? 'match' : 'training',
         status: 'active',
         priority: priorityFromCount(hits.length),
         progress_pct: 0,
@@ -161,7 +181,7 @@ export async function analyzeTeamProgress(teamId) {
     if (newPct !== (goal.progress_pct || 0)) {
       await base44.entities.TacticalGoal.update(goal.id, {
         progress_pct: newPct,
-        progress_note: `${trainingSessions} אימונים טיפלו בנושא. עדיין מופיעה ב-${issueStillPresent} סיכומים. ${issueReduced} סיכומים ללא הבעיה.`,
+        progress_note: buildProgressNote(trainingSessions, issueStillPresent, issueReduced),
       }).catch(() => {});
     }
   }
