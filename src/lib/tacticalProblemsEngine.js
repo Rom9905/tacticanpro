@@ -144,7 +144,7 @@ function generateTacticalProblems(analysis) {
   // כדור קבוע — set pieces
   // ═══════════════════════════════════════════
 
-  if (goalsScored > 0) {
+  if (scored > 0) {
     const setPieceMentions = (allText.match(/קורנר|סט[- ]?פיס|בעיטה חופשית|נגיח/g) || []).length;
     if (setPieceMentions >= 2 && stats.xg != null && stats.xg < 1.5) {
       push(
@@ -156,7 +156,7 @@ function generateTacticalProblems(analysis) {
     }
   }
 
-  if (conceded > 0 && /ספג.*קורנר|ספג.*חופשית|ספג.*נגיח|נגיחה.*ספג/g.test(allText)) {
+  if (conceded > 0 && /ספג.*(קורנר|חופשית|נגיח|הגבה|הורם|קבוע)|(קורנר|חופשית|נגיח|הגבה|הורם|קבוע).*ספג/.test(allText)) {
     push(
       CATEGORIES.SET_PIECES, 'set_pieces', 'high',
       `ספגנו מכדור קבוע מול ${opponent} — בעיה בארגון ההגנתי במצבים נייחים. סימון אישי לא הצליח, או שהחומה/אזור לא כיסו את האיום.`,
