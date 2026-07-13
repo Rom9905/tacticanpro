@@ -12,6 +12,45 @@ const SITUATION_CATEGORIES_EN = [
   'Final Third', 'Set Pieces', 'Counter-Attack', 'Ball Loss', 'Game Management',
 ];
 
+const CATEGORY_MAP = {
+  'possession': 'בנייה מאחור',
+  'passing': 'בנייה מאחור',
+  'chance-creation': 'שליש אחרון',
+  'shot-quality': 'שליש אחרון',
+  'shooting': 'שליש אחרון',
+  'finishing': 'שליש אחרון',
+  'turnovers': 'אובדן כדור',
+  'defense': 'מעבר הגנתי',
+  'errors': 'מעבר הגנתי',
+  'control-without-result': 'ניהול משחק',
+  'margins': 'ניהול משחק',
+  'set-piece-dependency': 'כדור קבוע',
+  'player-performance': 'ניהול משחק',
+  'team-level': 'ניהול משחק',
+  'discipline': 'ניהול משחק',
+  'offsides': 'מעבר התקפי',
+  'phase-buildup': 'בנייה מאחור',
+  'phase-organized_defense': 'לחץ',
+  'transition-attack': 'מעבר התקפי',
+  'transition-defense': 'מעבר הגנתי',
+};
+
+function mapToCategoryHe(engineCategory, text) {
+  if (engineCategory && CATEGORY_MAP[engineCategory]) return CATEGORY_MAP[engineCategory];
+  // Keyword fallback
+  if (!text) return null;
+  if (/בנייה|חזקה|מסירות|דיוק/.test(text)) return 'בנייה מאחור';
+  if (/קאונטר|נגד/.test(text)) return 'קונטרה';
+  if (/איבוד|טרנאובר/.test(text)) return 'אובדן כדור';
+  if (/סט.?פיס|קורנר|בעיטה חופשית|נגיח/.test(text)) return 'כדור קבוע';
+  if (/לחץ|pressing|ללחוץ|חטיפ/.test(text)) return 'לחץ';
+  if (/שליש|רחבה|xG|בעיטו?ת|גמירה/.test(text)) return 'שליש אחרון';
+  if (/הגנ|ספג|בלם|מרחב/.test(text)) return 'מעבר הגנתי';
+  if (/התקפ|עומק|חדיר/.test(text)) return 'מעבר התקפי';
+  if (/ניהול|שאנן|ריכוז|עבירו/.test(text)) return 'ניהול משחק';
+  return null;
+}
+
 export default function ProblemHeatmap({ analyses }) {
   const { t: langT } = useLang();
   const isHe = langT.lang === 'he';
@@ -42,7 +81,16 @@ export default function ProblemHeatmap({ analyses }) {
         });
       }
 
-      if (analysis.report?.issues) {
+      if (analysis.tactical_problems?.length > 0) {
+        analysis.tactical_problems.forEach(problem => {
+          const text = problem.text || problem;
+          const cat = mapToCategoryHe(problem.category, text);
+          if (cat && problemCount[cat]) {
+            problemCount[cat].count++;
+            problemCount[cat].issues.push({ game: analysis.opponent, note: text });
+          }
+        });
+      } else if (analysis.report?.issues) {
         analysis.report.issues.forEach(issue => {
           situationCategories.forEach(cat => {
             if (issue.includes(cat.split(' ')[0])) {
