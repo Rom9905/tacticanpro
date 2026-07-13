@@ -17,10 +17,34 @@ import TeamManagementPage from '@/pages/TeamManagement';
 import TrainingCenterPage from '@/pages/TrainingCenter';
 
 const INSIGHT_VIEWS_CONFIG = [
-  { id: 'training_center', labelKey: 'trainingCenter', icon: Dumbbell,  color: '#2A7050', bg: 'rgba(42,112,80,0.09)',  border: 'rgba(42,112,80,0.22)',  Component: TrainingCenterPage },
-  { id: 'match',           labelKey: 'matchAnalysis',  icon: Swords,    color: '#2A5FA8', bg: 'rgba(41,82,168,0.09)',  border: 'rgba(41,82,168,0.22)',  Component: MatchAnalysisPage },
-  { id: 'training',        labelKey: 'trainingAnalytics', icon: BarChart3, color: '#B97A2A', bg: 'rgba(185,122,42,0.09)', border: 'rgba(185,122,42,0.22)', Component: TrainingAnalyticsPage },
-  { id: 'team',            labelKey: 'team',           icon: Users,     color: '#7A2A8A', bg: 'rgba(122,42,138,0.09)', border: 'rgba(122,42,138,0.22)', Component: TeamManagementPage },
+  {
+    id: 'training_center', labelKey: 'trainingCenter', icon: Dumbbell,
+    color: '#2A7050', bg: 'rgba(42,112,80,0.09)', border: 'rgba(42,112,80,0.30)',
+    descHe: 'נושאי עבודה, תוכניות שחקנים והכנה למשחק',
+    descEn: 'Work topics, player programs & game prep',
+    trackId: 'training_center', Component: TrainingCenterPage,
+  },
+  {
+    id: 'match', labelKey: 'matchAnalysis', icon: Swords,
+    color: '#2A5FA8', bg: 'rgba(41,82,168,0.09)', border: 'rgba(41,82,168,0.30)',
+    descHe: 'ניתוחי משחקים, בעיות טקטיות ותובנות AI',
+    descEn: 'Match analyses, tactical issues & AI insights',
+    trackId: 'match_analysis', Component: MatchAnalysisPage,
+  },
+  {
+    id: 'training', labelKey: 'trainingAnalytics', icon: BarChart3,
+    color: '#B97A2A', bg: 'rgba(185,122,42,0.09)', border: 'rgba(185,122,42,0.30)',
+    descHe: 'מגמות אימונים, השוואת תקופות וניתוח אישי',
+    descEn: 'Training trends, period comparison & personal tracking',
+    trackId: 'training_analytics', Component: TrainingAnalyticsPage,
+  },
+  {
+    id: 'team', labelKey: 'team', icon: Users,
+    color: '#7A2A8A', bg: 'rgba(122,42,138,0.09)', border: 'rgba(122,42,138,0.30)',
+    descHe: 'סגל, הרכב, השוואת שחקנים ושיטת משחק',
+    descEn: 'Squad, lineup, player comparison & game style',
+    trackId: 'team_management', Component: TeamManagementPage,
+  },
 ];
 
 const slideVariants = {
@@ -183,23 +207,80 @@ export default function SummaryView({
           {tab === 'insights' && (
             <>
               {!insightView && (
-                <div className="rounded-xl p-4" style={{ backgroundColor: '#FAF7F2', border: '1px solid rgba(139,115,85,0.18)' }}>
-                  <p className="text-xs font-semibold mb-3" style={{ color: '#9A8672' }}>{db.selectInsightView}</p>
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2">
-                    {INSIGHT_VIEWS.map(v => {
+                <div className="rounded-2xl overflow-hidden" style={{ backgroundColor: '#FAF7F2', border: '1px solid rgba(139,115,85,0.18)' }}>
+                  {/* Header strip */}
+                  <div className="px-5 pt-5 pb-4 md:px-6" style={{ background: 'linear-gradient(135deg, #0D1A12 0%, #12251A 100%)' }}>
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+                        style={{ backgroundColor: 'rgba(74,222,128,0.14)', border: '1px solid rgba(74,222,128,0.25)' }}>
+                        <Lightbulb className="w-5 h-5" style={{ color: '#4ADE80' }} />
+                      </div>
+                      <div>
+                        <h2 className="text-base font-bold" style={{ color: '#F4EFE6', fontFamily: 'Heebo, sans-serif' }}>
+                          {t.lang === 'he' ? 'תובנות' : 'Insights'}
+                        </h2>
+                        <p className="text-xs mt-0.5" style={{ color: 'rgba(244,239,230,0.55)' }}>{db.selectInsightView}</p>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Cards */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 md:p-5">
+                    {INSIGHT_VIEWS.map((v, i) => {
                       const Icon = v.icon;
                       return (
-                        <button
+                        <motion.button
                           key={v.id}
-                          onClick={() => { setInsightView(v.id); trackEvent(`open_${v.id === 'training_center' ? 'training_center' : v.id === 'match' ? 'match_analysis' : v.id === 'training' ? 'training_analytics' : v.id === 'team' ? 'team_management' : v.id}`); }}
-                          className="flex flex-col items-center gap-1.5 py-4 px-2 rounded-xl transition-all"
-                          style={{ backgroundColor: 'rgba(139,115,85,0.05)', border: '1.5px solid rgba(139,115,85,0.15)' }}
-                          onMouseEnter={e => { e.currentTarget.style.backgroundColor = v.bg; e.currentTarget.style.borderColor = v.border; }}
-                          onMouseLeave={e => { e.currentTarget.style.backgroundColor = 'rgba(139,115,85,0.05)'; e.currentTarget.style.borderColor = 'rgba(139,115,85,0.15)'; }}
+                          initial={{ opacity: 0, y: 12 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ duration: 0.25, delay: i * 0.05, ease: 'easeOut' }}
+                          whileTap={{ scale: 0.98 }}
+                          onClick={() => { setInsightView(v.id); trackEvent(`open_${v.trackId}`); }}
+                          className="group relative flex items-center gap-4 p-4 rounded-xl text-right transition-all duration-200 cursor-pointer focus-visible:outline-none focus-visible:ring-2"
+                          style={{
+                            backgroundColor: '#FFFFFF',
+                            border: '1.5px solid rgba(139,115,85,0.14)',
+                            boxShadow: '0 1px 2px rgba(13,26,18,0.04)',
+                            minHeight: '84px',
+                            '--tw-ring-color': v.color,
+                          }}
+                          onMouseEnter={e => {
+                            e.currentTarget.style.borderColor = v.border;
+                            e.currentTarget.style.boxShadow = `0 6px 18px -6px ${v.bg.replace('0.09', '0.45')}`;
+                            e.currentTarget.style.transform = 'translateY(-2px)';
+                          }}
+                          onMouseLeave={e => {
+                            e.currentTarget.style.borderColor = 'rgba(139,115,85,0.14)';
+                            e.currentTarget.style.boxShadow = '0 1px 2px rgba(13,26,18,0.04)';
+                            e.currentTarget.style.transform = 'translateY(0)';
+                          }}
                         >
-                          <Icon className="w-5 h-5" style={{ color: v.color }} />
-                          <span className="text-xs font-medium text-center" style={{ color: '#5C4E38' }}>{v.label}</span>
-                        </button>
+                          {/* Accent bar */}
+                          <span className="absolute top-3 bottom-3 right-0 w-1 rounded-l-full transition-opacity duration-200 opacity-0 group-hover:opacity-100"
+                            style={{ backgroundColor: v.color }} aria-hidden="true" />
+
+                          {/* Icon tile */}
+                          <div className="w-12 h-12 rounded-xl flex items-center justify-center flex-shrink-0 transition-transform duration-200 group-hover:scale-105"
+                            style={{ backgroundColor: v.bg, border: `1px solid ${v.border}` }}>
+                            <Icon className="w-6 h-6" style={{ color: v.color }} />
+                          </div>
+
+                          {/* Texts */}
+                          <div className="flex-1 min-w-0">
+                            <span className="block text-sm font-bold" style={{ color: '#2C2416', fontFamily: 'Heebo, sans-serif' }}>
+                              {v.label}
+                            </span>
+                            <span className="block text-xs mt-1 leading-relaxed" style={{ color: '#9A8672' }}>
+                              {t.lang === 'he' ? v.descHe : v.descEn}
+                            </span>
+                          </div>
+
+                          {/* Chevron affordance */}
+                          <ChevronRight
+                            className={`w-4 h-4 flex-shrink-0 transition-transform duration-200 ${dir === 'rtl' ? 'rotate-180 group-hover:-translate-x-1' : 'group-hover:translate-x-1'}`}
+                            style={{ color: v.color }} aria-hidden="true"
+                          />
+                        </motion.button>
                       );
                     })}
                   </div>
