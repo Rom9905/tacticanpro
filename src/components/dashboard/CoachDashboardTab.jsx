@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
 import { useLang } from '@/lib/LanguageContext';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
-  AlertCircle, Activity, TrendingUp,
-  Calendar, Target, Users, Zap, ChevronRight,
+  AlertCircle, Activity, TrendingUp, Target, Users, Zap, ChevronRight,
   Clock, CheckCircle2, AlertTriangle, Star, Trophy, Handshake, Settings
 } from 'lucide-react';
 import IssueCard from './IssueCard';
@@ -214,51 +214,114 @@ export default function CoachDashboardTab({
 
   return (
     <div className="space-y-4" dir={dir}>
-      {/* KPI Row — hero season balance (span 2) + KPI cards */}
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-        {/* Season Balance — hero card */}
-        {hasResults && (() => {
-          const total = wins + draws + losses || 1;
-          const winPct = Math.round((wins / total) * 100);
-          return (
-            <div className="col-span-2 premium-card p-4" style={{ border: '1px solid rgba(13,26,18,.08)', borderRight: '4px solid var(--brand-green-dark)' }}>
-              <div className="flex items-center gap-2 mb-3">
-                <div className="rounded-full flex items-center justify-center" style={{ width: '40px', height: '40px', backgroundColor: 'var(--success-bg)' }}>
-                  <TrendingUp className="w-5 h-5" style={{ color: 'var(--brand-green-dark)' }} />
+      {/* ── Hero: season overview (dark strip) ── */}
+      <motion.div
+        initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25, ease: 'easeOut' }}
+        className="rounded-2xl overflow-hidden"
+        style={{ background: 'linear-gradient(135deg, #0D1A12 0%, #12251A 100%)', border: '1px solid rgba(74,222,128,0.15)' }}
+      >
+        <div className="px-5 pt-5 pb-4 md:px-6">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0"
+              style={{ backgroundColor: 'rgba(74,222,128,0.14)', border: '1px solid rgba(74,222,128,0.25)' }}>
+              <TrendingUp className="w-5 h-5" style={{ color: '#4ADE80' }} />
+            </div>
+            <div>
+              <h2 className="text-base font-bold" style={{ color: '#F4EFE6', fontFamily: 'Heebo, sans-serif' }}>
+                {t.lang === 'he' ? 'תמונת מצב' : 'Status'}
+              </h2>
+              <p className="text-xs mt-0.5" style={{ color: 'rgba(244,239,230,0.55)' }}>{db.seasonBalance}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="px-5 pb-5 md:px-6 flex flex-col md:flex-row md:items-center gap-5 md:gap-8">
+          {hasResults ? (() => {
+            const total = wins + draws + losses || 1;
+            const winPct = Math.round((wins / total) * 100);
+            return (
+              <>
+                {/* Win % + W/D/L */}
+                <div className="flex items-center gap-5">
+                  <div className="text-center">
+                    <div className="font-bold leading-none" style={{ fontSize: '52px', fontFamily: 'Heebo, sans-serif', fontWeight: 900, color: '#4ADE80', fontVariantNumeric: 'tabular-nums' }}>{winPct}%</div>
+                    <div className="text-[11px] mt-1.5" style={{ color: 'rgba(244,239,230,0.55)' }}>{db.wins}</div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    {[
+                      { n: wins, l: 'W', c: '#4ADE80', tc: '#0D1A12' },
+                      { n: draws, l: 'D', c: '#D9A93F', tc: '#0D1A12' },
+                      { n: losses, l: 'L', c: '#E06C6C', tc: '#0D1A12' },
+                    ].map(x => (
+                      <div key={x.l} className="flex flex-col items-center">
+                        <div className="rounded-xl flex items-center justify-center font-bold"
+                          style={{ width: '44px', height: '44px', backgroundColor: `${x.c}1F`, border: `1px solid ${x.c}55`, color: x.c, fontSize: '17px', fontVariantNumeric: 'tabular-nums' }}>
+                          {x.n}
+                        </div>
+                        <span className="text-[10px] mt-1" style={{ color: 'rgba(244,239,230,0.45)' }}>{x.l}</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-                <span className="text-xs font-semibold" style={{ color: 'var(--text-secondary)' }}>{db.seasonBalance}</span>
+
+                {/* Bar + last 5 form */}
+                <div className="flex-1 min-w-0">
+                  <div className="flex h-2 rounded-full overflow-hidden" style={{ backgroundColor: 'rgba(244,239,230,0.10)' }}>
+                    <div style={{ width: `${(wins / total) * 100}%`, backgroundColor: '#4ADE80' }} />
+                    <div style={{ width: `${(draws / total) * 100}%`, backgroundColor: '#D9A93F' }} />
+                    <div style={{ width: `${(losses / total) * 100}%`, backgroundColor: '#E06C6C' }} />
+                  </div>
+                  {last5.length > 0 && (
+                    <div className="flex items-center gap-2 mt-3">
+                      <span className="text-[11px]" style={{ color: 'rgba(244,239,230,0.45)' }}>{db.last5results}</span>
+                      <div className="flex gap-1.5">
+                        {last5.map((r, i) => (
+                          <span key={i} className="rounded-full flex items-center justify-center font-bold"
+                            style={{
+                              width: '26px', height: '26px', fontSize: '11px',
+                              backgroundColor: r.char === 'W' ? '#4ADE80' : r.char === 'D' ? '#D9A93F' : '#E06C6C',
+                              color: '#0D1A12',
+                            }}>
+                            {r.char}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </>
+            );
+          })() : (
+            <p className="text-sm" style={{ color: 'rgba(244,239,230,0.55)' }}>
+              {t.lang === 'he' ? 'עדיין אין תוצאות העונה — התמונה תתמלא אחרי המשחק הראשון.' : 'No results yet — the picture fills in after the first match.'}
+            </p>
+          )}
+
+          {/* Next game */}
+          {nextGameDate && (
+            <div className="flex items-center gap-3 rounded-xl px-4 py-3 md:mr-auto"
+              style={{ backgroundColor: 'rgba(74,222,128,0.08)', border: '1px solid rgba(74,222,128,0.20)' }}>
+              <div className="flex flex-col items-center justify-center w-12 h-12 rounded-xl flex-shrink-0"
+                style={{ backgroundColor: 'rgba(74,222,128,0.14)' }}>
+                <span className="text-sm font-bold leading-none" style={{ color: '#4ADE80', fontVariantNumeric: 'tabular-nums' }}>
+                  {nextGameDate.toLocaleDateString(t.lang === 'he' ? 'he-IL' : 'en-US', { day: '2-digit' })}
+                </span>
+                <span className="text-[10px] mt-0.5" style={{ color: '#4ADE80' }}>
+                  {nextGameDate.toLocaleDateString(t.lang === 'he' ? 'he-IL' : 'en-US', { month: 'short' })}
+                </span>
               </div>
-              <div className="flex items-center gap-4">
-                {/* Win % big number */}
-                <div className="text-center">
-                  <div className="font-bold leading-none" style={{ fontSize: '48px', fontFamily: 'Heebo, sans-serif', fontWeight: 900, color: 'var(--brand-green-dark)' }}>{winPct}%</div>
-                  <div className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>{db.wins} {wins}</div>
-                </div>
-                {/* W/D/L circles */}
-                <div className="flex items-center gap-2">
-                  <div className="flex flex-col items-center">
-                    <div className="rounded-full flex items-center justify-center font-bold text-white" style={{ width: '44px', height: '44px', backgroundColor: 'var(--success)' }}>{wins}</div>
-                    <span className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>W</span>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <div className="rounded-full flex items-center justify-center font-bold text-white" style={{ width: '44px', height: '44px', backgroundColor: 'var(--warning)' }}>{draws}</div>
-                    <span className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>D</span>
-                  </div>
-                  <div className="flex flex-col items-center">
-                    <div className="rounded-full flex items-center justify-center font-bold text-white" style={{ width: '44px', height: '44px', backgroundColor: 'var(--danger)' }}>{losses}</div>
-                    <span className="text-[10px] mt-1" style={{ color: 'var(--text-muted)' }}>L</span>
-                  </div>
-                </div>
-              </div>
-              {/* Win-rate bar */}
-              <div className="flex h-2 rounded-full overflow-hidden mt-3" style={{ backgroundColor: 'rgba(13,26,18,.06)' }}>
-                <div style={{ width: `${(wins/total)*100}%`, backgroundColor: 'var(--success)' }} />
-                <div style={{ width: `${(draws/total)*100}%`, backgroundColor: 'var(--warning)' }} />
-                <div style={{ width: `${(losses/total)*100}%`, backgroundColor: 'var(--danger)' }} />
+              <div>
+                <p className="text-[11px]" style={{ color: 'rgba(244,239,230,0.55)' }}>{db.nextGame}</p>
+                <p className="text-sm font-bold mt-0.5" style={{ color: '#F4EFE6' }}>{db.vs} {nextGame.opponent}</p>
               </div>
             </div>
-          );
-        })()}
+          )}
+        </div>
+      </motion.div>
+
+      {/* KPI Row */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {/* Open Issues */}
         <KPICard
           icon={AlertCircle}
@@ -279,17 +342,6 @@ export default function CoachDashboardTab({
           detailLabel={db.clickToSummarize}
           detailLabelMissing={db.upToDate}
         />
-        {/* Next Game */}
-        {nextGameDate && (
-          <KPICard
-            icon={Calendar}
-            label={db.nextGame}
-            value={`${nextGameDate.toLocaleDateString(t.lang === 'he' ? 'he-IL' : 'en-US', { day: '2-digit', month: 'short' })}`}
-            semantic="success"
-            detailLabel={`${db.vs} ${nextGame.opponent}`}
-            detailLabelMissing={`${db.vs} ${nextGame.opponent}`}
-          />
-        )}
         {/* Top Scorer */}
         {(topScorer?.season_goals > 0) && (
           <KPICard
@@ -318,7 +370,13 @@ export default function CoachDashboardTab({
 
       {/* Team Performance Stats */}
       <div className="space-y-3">
-        <h3 className="text-sm font-bold px-1" style={{ color: 'var(--text-primary)' }}>{db.teamPerformance}</h3>
+        <div className="flex items-center gap-2.5 px-1">
+          <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+            style={{ backgroundColor: 'rgba(42,112,80,0.10)' }}>
+            <Activity className="w-4 h-4" style={{ color: '#2A7050' }} />
+          </div>
+          <h3 className="text-sm font-bold" style={{ color: 'var(--text-primary)' }}>{db.teamPerformance}</h3>
+        </div>
         <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {/* Average Team Rating */}
           {(() => {
@@ -338,7 +396,7 @@ export default function CoachDashboardTab({
             const avgSeason = calcAvg(matchesWithRatings);
             
             return (avg5 || avgSeason) ? (
-              <Card style={{ backgroundColor: '#FAF7F2', borderColor: 'rgba(139,115,85,0.18)' }}>
+              <Card style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(139,115,85,0.16)', borderRadius: '12px', boxShadow: '0 1px 2px rgba(13,26,18,0.04)' }}>
                 <CardContent className="p-4">
                   <div className="flex items-center gap-1.5 mb-2">
                     <Star className="w-4 h-4" style={{ color: '#2A7050' }} />
@@ -374,7 +432,7 @@ export default function CoachDashboardTab({
             const avgConceded = (totalConceded / matchesWithGoals.length).toFixed(1);
             
             return (
-              <Card style={{ backgroundColor: '#FAF7F2', borderColor: 'rgba(139,115,85,0.18)' }}>
+              <Card style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(139,115,85,0.16)', borderRadius: '12px', boxShadow: '0 1px 2px rgba(13,26,18,0.04)' }}>
                 <CardContent className="p-4">
                   <div className="flex items-center gap-1.5 mb-2">
                     <Target className="w-4 h-4" style={{ color: '#2A5FA8' }} />
@@ -404,7 +462,7 @@ export default function CoachDashboardTab({
             
             return topIssues.length > 0 ? (
               <button className="text-right w-full" onClick={() => setModal('issues')}>
-                <Card style={{ backgroundColor: '#FAF7F2', borderColor: 'rgba(139,115,85,0.18)' }} className="hover:shadow-md transition-shadow cursor-pointer h-full">
+                <Card style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(139,115,85,0.16)', borderRadius: '12px', boxShadow: '0 1px 2px rgba(13,26,18,0.04)' }} className="hover:shadow-md transition-shadow cursor-pointer h-full">
                   <CardContent className="p-4">
                     <div className="flex items-center gap-1.5 mb-2">
                       <AlertCircle className="w-4 h-4" style={{ color: '#D97706' }} />
@@ -469,7 +527,7 @@ export default function CoachDashboardTab({
             const statusColor = score >= 7.5 ? 'var(--brand-green-dark)' : score >= 6.5 ? 'var(--info)' : score >= 5.5 ? 'var(--warning)' : 'var(--danger)';
             
             return (
-              <Card style={{ backgroundColor: '#FAF7F2', borderColor: 'rgba(139,115,85,0.18)' }}>
+              <Card style={{ backgroundColor: '#FFFFFF', borderColor: 'rgba(139,115,85,0.16)', borderRadius: '12px', boxShadow: '0 1px 2px rgba(13,26,18,0.04)' }}>
                 <CardContent className="p-4">
                   <div className="flex items-center gap-1.5 mb-2">
                     <TrendingUp className="w-4 h-4" style={{ color: statusColor }} />
@@ -491,35 +549,19 @@ export default function CoachDashboardTab({
         </div>
       </div>
 
-      {/* Last 5 results — 44px circles with tooltip */}
-      {last5.length > 0 && hasResults && (
-        <div className="premium-card px-4 py-3" style={{ border: '1px solid rgba(13,26,18,.08)' }}>
-          <p className="text-xs font-semibold mb-2" style={{ color: 'var(--text-muted)' }}>{db.last5results}</p>
-          <div className="flex gap-2">
-            {last5.map((r, i) => (
-              <div key={i} className="relative group">
-                <span className="rounded-full flex items-center justify-center font-bold"
-                  style={{
-                    width: '44px', height: '44px', fontSize: '16px',
-                    backgroundColor: r.char === 'W' ? 'var(--success)' : r.char === 'D' ? 'var(--warning)' : 'var(--danger)',
-                    color: r.char === 'W' ? '#0D1A12' : '#fff',
-                  }}>
-                  {r.char}
-                </span>
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
-
       {/* Open Issues */}
       {openIssuesList.length > 0 && (
         <div className="space-y-3">
-          <div className="flex items-center gap-2 px-1">
-            <AlertCircle className="w-5 h-5" style={{ color: '#B94040' }} />
-            <h3 className="text-base font-bold" style={{ color: '#B94040' }}>
-              {db.openIssuesTitle} ({openIssuesList.length})
-            </h3>
+          <div className="flex items-center gap-2.5 px-1">
+            <div className="w-8 h-8 rounded-lg flex items-center justify-center"
+              style={{ backgroundColor: 'rgba(185,64,64,0.10)' }}>
+              <AlertCircle className="w-4 h-4" style={{ color: '#B94040' }} />
+            </div>
+            <h3 className="text-sm font-bold" style={{ color: '#2C2416' }}>{db.openIssuesTitle}</h3>
+            <span className="text-[11px] px-2.5 py-1 rounded-full font-bold"
+              style={{ backgroundColor: 'rgba(185,64,64,0.10)', color: '#B94040' }}>
+              {openIssuesList.length}
+            </span>
           </div>
           {openIssuesList.map((goal) => (
             <IssueCard
