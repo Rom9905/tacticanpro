@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useTeam } from '@/components/TeamContext';
-import { Loader2, TrendingUp, TrendingDown, Activity, AlertCircle, User, ShieldCheck, FileText } from 'lucide-react';
+import { TrendingUp, TrendingDown, Activity, AlertCircle, User, ShieldCheck } from 'lucide-react';
 import { updateDeadlinesForGame } from '@/components/schedule/DeadlineCalculator';
 import { trackEvent } from '@/hooks/useAnalytics';
 import LandingPage from '@/components/LandingPage';
@@ -11,7 +11,6 @@ import DashboardSkeleton from '@/components/dashboard/DashboardSkeleton';
 import DashboardTopBar from '@/components/dashboard/DashboardTopBar';
 import SummaryView from '@/components/dashboard/SummaryView';
 import EventSummaryModal from '@/components/calendar/EventSummaryModal';
-import { Alert, AlertDescription } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 
 function parseNotes(notes) {

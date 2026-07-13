@@ -18,7 +18,7 @@ export default function DeepAnalysisSection({ analysis, onRefresh }) {
         match_analysis_id: analysis.id
       });
       onRefresh && onRefresh();
-    } catch (e) {
+    } catch {
       setError('שגיאה ביצירת הניתוח המעמיק. נסה שוב.');
     } finally { setGenerating(false); }
   };

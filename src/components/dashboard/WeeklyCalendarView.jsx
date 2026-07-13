@@ -7,7 +7,7 @@ function parseNotes(notes) {
   try { return JSON.parse(notes || '{}'); } catch { return {}; }
 }
 
-export default function WeeklyCalendarView({ events = [], onSummarize }) {
+export default function WeeklyCalendarView({ events = [], onSummarize: _onSummarize }) {
   const today = new Date();
   today.setHours(0, 0, 0, 0);
   const weekDays = Array.from({ length: 7 }, (_, i) => {

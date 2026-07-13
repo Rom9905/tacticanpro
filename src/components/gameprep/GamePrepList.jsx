@@ -6,7 +6,7 @@ import { Plus, Loader2, Shield, Target, Calendar, ChevronRight } from 'lucide-re
 import GamePrepForm from './GamePrepForm';
 import GamePrepAnalysis from './GamePrepAnalysis';
 
-export default function GamePrepList({ teamId, players, onRefresh }) {
+export default function GamePrepList({ teamId, players, onRefresh: _onRefresh }) {
   const [preps, setPreps] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);

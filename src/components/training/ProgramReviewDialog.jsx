@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent } from '@/components/ui/card';
-import { CheckCircle2, TrendingUp, TrendingDown, Minus, AlertTriangle, Brain, Target } from 'lucide-react';
+import { CheckCircle2, TrendingUp, TrendingDown, Minus, AlertTriangle, Target } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 
 export default function ProgramReviewDialog({ isOpen, onClose, program, player, onComplete }) {

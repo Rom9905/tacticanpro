@@ -1,6 +1,6 @@
 import React, { useState, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
-import { Target, Filter, TrendingUp } from 'lucide-react';
+import { Target, TrendingUp } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -15,17 +15,17 @@ export default function ControlZones({
   onToggle, 
   isActive,
   onFilterChange,
-  customZones = [],
+  customZones: _customZones = [],
   onAddCustomZone,
-  onUpdateCustomZone,
-  onRemoveCustomZone,
-  isFullscreen,
-  containerRef 
+  onUpdateCustomZone: _onUpdateCustomZone,
+  onRemoveCustomZone: _onRemoveCustomZone,
+  isFullscreen: _isFullscreen,
+  containerRef: _containerRef 
 }) {
   const [mode, setMode] = useState('static'); // 'static' or 'dynamic'
   const [filter, setFilter] = useState('all'); // 'all', 'center', 'final_third', 'left', 'right', 'custom'
   const [hoveredZone, setHoveredZone] = useState(null);
-  const [isDrawingZone, setIsDrawingZone] = useState(false);
+  const [_isDrawingZone, _setIsDrawingZone] = useState(false);
 
   const handleFilterChange = (newFilter) => {
     setFilter(newFilter);

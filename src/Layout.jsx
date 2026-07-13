@@ -3,7 +3,6 @@ import { Link, useNavigate } from 'react-router-dom';
 import { createPageUrl } from './utils';
 import { base44 } from '@/api/base44Client';
 import { TeamProvider, useTeam } from '@/components/TeamContext';
-import { ThemeProvider } from '@/components/ThemeContext';
 
 import {
   Home,
@@ -15,8 +14,6 @@ import {
   LogOut,
   Menu,
   X,
-  ChevronLeft,
-  Calendar,
   Plus,
 } from 'lucide-react';
 import AddEventModal from '@/components/calendar/AddEventModal';

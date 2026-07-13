@@ -9,7 +9,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 
-export default function TemplateSelector({ teamId, onLoadTemplate, onSaveAsTemplate, currentBoard, containerRef }) {
+export default function TemplateSelector({ teamId, onLoadTemplate, onSaveAsTemplate: _onSaveAsTemplate, currentBoard, containerRef }) {
   const [showDialog, setShowDialog] = useState(false);
   const [templates, setTemplates] = useState([]);
   const [builtInTemplates, setBuiltInTemplates] = useState([]);

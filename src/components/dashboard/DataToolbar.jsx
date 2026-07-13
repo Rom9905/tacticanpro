@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { PlusCircle, BarChart3, Calendar, Dumbbell, Swords, ClipboardList, Users, Brain, TrendingUp, Zap } from 'lucide-react';
+import { PlusCircle, BarChart3, Calendar, Dumbbell, Swords, ClipboardList, Users, Brain, TrendingUp } from 'lucide-react';
 import AddEventModal from '@/components/calendar/AddEventModal';
 import EventSummaryModal from '@/components/calendar/EventSummaryModal';
 import CalendarView from '@/components/dashboard/CalendarView';

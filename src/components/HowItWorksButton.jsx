@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { HelpCircle, X, ChevronRight } from 'lucide-react';
+import { HelpCircle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 

@@ -161,7 +161,7 @@ export default function PlayerForm({ isOpen, onClose, player, onSave }) {
   const isHe = langT.lang === 'he';
 
   const positions = isHe ? POSITIONS_HE : POSITIONS_EN;
-  const statuses = isHe ? STATUSES_HE : STATUSES_EN;
+  const _statuses = isHe ? STATUSES_HE : STATUSES_EN;
   const roles = isHe ? ROLES_HE : ROLES_EN;
   const skillOptions = isHe ? SKILL_OPTIONS_HE : SKILL_OPTIONS_EN;
   const gkSkillOptions = isHe ? GK_SKILL_OPTIONS_HE : GK_SKILL_OPTIONS_EN;

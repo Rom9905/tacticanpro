@@ -1,7 +1,6 @@
 import React, { useMemo } from 'react';
-import { Calendar, Clock, Trophy, Activity } from 'lucide-react';
+import { Calendar, Trophy, Activity } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 
 const DAY_NAMES = ['ראשון', 'שני', 'שלישי', 'רביעי', 'חמישי', 'שישי', 'שבת'];
 

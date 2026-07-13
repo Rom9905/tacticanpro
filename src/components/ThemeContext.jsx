@@ -21,7 +21,7 @@ export function ThemeProvider({ children }) {
           document.body.style.backgroundColor = '#F4EFE6';
           document.body.style.color = '#2C2416';
         }
-      } catch (error) {
+      } catch {
         setTheme('light');
         document.documentElement.classList.remove('dark');
         document.body.style.backgroundColor = '#F4EFE6';

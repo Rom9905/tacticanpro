@@ -2,9 +2,9 @@ import React, { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
-import { Loader2, Copy, FileText, Star, Users } from 'lucide-react';
+import { Loader2, Copy, FileText, Users } from 'lucide-react';
 
-export default function PlayerReportModal({ open, onClose, player, matchAnalyses = [], teamPlayers = [] }) {
+export default function PlayerReportModal({ open, onClose, player, matchAnalyses = [], teamPlayers: _teamPlayers = [] }) {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -40,7 +40,7 @@ export default function PlayerReportModal({ open, onClose, player, matchAnalyses
       map(([k, v]) => `${k}: ${v}/5`).
       join(', ');
 
-    const matchText = matchHistory.map((m) =>
+    const _matchText = matchHistory.map((m) =>
       `${m.date} vs ${m.opponent || 'לא ידוע'}`
     ).join(', ');
 
@@ -49,7 +49,7 @@ export default function PlayerReportModal({ open, onClose, player, matchAnalyses
       (Object.values(skillRatings).filter(v => v != null).reduce((a, b) => a + b, 0) /
         Object.values(skillRatings).filter(v => v != null).length) * 20 :
       50;
-    const overallScore = Math.round((avgSkill + (avgRating ? parseFloat(avgRating) * 10 : 50)) / 2);
+    const _overallScore = Math.round((avgSkill + (avgRating ? parseFloat(avgRating) * 10 : 50)) / 2);
 
     const prompt = `
 אתה מנהל מקצועי בכיר בכדורגל. כתוב דוח שחקן מנוסח ברור וקצר.
@@ -107,7 +107,7 @@ ${skillText || 'לא הוזנו'}
           await base44.entities.Player.update(player.id, { ai_report: text, ai_report_updated_at: new Date().toISOString() });
         } catch (e) { console.warn('Failed to cache player report:', e); }
       }
-    } catch (e) {
+    } catch {
       setReport('שגיאה בהפקת הדוח. נסה שוב.');
     }
     setLoading(false);
@@ -259,10 +259,10 @@ function ReportDisplay({ content }) {
 
         const isStrengths = header?.includes('חוזקות');
         const isWeaknesses = header?.includes('נקודות לשיפור');
-        const isStyleFit = header?.includes('התאמה');
-        const isRoles = header?.includes('תפקידים');
-        const isTraining = header?.includes('המלצות אימון');
-        const isTactical = header?.includes('טקטית');
+        const _isStyleFit = header?.includes('התאמה');
+        const _isRoles = header?.includes('תפקידים');
+        const _isTraining = header?.includes('המלצות אימון');
+        const _isTactical = header?.includes('טקטית');
         const isSummary = header?.includes('תקציר');
 
         let bgColor = 'rgba(139,115,85,0.06)';

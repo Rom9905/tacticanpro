@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
   Plus, Target, Dumbbell, Swords, PenSquare, CheckCircle2,
-  Pause, Archive, AlertCircle, Clock, Filter
+  Pause, AlertCircle, Clock
 } from 'lucide-react';
 import { useLang } from '@/lib/LanguageContext';
 
@@ -27,7 +27,7 @@ const SOURCE_LABELS = {
   manual:   { labelHe: 'ידני',  labelEn: 'Manual',   icon: PenSquare, color: '#7A2A8A' },
 };
 
-export default function WorkTopicsList({ topics, summaries, onAddTopic, onEditTopic, onRefresh, teamId }) {
+export default function WorkTopicsList({ topics, summaries, onAddTopic, onEditTopic, onRefresh, teamId: _teamId }) {
   const { t: langT } = useLang();
   const isHe = langT.lang === 'he';
   const [filterStatus, setFilterStatus] = useState('active');

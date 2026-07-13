@@ -1,7 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { X, Loader2, Target, Shield, Dumbbell, ChevronRight, RefreshCw } from 'lucide-react';
 
 export default function GamePrepAnalysis({ prep, players, onClose, onUpdated }) {

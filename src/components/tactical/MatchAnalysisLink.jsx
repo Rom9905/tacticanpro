@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
-import { BarChart3, Zap, Calendar } from 'lucide-react';
+import { BarChart3, Zap } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -118,7 +118,7 @@ export default function MatchAnalysisLink({ teamId, onCreateFromAnalysis }) {
     toast.success('לוח טקטי נוצר מהמצב');
   };
 
-  const handleConvertToTraining = async (boardId) => {
+  const _handleConvertToTraining = async (_boardId) => {
     const nextGame = await base44.entities.GameSchedule.filter(
       { team_id: teamId, status: 'scheduled' },
       'game_date',

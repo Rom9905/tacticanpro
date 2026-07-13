@@ -32,7 +32,7 @@ export default function ComparisonTable({ players }) {
     return [];
   };
 
-  const compareValues = (attr, player1Val, player2Val) => {
+  const _compareValues = (attr, player1Val, player2Val) => {
     if (attr.type === 'number') {
       const diff = Math.abs(player1Val - player2Val);
       if (diff === 0) return <Minus className="w-4 h-4 text-slate-400" />;
@@ -81,7 +81,7 @@ export default function ComparisonTable({ players }) {
                 return (
                   <tr key={idx} className="border-b border-slate-800 hover:bg-slate-800/30">
                     <td className="p-3 text-sm text-slate-300">{attr.label}</td>
-                    {players.map((player, pIdx) => {
+                    {players.map((player, _pIdx) => {
                       const value = player[attr.key];
                       const displayValue = attr.type === 'number' 
                         ? `${value || 0}${attr.suffix || ''}`

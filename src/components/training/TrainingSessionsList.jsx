@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Dumbbell, Clock, Tag, ChevronDown, ChevronUp, Calendar, AlertCircle, Star } from 'lucide-react';
+import { Dumbbell, Clock, Tag, ChevronDown, ChevronUp, AlertCircle, Star } from 'lucide-react';
 import TrainingEvaluationModal from './TrainingEvaluationModal';
 
 const TOPIC_COLORS = {

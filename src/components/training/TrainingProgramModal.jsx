@@ -69,10 +69,10 @@ export default function TrainingProgramModal({
     if (isOpen && player?.team_id) {
       setLoadingSessions(true);
       base44.entities.GameSchedule.filter({ team_id: player.team_id, context: 'חברית' }, '-game_date', 50)
-        .then(async (results) => {
+        .then(async (_results) => {
           // Also fetch training sessions — GameSchedule doesn't have a "training" context type so we filter by event_type in ProfessionalSummary or use a separate approach
           // Actually fetch all GameSchedule and filter those that are training events
-          const allEvents = await base44.entities.GameSchedule.filter({ team_id: player.team_id }, '-game_date', 100);
+          const _allEvents = await base44.entities.GameSchedule.filter({ team_id: player.team_id }, '-game_date', 100);
           // Training sessions are typically logged via ProfessionalSummary with event_type='training'
           const summaries = await base44.entities.ProfessionalSummary.filter({ team_id: player.team_id, event_type: 'training' }, '-event_date', 50);
           setTrainingSessions(summaries);

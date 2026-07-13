@@ -1,5 +1,4 @@
 import React from 'react';
-import { Button } from '@/components/ui/button';
 import { Eye, EyeOff, AlertTriangle } from 'lucide-react';
 
 export default function LayerManager({ layers, onToggleLayer }) {

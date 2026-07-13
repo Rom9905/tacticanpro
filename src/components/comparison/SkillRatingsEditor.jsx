@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -41,7 +41,7 @@ function MiniSparkline({ history }) {
   );
 }
 
-function SparklineTooltip({ history, visible, anchorRef }) {
+function SparklineTooltip({ history, visible, anchorRef: _anchorRef }) {
   if (!visible || !history || history.length < 2) return null;
   return (
     <div style={{
@@ -131,7 +131,7 @@ export default function SkillRatingsEditor({ player, onUpdate }) {
         await supabase.from('player_attribute_history').insert(historyRows);
       }
 
-      const updated = await base44.entities.Player.update(player.id, { skill_ratings: ratings });
+      const _updated = await base44.entities.Player.update(player.id, { skill_ratings: ratings });
       setIsEditing(false);
       await loadHistory();
       if (onUpdate) onUpdate(ratings);

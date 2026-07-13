@@ -1,5 +1,5 @@
 // Critical Issues Detection Engine
-import { getAllowedPositions, checkPositionFit, POSITION_MAPPING } from './PositionRules';
+import { getAllowedPositions, POSITION_MAPPING } from './PositionRules';
 
 // Position fit calculation - checks if player matches slot requirements
 export const calculatePositionFit = (player, slotPosition) => {

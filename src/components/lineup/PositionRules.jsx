@@ -185,7 +185,7 @@ export const checkPositionFit = (player, positionName) => {
 };
 
 // Validate entire lineup
-export const validateLineup = (lineup, positions) => {
+export const validateLineup = (lineup, _positions) => {
   const issues = [];
   const warnings = [];
   const info = [];

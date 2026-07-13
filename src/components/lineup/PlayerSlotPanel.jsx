@@ -4,7 +4,7 @@ import { createPageUrl } from '../../utils';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { X, User, Target, TrendingUp, AlertCircle } from 'lucide-react';
+import { X, User, TrendingUp, AlertCircle } from 'lucide-react';
 
 export default function PlayerSlotPanel({ player, onClose, onRemove, onReplace }) {
   if (!player) return null;

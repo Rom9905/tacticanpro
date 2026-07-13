@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Save, RotateCcw, Star, X, Settings, AlertCircle, Sparkles, Copy, Plus, FileText, CheckCircle, Eye } from 'lucide-react';
+import { Save, RotateCcw, Star, X, Settings, AlertCircle, Copy, CheckCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
 import {
   Select,
@@ -16,7 +16,6 @@ import {
 } from "@/components/ui/select";
 import PlayerSlotPanel from '../lineup/PlayerSlotPanel';
 import LineupRecommendations from '../lineup/LineupRecommendations';
-import LineupQuickView from '../lineup/LineupQuickView';
 import { validateLineup, POSITION_MAPPING } from '../lineup/PositionRules';
 import { generateReadinessReport, autoFixDuplicates } from '../lineup/CriticalIssuesEngine';
 import { useLang } from '@/lib/LanguageContext';
@@ -277,7 +276,7 @@ export default function LineupBuilder({ team, players, onUpdate }) {
       team_id: team.id,
       name: templateName,
       formation: currentFormation,
-      starters: lineup.filter(Boolean).map((player, index) => ({
+      starters: lineup.filter(Boolean).map((player, _index) => ({
         player_id: player.id,
         position: positions[lineup.indexOf(player)],
       })),

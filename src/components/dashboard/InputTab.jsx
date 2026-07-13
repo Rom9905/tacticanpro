@@ -1,17 +1,15 @@
 import React, { useState } from 'react';
 import { useLang } from '@/lib/LanguageContext';
-import { Button } from '@/components/ui/button';
 import {
-  Clock, Calendar, Plus, X, Dumbbell, Swords,
+  Clock, Calendar, Dumbbell, Swords,
   CalendarDays, Check
 } from 'lucide-react';
 import AddEventModal from '@/components/calendar/AddEventModal';
 import ProfessionalSummaryModal from '@/components/calendar/ProfessionalSummaryModal';
-import WeeklyCalendarView from '@/components/dashboard/WeeklyCalendarView';
 import FullCalendarModal from '@/components/dashboard/FullCalendarModal';
 
 export default function InputTab({ teamId, allEvents, needsSummaryEvents, onRefresh }) {
-  const { t, dir, lang } = useLang();
+  const { t, dir: _dir, lang: _lang } = useLang();
   const inp = t.input;
 
   const [showAddTraining, setShowAddTraining] = useState(false);
@@ -28,7 +26,7 @@ export default function InputTab({ teamId, allEvents, needsSummaryEvents, onRefr
   }).sort((a, b) => new Date(a.game_date) - new Date(b.game_date));
 
   // Summarized events (not in needsSummaryEvents)
-  const summarizedWeekEvents = weekEvents.filter(ev =>
+  const _summarizedWeekEvents = weekEvents.filter(ev =>
     !needsSummaryEvents?.find(nse => nse.id === ev.id)
   );
 

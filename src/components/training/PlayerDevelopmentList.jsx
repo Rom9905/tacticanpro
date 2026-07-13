@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import {
-  Users, ChevronDown, ChevronUp, Target,
-  TrendingUp, TrendingDown, Minus, AlertTriangle, CheckCircle2
+  Users, ChevronDown, ChevronUp,
+  TrendingUp, TrendingDown, Minus, AlertTriangle
 } from 'lucide-react';
 import { useLang } from '@/lib/LanguageContext';
 import { tr, POSITION_MAP, SKILL_MAP } from '@/lib/hebrewToEnglish';
@@ -21,7 +21,7 @@ function calcDevTrend(evals) {
   return { label: '→ עדיין לא עקבי', icon: Minus, color: '#D97706', bg: 'rgba(217,119,6,0.08)' };
 }
 
-export default function PlayerDevelopmentList({ players, programs, topics, summaries, teamId, trainingEvaluations, onRefresh }) {
+export default function PlayerDevelopmentList({ players, programs, topics: _topics, summaries: _summaries, teamId: _teamId, trainingEvaluations, onRefresh: _onRefresh }) {
   const { t: langT } = useLang();
   const isHe = langT.lang === 'he';
   const tVal = (map, val) => isHe ? val : tr(map, val);

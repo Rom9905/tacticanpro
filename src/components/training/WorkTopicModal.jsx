@@ -38,8 +38,8 @@ export default function WorkTopicModal({ open, topic, teamId, summaries, onClose
   const isHe = langT.lang === 'he';
 
   const PRIORITIES = isHe ? PRIORITIES_HE : PRIORITIES_EN;
-  const CATEGORIES = isHe ? CATEGORIES_HE : CATEGORIES_EN;
-  const TACTICAL_TOPICS = isHe ? TACTICAL_TOPICS_HE : TACTICAL_TOPICS_EN;
+  const _CATEGORIES = isHe ? CATEGORIES_HE : CATEGORIES_EN;
+  const _TACTICAL_TOPICSTACTICAL_TOPICS = isHe ? TACTICAL_TOPICS_HE : TACTICAL_TOPICS_EN;
 
   const isNew = !topic?.id;
   const [title, setTitle] = useState('');
@@ -51,7 +51,7 @@ export default function WorkTopicModal({ open, topic, teamId, summaries, onClose
   const [progressPct, setProgressPct] = useState(0);
   const [progressNote, setProgressNote] = useState('');
   const [saving, setSaving] = useState(false);
-  const [fromSummary, setFromSummary] = useState(null);
+  const [_fromSummary, setFromSummary] = useState(null);
 
   useEffect(() => {
     if (topic) {

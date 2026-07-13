@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { AlertCircle, ExternalLink } from 'lucide-react';
 
-export default function PlayerDecisionProfile({ profile, situations, playerName }) {
+export default function PlayerDecisionProfile({ profile, situations: _situations, playerName }) {
   // Empty state - not enough data
   if (!profile || !profile.data_reliability || profile.data_reliability.based_on_matches < 2) {
     return (
@@ -41,7 +41,7 @@ export default function PlayerDecisionProfile({ profile, situations, playerName 
     const topSituation = profile.related_situations?.[0];
     const situationName = topSituation?.situation_name || 'מצבי משחק מגוונים';
     const riskLevel = profile.decision_tendencies?.risk_level;
-    const preferredAction = profile.decision_tendencies?.preferred_action;
+    const _preferredAction = profile.decision_tendencies?.preferred_action;
     
     let behaviorDescription = '';
     if (riskLevel === 'נמוך') {

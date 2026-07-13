@@ -1,8 +1,7 @@
-import React, { useState, useEffect, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useTeam } from '@/components/TeamContext';
 import { Loader2, Upload, CheckCircle2, PlusCircle, AlertCircle, ShieldCheck, Zap, Target, Swords, Users, Lightbulb, ArrowRight, ArrowLeft, ChevronDown, ChevronUp, X, BarChart3, TrendingUp, TrendingDown, Search, Send } from 'lucide-react';
-import { Button } from '@/components/ui/button';
 
 const SUPPORTED_TYPES = '.pdf,.csv,.xlsx,.xls';
 const SUPPORTED_LABELS = ['PDF', 'CSV', 'Excel'];
@@ -151,7 +150,7 @@ const DeepDive = React.memo(function DeepDive({ fileUrl, ourTeam, opponent }) {
         question: question.trim()
       });
       setAnswer(result.data || { no_data: true, title: 'לא התקבלה תשובה', blocks: [] });
-    } catch (e) {
+    } catch {
       setAnswer({ no_data: true, title: 'שגיאה בפנייה לשרת', blocks: [] });
     } finally { setLoading(false); }
   };

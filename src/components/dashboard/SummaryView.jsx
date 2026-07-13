@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Swords, Dumbbell, Users, BarChart3, Brain, ChevronRight, LayoutDashboard, PlusCircle, Lightbulb
+  Swords, Dumbbell, Users, BarChart3, ChevronRight, LayoutDashboard, PlusCircle, Lightbulb
 } from 'lucide-react';
 import AddEventModal from '@/components/calendar/AddEventModal';
 import ProfessionalSummaryModal from '@/components/calendar/ProfessionalSummaryModal';
@@ -33,7 +33,7 @@ const TAB_ORDER = { dashboard: 0, input: 1, insights: 2 };
 
 export default function SummaryView({
   dashboardData, upcomingGames, allEvents, needsSummaryEvents,
-  onFillSummary, teamId, weeklySchedule, onRefresh,
+  onFillSummary: _onFillSummary, teamId, weeklySchedule: _weeklySchedule, onRefresh,
   players, matchAnalyses, tacticalGoals, professionalSummaries
 }) {
   const { t, dir } = useLang();

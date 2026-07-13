@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/button';
 import { Edit2, Trash2, Star, AlertCircle, TrendingUp, Target, FileText } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 import { useLang } from '@/lib/LanguageContext';
-import { tr, POSITION_MAP, AVAILABILITY_MAP, PROFESSIONAL_STATUS_MAP, ROLE_MAP, SKILL_MAP } from '@/lib/hebrewToEnglish';
+import { tr, POSITION_MAP, AVAILABILITY_MAP, ROLE_MAP, SKILL_MAP } from '@/lib/hebrewToEnglish';
 
 const statusColors = {
   'זמין': 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30',
@@ -27,7 +27,7 @@ const positionColors = {
   'חלוץ': 'bg-red-500',
 };
 
-export default function PlayerCard({ player, onEdit, onDelete, onQuickView, hasActiveProgram }) {
+export default function PlayerCard({ player, onEdit, onDelete, onQuickView: _onQuickView, hasActiveProgram }) {
   const { t: langT } = useLang();
   const isHe = langT.lang === 'he';
   const tVal = (map, val) => isHe ? val : tr(map, val);

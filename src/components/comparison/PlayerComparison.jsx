@@ -6,16 +6,8 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { 
   Search, 
-  X, 
-  Plus, 
-  TrendingUp, 
-  TrendingDown, 
-  Minus,
-  Target,
+  X,
   Users,
-  CheckCircle2,
-  ArrowRight,
-  FileDown,
   Download
 } from 'lucide-react';
 import {
@@ -43,7 +35,7 @@ export default function PlayerComparison({
   teamId, 
   preselectedPlayerIds = [],
   preselectedPlayerId = null,
-  onClose,
+  onClose: _onClose,
   onAddToLineup 
 }) {
   const { t: langT } = useLang();
@@ -59,7 +51,7 @@ export default function PlayerComparison({
   const [contextFilter, setContextFilter] = useState('all'); // 'all', 'before_match', 'after_match', 'last_month'
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [reportName, setReportName] = useState('');
-  const [matchData, setMatchData] = useState([]);
+  const [_matchData, setMatchData] = useState([]);
 
   useEffect(() => {
     if (teamId) {

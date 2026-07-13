@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { base44 } from '@/api/base44Client';
@@ -10,7 +10,7 @@ import { buildGameStyleContext } from '@/hooks/useGameStyle';
 import { generateTacticalProblems } from '@/lib/tacticalProblemsEngine';
 import {
   Loader2, BarChart3, Video, FileText, Clock, Target,
-  TrendingUp, AlertTriangle, Lightbulb, ChevronDown, ChevronUp, Edit2, X, Trash2
+  TrendingUp, AlertTriangle, Lightbulb, ChevronDown, Edit2, X
 } from 'lucide-react';
 
 function getColorByRating(rating) {
@@ -60,12 +60,12 @@ function SectionHeader({ icon, children }) {
 export default function MatchAnalysisModal({ open, onClose, analysis, teamName, onRefresh, onDeleteAnalysisType }) {
   const [aiSummary, setAiSummary] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [expandedSection, setExpandedSection] = useState(null);
+  const [_expandedSection, _setExpandedSection] = useState(null);
   const [editingRatings, setEditingRatings] = useState(false);
   const [playerNameMap, setPlayerNameMap] = useState({});
   const [localRatings, setLocalRatings] = useState(null);
-  const [teamGameStyle, setTeamGameStyle] = useState(null);
-  const [teamGameStyleNotes, setTeamGameStyleNotes] = useState('');
+  const [_teamGameStyle, setTeamGameStyle] = useState(null);
+  const [_teamGameStyleNotes, setTeamGameStyleNotes] = useState('');
   const [deletingType, setDeletingType] = useState(null);
   const [showAllTopics, setShowAllTopics] = useState(false);
 

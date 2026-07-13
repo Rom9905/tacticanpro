@@ -1,10 +1,8 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Link } from 'react-router-dom';
 import { useSubscriptionGuard } from '@/components/useSubscriptionGuard';
-import { createPageUrl } from '../utils';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -13,13 +11,13 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { Plus, TrendingUp, TrendingDown, Users, AlertCircle, Edit2, Archive, CheckCircle2, HelpCircle, Filter, Calendar, Target, BarChart3, Shield, Zap, Activity, MapPin, X, Brain } from 'lucide-react';
+import { Plus, TrendingUp, TrendingDown, AlertCircle, CheckCircle2, Filter, Calendar, Target, BarChart3, Shield, Zap, Activity, X, Brain } from 'lucide-react';
 import TeamSelector from '@/components/team/TeamSelector';
 import HowItWorksButton from '@/components/HowItWorksButton';
 import InsightDetailModal from '@/components/insights/InsightDetailModal';
 import ActionHub from '@/components/decision/ActionHub';
 import SituationsGrid from '@/components/decision/SituationsGrid';
-import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, ResponsiveContainer, Legend } from 'recharts';
+import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip as ChartTooltip, ResponsiveContainer } from 'recharts';
 import { useTeam } from '@/components/TeamContext';
 
 export default function DecisionAnalysisPage() {
@@ -91,7 +89,7 @@ export default function DecisionAnalysisPage() {
   });
 
   // Load match analyses to get opponent names
-  const { data: matchAnalyses = [] } = useQuery({
+  const { data: _matchAnalyses = [] } = useQuery({
     queryKey: ['matches', selectedTeamId],
     queryFn: async () => {
       return base44.entities.MatchAnalysis.filter({ team_id: selectedTeamId }, '-date', 20);
@@ -274,7 +272,7 @@ export default function DecisionAnalysisPage() {
   };
 
   // Calculate outliers
-  const outliers = profiles
+  const _outliers = profiles
     .filter(p => {
       const avgRiskLevel = profiles.reduce((acc, prof) => {
         if (prof.decision_tendencies?.risk_level === 'גבוה') return acc + 2;
@@ -331,7 +329,7 @@ export default function DecisionAnalysisPage() {
     const trendData = recentSummaries
       .slice(0, trendTimeRange)
       .reverse()
-      .map((s, i) => {
+      .map((s, _i) => {
         const situation = situations.find(sit => sit.id === s.situation_id);
         const involvedPlayerNames = s.involved_players?.map(pid => 
           players.find(p => p.id === pid)?.name

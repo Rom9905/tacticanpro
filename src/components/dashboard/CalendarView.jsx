@@ -1,8 +1,7 @@
 import React, { useState, useMemo } from 'react';
-import { Calendar, Trophy, Activity, Plus, ChevronLeft, ChevronRight, CheckCircle2, Clock, RefreshCw, Trash2 } from 'lucide-react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Plus, ChevronLeft, ChevronRight, Clock, RefreshCw, Trash2 } from 'lucide-react';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import AddEventModal from '@/components/calendar/AddEventModal';
 import EventSummaryModal from '@/components/calendar/EventSummaryModal';
 import { base44 } from '@/api/base44Client';
@@ -20,13 +19,13 @@ function isEventPast(event) {
 }
 
 function getEventStatus(event) {
-  const parsedNotes = parseNotes(event.notes);
+  const _parsedNotes = parseNotes(event.notes);
   if (event.status === 'completed') return 'summarized';
   if (isEventPast(event)) return 'needs_summary';
   return 'upcoming';
 }
 
-export default function CalendarView({ teamId, events = [], weeklySchedule = [], onRefresh }) {
+export default function CalendarView({ teamId, events = [], weeklySchedule: _weeklySchedule = [], onRefresh }) {
   const today = new Date();
   const [viewYear, setViewYear] = useState(today.getFullYear());
   const [viewMonth, setViewMonth] = useState(today.getMonth());
@@ -53,7 +52,7 @@ export default function CalendarView({ teamId, events = [], weeklySchedule = [],
     try {
       const res = await base44.functions.invoke('syncToGoogleCalendar', { teamId });
       setSyncStatus({ ok: true, count: res.data?.synced || 0 });
-    } catch (e) {
+    } catch {
       setSyncStatus({ ok: false });
     }
     setSyncing(false);

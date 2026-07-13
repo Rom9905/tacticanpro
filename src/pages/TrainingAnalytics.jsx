@@ -72,7 +72,7 @@ export default function TrainingAnalytics() {
       if (cache?.data && cache.timeRange === timeRange && cache.training_count === summariesData.length) {
         setTeamAnalysis(cache.data);
       }
-    } catch (e) {}
+    } catch {}
   };
 
   const analyzeTeamTrainings = async () => {
@@ -208,7 +208,7 @@ The "status" field in period_comparison must be one of: "שיפור", "שימו�
     </div>
   );
 
-  const selectedTeam = teams.find(t => t.id === selectedTeamId);
+  const _selectedTeam = teams.find(t => t.id === selectedTeamId);
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F4EFE6' }} dir={dir}>

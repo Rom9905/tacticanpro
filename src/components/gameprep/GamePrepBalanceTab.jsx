@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from 'react';
-import { Badge } from '@/components/ui/badge';
 
 const STYLE_OPTIONS = ['הכל', 'לחץ גבוה', 'בנייה מהגנה', 'כדורים ארוכים', 'קטנגות', 'התקפה מהירה', 'כדורים גבוהים', 'התקפה מהצדדים'];
 

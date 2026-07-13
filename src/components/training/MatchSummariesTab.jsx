@@ -2,10 +2,8 @@ import React, { useState } from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import {
-  Swords, ChevronDown, ChevronUp, AlertCircle, CheckCircle2,
-  Brain, ArrowRight, ExternalLink, Target, TrendingUp, TrendingDown
+  Swords, ChevronDown, ChevronUp, AlertCircle, CheckCircle2, ArrowRight, Target, TrendingUp
 } from 'lucide-react';
-import { base44 } from '@/api/base44Client';
 import WorkTopicModal from './WorkTopicModal';
 import TrendsSection from '../analysis/TrendsSection';
 

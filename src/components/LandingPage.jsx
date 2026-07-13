@@ -4,7 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { motion } from 'framer-motion';
 import { 
   ArrowLeft, Brain, Target, Clock, CheckCircle2, 
-  AlertTriangle, TrendingUp, Users, BarChart3, 
+  AlertTriangle, Users, BarChart3, 
   Clipboard, GitMerge, Zap, ChevronDown
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';

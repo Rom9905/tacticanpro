@@ -20,8 +20,8 @@ export default function TeamForm({ isOpen, onClose, team, onSave }) {
   const { t: langT } = useLang();
   const isHe = langT.lang === 'he';
 
-  const ageGroups = isHe ? AGE_GROUPS_HE : AGE_GROUPS_EN;
-  const playingStyles = isHe ? PLAYING_STYLES_HE : PLAYING_STYLES_EN;
+  const _ageGroups = isHe ? AGE_GROUPS_HE : AGE_GROUPS_EN;
+  const _playingStyles = isHe ? PLAYING_STYLES_HE : PLAYING_STYLES_EN;
 
   const [formData, setFormData] = useState({
     name: '', age_group: '', league: '', formation: '4-4-2',

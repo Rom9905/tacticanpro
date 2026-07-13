@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion } from 'framer-motion';
 import { 
   Play, 
   Pause,
@@ -14,7 +14,6 @@ import {
   Move,
   Pencil,
   Eraser,
-  ChevronLeft,
   ChevronRight,
   Circle as CircleIcon,
   Folder,
@@ -33,13 +32,8 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
+
 import {
   Dialog,
   DialogContent,
@@ -49,9 +43,7 @@ import {
 import TeamSelector from '../components/team/TeamSelector';
 import { useSubscriptionGuard } from '@/components/useSubscriptionGuard';
 import LayerManager from '../components/tactical/LayerManager';
-import HeatZoneManager from '../components/tactical/HeatZoneManager';
 import TemplateSelector from '../components/tactical/TemplateSelector';
-import MatchAnalysisLink from '../components/tactical/MatchAnalysisLink';
 import PlayerTagging from '../components/tactical/PlayerTagging';
 import ControlZones, { useControlZonesData } from '../components/tactical/ControlZones';
 
@@ -495,7 +487,7 @@ export default function TacticalBoard() {
     }
   };
 
-  const deleteFrame = (index) => {
+  const _deleteFrame = (index) => {
     setFrames(prev => prev.filter((_, i) => i !== index));
     if (currentFrame >= frames.length - 1) {
       setCurrentFrame(Math.max(0, frames.length - 2));
@@ -583,7 +575,7 @@ export default function TacticalBoard() {
     }
   };
   
-  const handleCreateFromAnalysis = (boardData) => {
+  const _handleCreateFromAnalysis = (boardData) => {
     if (boardData.frames && boardData.frames.length > 0) {
       const frame = boardData.frames[0];
       setHomePlayers(frame.homePlayers || []);
@@ -620,15 +612,15 @@ export default function TacticalBoard() {
     setActiveLayer(currentLayers[layerId] ? null : layerId);
   };
   
-  const addHeatZone = (zone) => {
+  const _addHeatZone = (zone) => {
     setHeatZones(prev => [...prev, zone]);
   };
   
-  const removeHeatZone = (zoneId) => {
+  const _removeHeatZone = (zoneId) => {
     setHeatZones(prev => prev.filter(z => z.id !== zoneId));
   };
   
-  const updateHeatZone = (zone) => {
+  const _updateHeatZone = (zone) => {
     setHeatZones(prev => prev.map(z => z.id === zone.id ? zone : z));
   };
   
@@ -1417,7 +1409,7 @@ export default function TacticalBoard() {
                     {/* Heat Zones */}
                     {heatZones
                      .filter(zone => !activeLayer || zone.layerType === activeLayer || currentLayers[zone.layerType])
-                     .map((zone, i) => (
+                     .map((zone, _i) => (
                      <g key={zone.id}>
                         <rect
                           x={zone.x}

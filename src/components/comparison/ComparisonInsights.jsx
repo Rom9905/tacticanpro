@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import BottomLine from '@/components/ui/BottomLine';
-import { Lightbulb, ArrowRight, Target, Trophy, Zap, Dumbbell, CheckCircle2 } from 'lucide-react';
+import { Lightbulb, ArrowRight, Trophy, Zap, Dumbbell, CheckCircle2 } from 'lucide-react';
 import { isGoalkeeper, goalkeeperSkills, fieldPlayerSkills } from './AutoSuggestRatings';
 
 export default function ComparisonInsights({ players, teamStyle, onAddToLineup }) {
@@ -107,7 +107,7 @@ export default function ComparisonInsights({ players, teamStyle, onAddToLineup }
     );
   }
 
-  const { betterPlayer, otherPlayer, p1Avg, p2Avg, p1TopSkills, p2TopSkills, 
+  const { betterPlayer, otherPlayer: _otherPlayer, p1Avg, p2Avg, p1TopSkills, p2TopSkills, 
           p1Situations, p2Situations, p1Training, p2Training, player1, player2 } = analysis;
 
   return (

@@ -8,7 +8,6 @@ import {
   BarChart3, 
   Video,
   FileText,
-  ChevronLeft,
   Loader2,
   TrendingUp,
   AlertCircle,

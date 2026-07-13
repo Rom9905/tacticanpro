@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import { Loader2, Sparkles, Zap } from 'lucide-react';
+import { Loader2, Sparkles } from 'lucide-react';
 
 export default function StatisticsAnalysis({ isOpen, onClose, onSave, team, existingMatch }) {
   const [formData, setFormData] = useState({

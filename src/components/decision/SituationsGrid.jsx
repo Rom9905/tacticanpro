@@ -2,7 +2,7 @@ import React from 'react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Edit2, Archive, Eye, Shield, TrendingDown, TrendingUp, Zap, Target, Activity } from 'lucide-react';
+import { Edit2, Archive, Shield, TrendingDown, TrendingUp, Zap, Target, Activity } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function SituationsGrid({ situations, summaries, onEdit, onArchive, onView }) {

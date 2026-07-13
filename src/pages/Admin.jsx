@@ -12,7 +12,13 @@ export default function Admin() {
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState(null);
 
-  if (user?.email !== ADMIN_EMAIL) {
+  const isAdmin = user?.email === ADMIN_EMAIL;
+
+  useEffect(() => {
+    if (isAdmin) loadUsers();
+  }, [isAdmin]);
+
+  if (!isAdmin) {
     return (
       <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#0D1A12' }} dir="rtl">
         <div className="text-center">
@@ -23,10 +29,6 @@ export default function Admin() {
       </div>
     );
   }
-
-  useEffect(() => {
-    loadUsers();
-  }, []);
 
   const loadUsers = async () => {
     setLoading(true);

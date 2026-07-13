@@ -1,26 +1,25 @@
 import React, { useState, useEffect } from 'react';
 import { useLang } from '@/lib/LanguageContext';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import {
-  AlertCircle, Activity, TrendingUp, TrendingDown,
+  AlertCircle, Activity, TrendingUp,
   Calendar, Target, Users, Zap, ChevronRight,
-  Clock, CheckCircle2, AlertTriangle, Star, X, Trophy, Handshake, Settings
+  Clock, CheckCircle2, AlertTriangle, Star, Trophy, Handshake, Settings
 } from 'lucide-react';
 import IssueCard from './IssueCard';
 import KPICard from './KPICard';
 import { base44 } from '@/api/base44Client';
 
-function getUrgencyColor(sev) {
+function _getUrgencyColor(sev) {
   if (sev === 'critical') return { bg: 'rgba(200,50,50,0.08)', border: 'rgba(200,50,50,0.28)', badge: '#B94040' };
   if (sev === 'high') return { bg: 'rgba(217,119,6,0.08)', border: 'rgba(217,119,6,0.28)', badge: '#D97706' };
   return { bg: 'rgba(139,115,85,0.06)', border: 'rgba(139,115,85,0.20)', badge: '#9A8672' };
 }
 
-const SOURCE_LABELS = { match: 'ניתוח משחק', training: 'אימון', manual: 'הוזן ידנית' };
-const CATEGORY_LABELS = { התקפה: 'התקפה', הגנה: 'הגנה', מעברים: 'מעברים', 'מצבים ניייחים': 'מצבים נייחים', לחץ: 'לחץ', כללי: 'כללי' };
+const _SOURCE_LABELSSOURCE_LABELS = { match: 'ניתוח משחק', training: 'אימון', manual: 'הוזן ידנית' };
+const _CATEGORY_LABELSCATEGORY_LABELS = { התקפה: 'התקפה', הגנה: 'הגנה', מעברים: 'מעברים', 'מצבים ניייחים': 'מצבים נייחים', לחץ: 'לחץ', כללי: 'כללי' };
 
 function IssuesModal({ open, onClose, issues, onGoInsight, professionalSummaries }) {
   const { t, dir } = useLang();
@@ -111,14 +110,14 @@ function TopScorersModal({ open, onClose, players, type }) {
 }
 
 export default function CoachDashboardTab({
-  dashboardData, upcomingGames, needsSummaryEvents, players, matchAnalyses,
+  dashboardData, upcomingGames: _upcomingGames, needsSummaryEvents, players, matchAnalyses,
   tacticalGoals, professionalSummaries,
   onGoInsight, onFillSummary
 }) {
   const { t, dir } = useLang();
   const db = t.dashboard;
   const [modal, setModal] = useState(null); // 'issues' | 'scorers' | 'assisters'
-  const [teamGameStyle, setTeamGameStyle] = useState(null);
+  const [_teamGameStyle, setTeamGameStyle] = useState(null);
   const [gameStyleLastUpdated, setGameStyleLastUpdated] = useState(null);
 
   // Load team game style for dashboard context
@@ -412,7 +411,7 @@ export default function CoachDashboardTab({
                       <span className="text-xs font-medium" style={{ color: '#7A6B57' }}>{db.topIssues}</span>
                     </div>
                     <div className="space-y-1">
-                      {topIssues.map((issue, i) => (
+                      {topIssues.map((issue, _i) => (
                         <div key={issue.id} className="text-[10px] flex items-start gap-1" style={{ color: '#5C4E38' }}>
                           <span style={{ color: '#9A8672' }}>•</span>
                           <span className="line-clamp-1">{issue.title}</span>

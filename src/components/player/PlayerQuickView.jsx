@@ -15,9 +15,7 @@ import {
   TrendingUp, 
   TrendingDown, 
   Minus,
-  Target,
-  CheckCircle2,
-  XCircle
+  Target
 } from 'lucide-react';
 import { useLang } from '@/lib/LanguageContext';
 import { tr, POSITION_MAP, ROLE_MAP, PROFESSIONAL_STATUS_MAP, SKILL_MAP } from '@/lib/hebrewToEnglish';
@@ -70,7 +68,7 @@ export default function PlayerQuickView({ playerId, isOpen, onClose }) {
   const daysSinceLastUpdate = recentMatch 
     ? Math.floor((new Date() - new Date(recentMatch.date)) / (1000 * 60 * 60 * 24))
     : null;
-  const gamesSinceUpdate = player?.match_history?.length || 0;
+  const _gamesSinceUpdate = player?.match_history?.length || 0;
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

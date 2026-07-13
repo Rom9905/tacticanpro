@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Shield, Users, ChevronDown, Check } from 'lucide-react';
-import { Badge } from '@/components/ui/badge';
+import { Shield, Users } from 'lucide-react';
 
 const PLAN_OPTIONS = [
   { value: 'starter', label: 'Starter', color: 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30' },
@@ -9,7 +8,7 @@ const PLAN_OPTIONS = [
   { value: 'club', label: 'Club', color: 'bg-purple-500/15 text-purple-600 border-purple-500/30' },
 ];
 
-function PlanBadge({ plan }) {
+function _PlanBadge({ plan }) {
   if (!plan) return <span className="text-sm" style={{ color: '#9A8672' }}>ללא תוכנית</span>;
   const opt = PLAN_OPTIONS.find(p => p.value === plan);
   return (

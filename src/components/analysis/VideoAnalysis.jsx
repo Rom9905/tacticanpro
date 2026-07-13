@@ -6,7 +6,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Loader2, Video, Plus, Trash2, Play, Pause, Sparkles } from 'lucide-react';
+import { Loader2, Video, Plus, Trash2, Sparkles } from 'lucide-react';
 
 export default function VideoAnalysis({ isOpen, onClose, onSave, team, existingMatch }) {
   const [formData, setFormData] = useState({

@@ -17,26 +17,19 @@ import {
   FileText,
   Star,
   Calendar,
-  ExternalLink,
-  ChevronDown,
   CheckCircle2,
   XCircle,
   Sparkles,
   X,
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Progress } from '@/components/ui/progress';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import TrainingProgramCard from '../components/training/TrainingProgramCard';
 import TrainingProgramModal from '../components/training/TrainingProgramModal';
-import PlayerDecisionProfile from '../components/player/PlayerDecisionProfile';
 import ProgramReviewDialog from '../components/training/ProgramReviewDialog';
 import TrainingHistory from '../components/training/TrainingHistory';
 import SkillRatingsEditor from '../components/comparison/SkillRatingsEditor';
@@ -60,7 +53,7 @@ export default function PlayerProfile() {
 
   const [player, setPlayer] = useState(null);
   const [trainingProgram, setTrainingProgram] = useState(null);
-  const [drills, setDrills] = useState([]);
+  const [_drills, setDrills] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showEditStats, setShowEditStats] = useState(false);
   const [showAddMatch, setShowAddMatch] = useState(false);
@@ -99,7 +92,7 @@ export default function PlayerProfile() {
     match_id: '',
   });
 
-  const { data: decisionProfile } = useQuery({
+  const { data: _decisionProfile } = useQuery({
     queryKey: ['decisionProfile', playerId],
     queryFn: async () => {
       const profiles = await base44.entities.PlayerDecisionProfile.filter({ player_id: playerId });
@@ -108,7 +101,7 @@ export default function PlayerProfile() {
     enabled: !!playerId,
   });
 
-  const { data: situations = [] } = useQuery({
+  const { data: _situations = [] } = useQuery({
     queryKey: ['situations', player?.team_id],
     queryFn: () => base44.entities.KeyMatchSituation.filter({ team_id: player.team_id }),
     enabled: !!player?.team_id,

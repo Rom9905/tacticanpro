@@ -228,7 +228,7 @@ export const buildRecommendedLineup = (positions, players, mode) => {
 };
 
 // Generate explanation for player selection - CLEAR TEXT ONLY
-const generateExplanation = (player, position, mode, allCandidates) => {
+const generateExplanation = (player, position, mode, _allCandidates) => {
   const why = [];
   const risks = [];
   

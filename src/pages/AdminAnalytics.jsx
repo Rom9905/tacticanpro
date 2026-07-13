@@ -52,7 +52,7 @@ export default function AdminAnalytics() {
         ]);
         setEvents(evts);
         setUsers(usrs);
-      } catch (e) {
+      } catch {
         setForbidden(true);
       } finally {
         setLoading(false);
@@ -160,7 +160,7 @@ export default function AdminAnalytics() {
 
   const matchCompletions = featureCounts['match_summary_completed'] || 0;
   const matchStarts = featureCounts['match_summary_started'] || 0;
-  const matchCompletionRate = matchStarts ? Math.round((matchCompletions / matchStarts) * 100) : null;
+  const _matchCompletionRate = matchStarts ? Math.round((matchCompletions / matchStarts) * 100) : null;
 
   const S = ({ children, className = '' }) => (
     <div className={`rounded-xl p-5 ${className}`} style={{ backgroundColor: '#FAF7F2', border: '1px solid rgba(139,115,85,0.18)' }}>
