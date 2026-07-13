@@ -1,6 +1,7 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { SYSTEM_PROMPT } from "./systemPrompt.ts";
 
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -37,10 +38,9 @@ serve(async (req) => {
 
     let finalPrompt = prompt;
     if (response_json_schema) {
-      generationConfig.responseMimeType = "application/json";
       finalPrompt = `${prompt}
 
-החזר JSON תקין בלבד התואם בדיוק לסכמה הבאה (ללא טקסט נוסף):
+החזר JSON תקין בלבד התואם בדיוק לסכמה הבאה (ללא טקסט נוסף, ללא markdown, רק JSON):
 ${JSON.stringify(response_json_schema)}`;
     }
 
@@ -48,6 +48,7 @@ ${JSON.stringify(response_json_schema)}`;
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
+        systemInstruction: { parts: [{ text: SYSTEM_PROMPT }] },
         contents: [{ parts: [{ text: finalPrompt }] }],
         generationConfig,
       }),
@@ -55,7 +56,6 @@ ${JSON.stringify(response_json_schema)}`;
 
     if (!response.ok) {
       const err = await response.text();
-      // Return 200 with a structured error so the client can show a friendly message
       return jsonResponse({
         error: `Gemini API error: ${response.status}`,
         error_code: response.status === 429 ? "quota_exceeded" : "llm_unavailable",
