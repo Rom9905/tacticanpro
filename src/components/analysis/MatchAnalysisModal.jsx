@@ -179,6 +179,16 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
     prevOpenRef.current = open;
   }, [open]);
 
+  const tacticalProblems = React.useMemo(() => {
+    if (!analysis) return [];
+    if (analysis.tactical_problems?.length > 0) return analysis.tactical_problems;
+    const generated = generateTacticalProblems(analysis);
+    if (generated.length > 0 && analysis.id) {
+      base44.entities.MatchAnalysis.update(analysis.id, { tactical_problems: generated }).catch(() => {});
+    }
+    return generated;
+  }, [analysis?.id, analysis?.tactical_problems]);
+
   if (!analysis) return null;
 
   const rawRatings = localRatings ?? analysis.player_ratings ?? [];
@@ -196,15 +206,6 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
   const hasVideoMoments = analysis.video_moments?.length > 0;
   const hasPlayerRatings = displayRatings.length > 0;
   const hasTrainingActions = analysis.training_actions?.length > 0;
-
-  const tacticalProblems = React.useMemo(() => {
-    if (analysis.tactical_problems?.length > 0) return analysis.tactical_problems;
-    const generated = generateTacticalProblems(analysis);
-    if (generated.length > 0 && analysis.id) {
-      base44.entities.MatchAnalysis.update(analysis.id, { tactical_problems: generated }).catch(() => {});
-    }
-    return generated;
-  }, [analysis.id, analysis.tactical_problems]);
 
   const hasTacticalIssues = tacticalProblems.length > 0;
   const tacticalIssues = tacticalProblems.map(p => p.text);
