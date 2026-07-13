@@ -7,6 +7,7 @@ import EditPlayerRatingsModal from './EditPlayerRatingsModal';
 import DeepAnalysisSection from './DeepAnalysisSection';
 import BottomLine from '@/components/ui/BottomLine';
 import { buildGameStyleContext } from '@/hooks/useGameStyle';
+import { generateTacticalProblems } from '@/lib/tacticalProblemsEngine';
 import {
   Loader2, BarChart3, Video, FileText, Clock, Target,
   TrendingUp, AlertTriangle, Lightbulb, ChevronDown, ChevronUp, Edit2, X, Trash2
@@ -194,16 +195,19 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
   const hasStats = analysis.stats && Object.keys(analysis.stats).length > 0;
   const hasVideoMoments = analysis.video_moments?.length > 0;
   const hasPlayerRatings = displayRatings.length > 0;
-  const hasTacticalIssues = analysis.report?.issues?.length > 0 || analysis.phase_analysis;
   const hasTrainingActions = analysis.training_actions?.length > 0;
 
-  const tacticalIssues = [
-    ...(analysis.report?.issues || []),
-    ...(analysis.phase_analysis?.buildup?.issues || []),
-    ...(analysis.phase_analysis?.transitions?.attack?.issues || []),
-    ...(analysis.phase_analysis?.transitions?.defense?.issues || []),
-    ...(analysis.phase_analysis?.organized_defense?.issues || []),
-  ].filter((v, i, a) => a.indexOf(v) === i).slice(0, 5);
+  const tacticalProblems = React.useMemo(() => {
+    if (analysis.tactical_problems?.length > 0) return analysis.tactical_problems;
+    const generated = generateTacticalProblems(analysis);
+    if (generated.length > 0 && analysis.id) {
+      base44.entities.MatchAnalysis.update(analysis.id, { tactical_problems: generated }).catch(() => {});
+    }
+    return generated;
+  }, [analysis.id, analysis.tactical_problems]);
+
+  const hasTacticalIssues = tacticalProblems.length > 0;
+  const tacticalIssues = tacticalProblems.map(p => p.text);
 
   const trainingTopics = hasTrainingActions 
     ? analysis.training_actions.map(a => a.focus)
@@ -507,20 +511,30 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
             )}
 
             {/* Tactical Issues */}
-            {hasTacticalIssues && tacticalIssues.length > 0 && (
+            {hasTacticalIssues && tacticalProblems.length > 0 && (
               <div>
                 <SectionHeader icon={AlertTriangle}>בעיות טקטיות שזוהו במשחק</SectionHeader>
                 <div className="space-y-2">
-                  {tacticalIssues.map((issue, i) => (
-                    <div key={i} className="p-3 rounded-lg" style={{ backgroundColor: 'var(--danger-bg)', border: '1px solid rgba(220,38,38,0.18)' }}>
-                      <p className="text-sm font-semibold mb-1" style={{ color: 'var(--danger)' }}>
-                        {issue.length > 50 ? issue.substring(0, 50) + '...' : issue}
-                      </p>
-                      {issue.length > 50 && (
-                        <p className="text-xs" style={{ color: 'var(--text-muted)' }}>{issue}</p>
-                      )}
-                    </div>
-                  ))}
+                  {tacticalProblems.map((problem, i) => {
+                    const severityColors = {
+                      high: { bg: 'var(--danger-bg)', border: 'rgba(220,38,38,0.18)', badge: 'var(--danger)', label: 'חמור' },
+                      medium: { bg: 'var(--warning-bg)', border: 'rgba(217,119,6,0.18)', badge: 'var(--warning)', label: 'בינוני' },
+                      low: { bg: 'var(--bg-card-soft)', border: 'rgba(13,26,18,0.08)', badge: 'var(--text-muted)', label: 'קל' },
+                    };
+                    const colors = severityColors[problem.severity] || severityColors.medium;
+                    return (
+                      <div key={i} className="p-3 rounded-lg" style={{ backgroundColor: colors.bg, border: `1px solid ${colors.border}` }}>
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-[10px] px-1.5 py-0.5 rounded font-bold" style={{ backgroundColor: colors.badge, color: '#fff' }}>
+                            {colors.label}
+                          </span>
+                        </div>
+                        <p className="text-sm leading-relaxed" style={{ color: 'var(--text-primary)' }}>
+                          {problem.text}
+                        </p>
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
