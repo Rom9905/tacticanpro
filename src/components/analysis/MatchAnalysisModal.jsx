@@ -8,6 +8,7 @@ import DeepAnalysisSection from './DeepAnalysisSection';
 import BottomLine from '@/components/ui/BottomLine';
 import { buildGameStyleContext } from '@/hooks/useGameStyle';
 import { generateTacticalProblems } from '@/lib/tacticalProblemsEngine';
+import { syncTacticalProblemsToGoals } from '@/lib/tacticalGoalsSync';
 import {
   Loader2, BarChart3, Video, FileText, Clock, Target,
   TrendingUp, AlertTriangle, Lightbulb, ChevronDown, Edit2, X
@@ -90,7 +91,9 @@ export default function MatchAnalysisModal({ open, onClose, analysis, teamName, 
   }, [open, analysis]);
 
   const loadOrGenerateAISummary = async (forceRegenerate = false) => {
-    if (!forceRegenerate && analysis.ai_summary) {
+    // regenerate if the cached picture is too long (old format before the 3-5 sentence limit)
+    const cachedTooLong = (analysis.ai_summary?.summary?.length || 0) > 700;
+    if (!forceRegenerate && analysis.ai_summary && !cachedTooLong) {
       setAiSummary(analysis.ai_summary);
       return;
     }
@@ -126,9 +129,18 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
 
 נתוני המשחק:${matchContext}
 
-צור תמונה מקצועית של המשחק ב-3-5 שורות בלבד. אל תכתוב "תמונת המשחק" או כותרות - רק טקסט רצוף על הביצועים הכדורגליים.${gameStyleCtx ? '\nאם זיהית פערים בין השיטה שהוגדרה לביצוע — ציין אותם.' : ''}`;
+צור תמונה מקצועית של המשחק — פסקה רצופה אחת של 3-5 משפטים בלבד, לא יותר. בלי כותרות, בלי רשימות, בלי חלוקה לנושאים. רק טקסט רצוף קצר על הביצועים הכדורגליים.${gameStyleCtx ? '\nאם זיהית פערים בין השיטה שהוגדרה לביצוע — ציין אותם.' : ''}`;
 
-      const summary = await base44.integrations.Core.InvokeLLM({ prompt });
+      const summaryRes = await base44.integrations.Core.InvokeLLM({
+        prompt,
+        response_json_schema: {
+          type: 'object',
+          properties: {
+            match_picture: { type: 'string', description: 'פסקה אחת של 3-5 משפטים בלבד' }
+          }
+        }
+      });
+      const summary = summaryRes?.__ai_error ? summaryRes : (summaryRes?.match_picture || '');
 
       const insightsPrompt = `אתה מנתח משחקי כדורגל מקצועי. התמקד אך ורק בנושאי כדורגל.
 
@@ -193,6 +205,14 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
       return [];
     }
   }, [analysis?.id, analysis?.tactical_problems]);
+
+  // flow the match's tactical problems into Training Center goals (idempotent)
+  useEffect(() => {
+    if (open && analysis?.id && tacticalProblems.length > 0) {
+      syncTacticalProblemsToGoals(analysis, tacticalProblems).catch(err =>
+        console.warn('tactical goals sync failed:', err));
+    }
+  }, [open, analysis?.id, tacticalProblems]);
 
   if (!analysis) return null;
 

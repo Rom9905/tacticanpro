@@ -14,10 +14,14 @@ export default function DeepAnalysisSection({ analysis, onRefresh }) {
   const generate = async () => {
     setGenerating(true); setError(null);
     try {
-      await base44.functions.invoke('generateDeepAnalysis', {
+      const res = await base44.functions.invoke('generateDeepAnalysis', {
         match_analysis_id: analysis.id
       });
-      onRefresh && onRefresh();
+      if (res?.success === false) {
+        setError(res.error || 'שגיאה ביצירת הניתוח המעמיק. נסה שוב.');
+      } else {
+        onRefresh && onRefresh();
+      }
     } catch {
       setError('שגיאה ביצירת הניתוח המעמיק. נסה שוב.');
     } finally { setGenerating(false); }

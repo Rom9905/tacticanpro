@@ -352,9 +352,7 @@ async function handleAnalyzeMatchFile(params) {
 
 const FUNCTION_STUBS = {
   sendLeadEmail: { success: true },
-  generateDeepAnalysis: { success: true, analysis: { summary: 'ניתוח מעמיק יהיה זמין בקרוב.' } },
   syncToGoogleCalendar: { success: true, message: 'סנכרון יומן אינו זמין כרגע.' },
-  analyzeTeamProgress: { success: true, progress: {} },
   createCheckoutSession: { success: true, url: '' },
   stripeWebhook: { success: true },
   eventSummaryReminder: { success: true },
@@ -363,6 +361,14 @@ const FUNCTION_STUBS = {
 const functions = {
   async invoke(functionName, params) {
     if (functionName === 'analyzeMatchFile') return await handleAnalyzeMatchFile(params);
+    if (functionName === 'generateDeepAnalysis') {
+      const { generateDeepAnalysis } = await import('@/lib/deepAnalysis.js');
+      return await generateDeepAnalysis(params || {});
+    }
+    if (functionName === 'analyzeTeamProgress') {
+      const { analyzeTeamProgress } = await import('@/lib/tacticalGoalsSync.js');
+      return await analyzeTeamProgress(params?.teamId);
+    }
     return FUNCTION_STUBS[functionName] || { success: true };
   },
 };
