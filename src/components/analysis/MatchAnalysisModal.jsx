@@ -182,11 +182,16 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
   const tacticalProblems = React.useMemo(() => {
     if (!analysis) return [];
     if (analysis.tactical_problems?.length > 0) return analysis.tactical_problems;
-    const generated = generateTacticalProblems(analysis);
-    if (generated.length > 0 && analysis.id) {
-      base44.entities.MatchAnalysis.update(analysis.id, { tactical_problems: generated }).catch(() => {});
+    try {
+      const generated = generateTacticalProblems(analysis);
+      if (generated.length > 0 && analysis.id) {
+        base44.entities.MatchAnalysis.update(analysis.id, { tactical_problems: generated }).catch(() => {});
+      }
+      return generated;
+    } catch (err) {
+      console.error('tactical problems engine failed:', err);
+      return [];
     }
-    return generated;
   }, [analysis?.id, analysis?.tactical_problems]);
 
   if (!analysis) return null;
