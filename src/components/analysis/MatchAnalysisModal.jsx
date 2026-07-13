@@ -525,14 +525,29 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
                     const colors = severityColors[problem.severity] || severityColors.medium;
                     return (
                       <div key={i} className="p-3 rounded-lg" style={{ backgroundColor: colors.bg, border: `1px solid ${colors.border}` }}>
-                        <div className="flex items-center gap-2 mb-1">
+                        <div className="flex items-center gap-2 mb-1.5">
                           <span className="text-[10px] px-1.5 py-0.5 rounded font-bold" style={{ backgroundColor: colors.badge, color: '#fff' }}>
                             {colors.label}
                           </span>
+                          {problem.category && (
+                            <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ backgroundColor: 'rgba(13,26,18,0.06)', color: 'var(--text-secondary)' }}>
+                              {problem.category}
+                            </span>
+                          )}
                         </div>
                         <p className="text-sm leading-relaxed" style={{ color: 'var(--text-primary)' }}>
                           {problem.text}
                         </p>
+                        {problem.root_cause && (
+                          <p className="text-xs mt-1.5 leading-relaxed" style={{ color: 'var(--text-muted)' }}>
+                            <span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>שורש: </span>{problem.root_cause}
+                          </p>
+                        )}
+                        {problem.training_action && (
+                          <p className="text-xs mt-1 leading-relaxed" style={{ color: 'var(--brand-green-dark)' }}>
+                            <span className="font-semibold">🏋️ </span>{problem.training_action}
+                          </p>
+                        )}
                       </div>
                     );
                   })}

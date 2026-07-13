@@ -12,32 +12,8 @@ const SITUATION_CATEGORIES_EN = [
   'Final Third', 'Set Pieces', 'Counter-Attack', 'Ball Loss', 'Game Management',
 ];
 
-const CATEGORY_MAP = {
-  'possession': 'בנייה מאחור',
-  'passing': 'בנייה מאחור',
-  'chance-creation': 'שליש אחרון',
-  'shot-quality': 'שליש אחרון',
-  'shooting': 'שליש אחרון',
-  'finishing': 'שליש אחרון',
-  'turnovers': 'אובדן כדור',
-  'defense': 'מעבר הגנתי',
-  'errors': 'מעבר הגנתי',
-  'control-without-result': 'ניהול משחק',
-  'margins': 'ניהול משחק',
-  'set-piece-dependency': 'כדור קבוע',
-  'player-performance': 'ניהול משחק',
-  'team-level': 'ניהול משחק',
-  'discipline': 'ניהול משחק',
-  'offsides': 'מעבר התקפי',
-  'phase-buildup': 'בנייה מאחור',
-  'phase-organized_defense': 'לחץ',
-  'transition-attack': 'מעבר התקפי',
-  'transition-defense': 'מעבר הגנתי',
-};
-
 function mapToCategoryHe(engineCategory, text) {
-  if (engineCategory && CATEGORY_MAP[engineCategory]) return CATEGORY_MAP[engineCategory];
-  // Keyword fallback
+  if (engineCategory && SITUATION_CATEGORIES_HE.includes(engineCategory)) return engineCategory;
   if (!text) return null;
   if (/בנייה|חזקה|מסירות|דיוק/.test(text)) return 'בנייה מאחור';
   if (/קאונטר|נגד/.test(text)) return 'קונטרה';
