@@ -64,7 +64,8 @@ export async function syncTacticalProblemsToGoals(analysis, problems) {
     const worst = catProblems.find(p => p.severity === 'high') || catProblems[0];
     const existing = goals.find(g =>
       g.status !== 'resolved' &&
-      (g.title === category || (g.linked_topics || []).includes(category))
+      ((g.linked_topics || []).includes(category) ||
+        (g.title || '').toLowerCase().includes(category.toLowerCase()))
     );
 
     if (existing) {
@@ -129,7 +130,8 @@ export async function analyzeTeamProgress(teamId) {
   for (const [topic, hits] of topicIssues) {
     const existing = goals.find(g =>
       g.status !== 'resolved' &&
-      (g.title === topic || (g.linked_topics || []).includes(topic))
+      ((g.linked_topics || []).includes(topic) ||
+        (g.title || '').toLowerCase().includes(topic.toLowerCase()))
     );
     const lastDate = hits[0]?.event_date || null;
 
