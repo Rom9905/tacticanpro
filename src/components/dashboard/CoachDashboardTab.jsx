@@ -563,7 +563,7 @@ export default function CoachDashboardTab({
               {openIssuesList.length}
             </span>
           </div>
-          {openIssuesList.map((goal) => (
+          {openIssuesList.slice(0, 4).map((goal) => (
             <IssueCard
               key={goal.id}
               issue={goal}
