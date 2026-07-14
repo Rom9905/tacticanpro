@@ -200,7 +200,7 @@ export default function CoachDashboardTab({
       const order = { critical: 0, high: 1, medium: 2, low: 3 };
       return (order[a.priority] || 2) - (order[b.priority] || 2);
     })
-    .slice(0, 4);
+;
 
   // Weekly highlights
   const highlights = [];
