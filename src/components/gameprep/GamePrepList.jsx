@@ -6,7 +6,7 @@ import { Plus, Loader2, Shield, Target, Calendar, ChevronRight } from 'lucide-re
 import GamePrepForm from './GamePrepForm';
 import GamePrepAnalysis from './GamePrepAnalysis';
 
-export default function GamePrepList({ teamId, players, onRefresh: _onRefresh }) {
+export default function GamePrepList({ teamId, players, onRefresh: _onRefresh, onSelectPrep }) {
   const [preps, setPreps] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showForm, setShowForm] = useState(false);
@@ -47,7 +47,7 @@ export default function GamePrepList({ teamId, players, onRefresh: _onRefresh })
       ) : (
         <div className="space-y-3">
           {preps.map(prep => (
-            <PrepCard key={prep.id} prep={prep} onClick={() => setSelectedPrep(prep)} />
+            <PrepCard key={prep.id} prep={prep} onClick={() => onSelectPrep ? onSelectPrep(prep) : setSelectedPrep(prep)} />
           ))}
         </div>
       )}
