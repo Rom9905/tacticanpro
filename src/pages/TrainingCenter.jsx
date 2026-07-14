@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useTeam } from '@/components/TeamContext';
 import { Loader2, Target, Dumbbell, Users, BarChart2, ArrowLeft } from 'lucide-react';
 import DashboardTopBar from '@/components/dashboard/DashboardTopBar';
+import PageHero from '@/components/ui/PageHero';
 import WorkTopicsList from '@/components/training/WorkTopicsList';
 import WorkTopicModal from '@/components/training/WorkTopicModal';
 import TrainingSessionsList from '@/components/training/TrainingSessionsList';
@@ -93,13 +94,11 @@ export default function TrainingCenter() {
       <div className="pt-14 pb-10 max-w-5xl mx-auto px-4 md:px-6">
         {/* Header */}
         <div className="pt-5 pb-4">
-          <h1 className="text-xl font-bold" style={{ color: '#2C2416' }}>{isHe ? 'מרכז אימונים' : 'Training Center'}</h1>
-          <p className="text-xs mt-0.5" style={{ color: '#9A8672' }}>
-            {topics.filter(tp => tp.status === 'active').length} {isHe ? 'נושאים פעילים' : 'active topics'} ·{' '}
-            {trainingSummaries.length} {isHe ? 'אימונים' : 'sessions'} ·{' '}
-            {summaries.filter(s => s.event_type === 'match').length} {isHe ? 'משחקים' : 'matches'} ·{' '}
-            {programs.filter(p => p.status === 'active').length} {isHe ? 'תוכניות שחקנים' : 'player programs'}
-          </p>
+          <PageHero
+            icon={Dumbbell}
+            title={isHe ? 'מרכז אימונים' : 'Training Center'}
+            subtitle={`${topics.filter(tp => tp.status === 'active').length} ${isHe ? 'נושאים פעילים' : 'active topics'} · ${trainingSummaries.length} ${isHe ? 'אימונים' : 'sessions'} · ${summaries.filter(s => s.event_type === 'match').length} ${isHe ? 'משחקים' : 'matches'} · ${programs.filter(p => p.status === 'active').length} ${isHe ? 'תוכניות שחקנים' : 'player programs'}`}
+          />
         </div>
 
         {/* Analytics Banner */}

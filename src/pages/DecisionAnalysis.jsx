@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useSubscriptionGuard } from '@/components/useSubscriptionGuard';
+import PageHero from '@/components/ui/PageHero';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -473,17 +474,17 @@ export default function DecisionAnalysisPage() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-950 p-6">
+    <div className="min-h-screen p-6" style={{ background: 'linear-gradient(180deg, #0A1410 0%, #0D1A12 55%, #0A1410 100%)' }}>
       <div className="max-w-7xl mx-auto">
-        <div className="mb-6 flex items-center justify-between">
-          <div className="flex-1">
-            <div className="flex items-center gap-4">
-              <h1 className="text-3xl font-bold text-white">ניתוח קבלת החלטות</h1>
-              <HowItWorksButton page="DecisionAnalysis" />
-            </div>
-            <p className="text-slate-400 mt-2">ניהול מצבי משחק ותיעוד דפוסי החלטות</p>
-          </div>
-          <TeamSelector teams={teams} selectedId={selectedTeamId} onSelect={selectTeam} />
+        <div className="mb-6">
+          <PageHero
+            icon={Brain}
+            title="ניתוח קבלת החלטות"
+            subtitle="ניהול מצבי משחק ותיעוד דפוסי החלטות"
+            titleExtra={<HowItWorksButton page="DecisionAnalysis" />}
+            style={{ border: '1px solid rgba(74,222,128,0.20)' }}
+            actions={<TeamSelector teams={teams} selectedId={selectedTeamId} onSelect={selectTeam} />}
+          />
         </div>
 
         <Tabs defaultValue="overview" className="space-y-6">

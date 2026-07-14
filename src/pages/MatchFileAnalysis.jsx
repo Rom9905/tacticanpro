@@ -1,7 +1,8 @@
 import React, { useState, useCallback, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useTeam } from '@/components/TeamContext';
-import { Loader2, Upload, CheckCircle2, PlusCircle, AlertCircle, ShieldCheck, Zap, Target, Swords, Users, Lightbulb, ArrowRight, ArrowLeft, ChevronDown, ChevronUp, X, BarChart3, TrendingUp, TrendingDown, Search, Send } from 'lucide-react';
+import { Loader2, Upload, FileText, CheckCircle2, PlusCircle, AlertCircle, ShieldCheck, Zap, Target, Swords, Users, Lightbulb, ArrowRight, ArrowLeft, ChevronDown, ChevronUp, X, BarChart3, TrendingUp, TrendingDown, Search, Send } from 'lucide-react';
+import PageHero from '@/components/ui/PageHero';
 
 const SUPPORTED_TYPES = '.pdf,.csv,.xlsx,.xls';
 const SUPPORTED_LABELS = ['PDF', 'CSV', 'Excel'];
@@ -569,6 +570,14 @@ export default function MatchFileAnalysis() {
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F4EFE6' }} dir="rtl">
       <div className="max-w-3xl mx-auto px-4 py-6">
+        {/* Hero */}
+        <div className="mb-4">
+          <PageHero
+            icon={FileText}
+            title="ניתוח קובץ משחק"
+            subtitle="העלה דוח, תמונה או סטטיסטיקות — וקבל ניתוח מקצועי מלא"
+          />
+        </div>
         {/* Back + Stepper */}
         <div className="flex items-center justify-between mb-6">
           <a href="/" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all hover:opacity-80"

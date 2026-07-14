@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useTeam } from '@/components/TeamContext';
 import { useLang } from '@/lib/LanguageContext';
 import BottomLine from '@/components/ui/BottomLine';
+import PageHero from '@/components/ui/PageHero';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -223,10 +224,11 @@ The "status" field in period_comparison must be one of: "שיפור", "שימו�
       <div className="pt-14 pb-10 max-w-6xl mx-auto px-4 md:px-6">
         {/* Header */}
         <div className="pt-5 pb-6">
-          <h1 className="text-xl font-bold" style={{ color: '#2C2416' }}>{isHe ? 'ניתוח אימונים' : 'Training Analytics'}</h1>
-          <p className="text-xs mt-0.5" style={{ color: '#9A8672' }}>
-            {isHe ? 'ניתוח התקדמות קבוצתי ואישי' : 'Team & personal progress analysis'}
-          </p>
+          <PageHero
+            icon={TrendingUp}
+            title={isHe ? 'ניתוח אימונים' : 'Training Analytics'}
+            subtitle={isHe ? 'ניתוח התקדמות קבוצתי ואישי' : 'Team & personal progress analysis'}
+          />
         </div>
 
         {/* Tabs */}

@@ -3,9 +3,11 @@ import { base44 } from '@/api/base44Client';
 import { motion } from 'framer-motion';
 import { useLang } from '@/lib/LanguageContext';
 import { useSubscriptionGuard } from '@/components/useSubscriptionGuard';
+import PageHero from '@/components/ui/PageHero';
 import { 
   Plus, 
   BarChart3, 
+  Swords,
   Video,
   FileText,
   Loader2,
@@ -380,27 +382,29 @@ export default function MatchAnalysis() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 p-4 md:p-6" dir={dir}>
+    <div className="min-h-screen p-4 md:p-6" style={{ background: 'linear-gradient(180deg, #0A1410 0%, #0D1A12 55%, #0A1410 100%)' }} dir={dir}>
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl md:text-3xl font-bold text-white mb-1">{isHe ? 'ניתוח משחקים' : 'Match Analysis'}</h1>
-              <HowItWorksButton page="MatchAnalysis" />
-            </div>
-            <p className="text-slate-400">{isHe ? 'שלושה מסלולים, מעקב עומק לאורך זמן' : 'Three tracks, deep long-term tracking'}</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <TeamSelector teams={teams} selectedTeamId={selectedTeamId} onSelect={setSelectedTeamId} />
-            <Button 
-              onClick={() => setShowNewAnalysis(true)}
-              className="premium-btn-green"
-            >
-              <Plus className="w-4 h-4 ml-2" />
-              {isHe ? 'ניתוח חדש' : 'New Analysis'}
-            </Button>
-          </div>
+        <div className="mb-6">
+          <PageHero
+            icon={Swords}
+            title={isHe ? 'ניתוח משחקים' : 'Match Analysis'}
+            subtitle={isHe ? 'שלושה מסלולים, מעקב עומק לאורך זמן' : 'Three tracks, deep long-term tracking'}
+            titleExtra={<HowItWorksButton page="MatchAnalysis" />}
+            style={{ border: '1px solid rgba(74,222,128,0.20)' }}
+            actions={
+              <>
+                <TeamSelector teams={teams} selectedTeamId={selectedTeamId} onSelect={setSelectedTeamId} />
+                <Button
+                  onClick={() => setShowNewAnalysis(true)}
+                  className="premium-btn-green"
+                >
+                  <Plus className="w-4 h-4 ml-2" />
+                  {isHe ? 'ניתוח חדש' : 'New Analysis'}
+                </Button>
+              </>
+            }
+          />
         </div>
 
         {/* View Tabs */}

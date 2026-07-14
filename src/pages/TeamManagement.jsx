@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useSubscriptionGuard } from '@/components/useSubscriptionGuard';
+import PageHero from '@/components/ui/PageHero';
 import { motion } from 'framer-motion';
 import { 
   Plus, 
@@ -164,31 +165,33 @@ export default function TeamManagement({ initialTab, initialPreselect } = {}) {
   const positions = [...new Set(players.map(p => p.position).filter(Boolean))];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 p-4 md:p-6" dir={dir}>
+    <div className="min-h-screen p-4 md:p-6" style={{ background: 'linear-gradient(180deg, #0A1410 0%, #0D1A12 55%, #0A1410 100%)' }} dir={dir}>
       <div className="max-w-7xl mx-auto">
         {/* Header */}
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl md:text-3xl font-bold text-white mb-1">{isHe ? 'ניהול קבוצה' : 'Team Management'}</h1>
-              <HowItWorksButton page="TeamManagement" />
-            </div>
-            <p className="text-slate-400">{isHe ? 'נהל את הסגל, בנה הרכב ופתח שחקנים' : 'Manage the squad, build lineup and develop players'}</p>
-          </div>
-          <div className="flex items-center gap-3">
-            <TeamSelector 
-              teams={teams} 
-              selectedTeamId={selectedTeamId} 
-              onSelect={selectTeam} 
-            />
-            <Button 
-              onClick={() => { setEditingTeam(null); setShowTeamForm(true); }}
-              className="bg-emerald-600 hover:bg-emerald-700"
-            >
-              <Plus className="w-4 h-4 ml-2" />
-              {isHe ? 'קבוצה חדשה' : 'New Team'}
-            </Button>
-          </div>
+        <div className="mb-6">
+          <PageHero
+            icon={Users}
+            title={isHe ? 'ניהול קבוצה' : 'Team Management'}
+            subtitle={isHe ? 'נהל את הסגל, בנה הרכב ופתח שחקנים' : 'Manage the squad, build lineup and develop players'}
+            titleExtra={<HowItWorksButton page="TeamManagement" />}
+            style={{ border: '1px solid rgba(74,222,128,0.20)' }}
+            actions={
+              <>
+                <TeamSelector
+                  teams={teams}
+                  selectedTeamId={selectedTeamId}
+                  onSelect={selectTeam}
+                />
+                <Button
+                  onClick={() => { setEditingTeam(null); setShowTeamForm(true); }}
+                  className="bg-emerald-600 hover:bg-emerald-700"
+                >
+                  <Plus className="w-4 h-4 ml-2" />
+                  {isHe ? 'קבוצה חדשה' : 'New Team'}
+                </Button>
+              </>
+            }
+          />
         </div>
 
         {selectedTeam && (
