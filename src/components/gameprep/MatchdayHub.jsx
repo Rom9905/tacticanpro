@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
 import {
   ShieldCheck, Crosshair, Target, Shield, Dumbbell, Sparkles,
-  PencilLine, Scale, Shirt, Printer, Share2, Plus, Users,
+  PencilLine, Scale, Shirt, Printer, Plus, Users,
   AlertTriangle, Lightbulb, Moon, ClipboardList, ArrowRight, X, Loader2, RefreshCw
 } from 'lucide-react';
 
@@ -672,24 +672,16 @@ ${prep.opponent_patterns ? `דפוסים: ${prep.opponent_patterns}` : ''}
                   <p style={{ margin: 0, fontSize: 11, fontWeight: 700, letterSpacing: '.08em', color: '#4ADE80' }}>ההכנה הבאה · {dateStr}</p>
                   <h2 style={{ margin: '2px 0 0', fontSize: 24, fontWeight: 800, color: '#F4EFE6', fontFamily: 'Heebo,sans-serif' }}>מול {prep.opponent_name || prep.name}</h2>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 }}>
-                    <span style={{ fontSize: 13, fontWeight: 800, color: '#F4EFE6', fontFamily: 'Heebo,sans-serif' }}>{formation} <span style={{ color: 'rgba(244,239,230,.4)', fontWeight: 400 }}>מול</span> {prep.opponent_formation || '?'}</span>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: '#F4EFE6', fontFamily: 'Heebo,sans-serif' }}>מערכת יריב: {prep.opponent_formation || '?'}</span>
                     {prep.opponent_strength_level && (
                       <span style={{ fontSize: 11, padding: '2px 9px', borderRadius: 9999, background: 'rgba(239,139,139,.15)', color: '#EF8B8B', fontWeight: 700 }}>{prep.opponent_strength_level} · {prep.opponent_attack_style || ''}</span>
                     )}
                   </div>
                 </div>
               </div>
-              <div style={{ textAlign: 'center', flexShrink: 0 }}>
-                <p style={{ margin: 0, fontSize: 26, fontWeight: 900, color: '#4ADE80', fontFamily: 'Heebo,sans-serif' }}>{countdown.text}</p>
-                <p style={{ margin: 0, fontSize: 10, fontWeight: 600, letterSpacing: '.1em', color: 'rgba(244,239,230,.5)' }}>ימים : שעות : דקות : שניות</p>
-              </div>
-              <div style={{ width: 1, height: 52, background: 'rgba(74,222,128,.15)', flexShrink: 0 }} />
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, flexShrink: 0 }}>
+              <div style={{ flexShrink: 0 }}>
                 <button onClick={() => setShowReport(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', borderRadius: 10, fontSize: 13, fontWeight: 700, background: '#4ADE80', color: '#0D1A12', border: 'none', cursor: 'pointer', fontFamily: 'Assistant,sans-serif' }}>
                   <Printer className="w-[15px] h-[15px]" />הדפס דו"ח הכנה
-                </button>
-                <button style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 18px', borderRadius: 10, fontSize: 13, fontWeight: 600, border: '1px solid rgba(74,222,128,.35)', color: '#4ADE80', background: 'transparent', cursor: 'pointer', fontFamily: 'Assistant,sans-serif' }}>
-                  <Share2 className="w-[15px] h-[15px]" />שתף לצוות
                 </button>
               </div>
             </div>
@@ -712,24 +704,13 @@ ${prep.opponent_patterns ? `דפוסים: ${prep.opponent_patterns}` : ''}
                 <button onClick={() => setMode('work')} style={{ padding: '5px 16px', borderRadius: 9999, fontSize: 12, fontWeight: 600, color: 'rgba(244,239,230,.6)', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'Assistant,sans-serif' }}>מצב עבודה</button>
                 <button onClick={() => setMode('matchday')} style={{ padding: '5px 16px', borderRadius: 9999, fontSize: 12, fontWeight: 700, background: '#4ADE80', color: '#0D1A12', border: 'none', cursor: 'pointer', fontFamily: 'Assistant,sans-serif' }}>ליל משחק</button>
               </div>
-              <div style={{ display: 'flex', gap: 8 }}>
-                <button onClick={() => setShowReport(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 10, fontSize: 13, fontWeight: 700, background: '#4ADE80', color: '#0D1A12', border: 'none', cursor: 'pointer', fontFamily: 'Assistant,sans-serif' }}>
-                  <Printer className="w-[15px] h-[15px]" />הדפס דו"ח הכנה
-                </button>
-                <button style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 10, fontSize: 13, fontWeight: 600, border: '1px solid rgba(74,222,128,.35)', color: '#4ADE80', background: 'transparent', cursor: 'pointer', fontFamily: 'Assistant,sans-serif' }}>
-                  <Share2 className="w-[15px] h-[15px]" />שתף לצוות
-                </button>
-              </div>
+              <button onClick={() => setShowReport(true)} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 10, fontSize: 13, fontWeight: 700, background: '#4ADE80', color: '#0D1A12', border: 'none', cursor: 'pointer', fontFamily: 'Assistant,sans-serif' }}>
+                <Printer className="w-[15px] h-[15px]" />הדפס דו"ח הכנה
+              </button>
             </div>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 24, marginBottom: 22, flexWrap: 'wrap' }}>
-              <div>
-                <p style={{ margin: 0, fontSize: 11, fontWeight: 700, letterSpacing: '.14em', color: '#4ADE80' }}>ליל משחק</p>
-                <h2 style={{ margin: '4px 0 0', fontSize: 32, fontWeight: 900, color: '#F4EFE6', fontFamily: 'Heebo,sans-serif' }}>{teamName} <span style={{ color: 'rgba(244,239,230,.35)', fontWeight: 400 }}>מול</span> {prep.opponent_name || prep.name}</h2>
-              </div>
-              <div style={{ textAlign: 'center', flexShrink: 0 }}>
-                <p style={{ margin: 0, fontSize: 40, fontWeight: 900, color: '#4ADE80', fontFamily: 'Heebo,sans-serif', textShadow: '0 0 24px rgba(74,222,128,.45)' }}>{countdown.text}</p>
-                <p style={{ margin: 0, fontSize: 11, fontWeight: 600, letterSpacing: '.12em', color: 'rgba(244,239,230,.5)' }}>ימים : שעות : דקות : שניות</p>
-              </div>
+            <div style={{ marginBottom: 22 }}>
+              <p style={{ margin: 0, fontSize: 11, fontWeight: 700, letterSpacing: '.14em', color: '#4ADE80' }}>ליל משחק</p>
+              <h2 style={{ margin: '4px 0 0', fontSize: 32, fontWeight: 900, color: '#F4EFE6', fontFamily: 'Heebo,sans-serif' }}>{teamName} <span style={{ color: 'rgba(244,239,230,.35)', fontWeight: 400 }}>מול</span> {prep.opponent_name || prep.name}</h2>
             </div>
           </>
         )}
