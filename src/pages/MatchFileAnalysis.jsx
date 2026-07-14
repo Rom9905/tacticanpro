@@ -1,17 +1,26 @@
-import React, { useState, useCallback, useRef } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useTeam } from '@/components/TeamContext';
-import { Loader2, Upload, FileText, CheckCircle2, PlusCircle, AlertCircle, ShieldCheck, Zap, Target, Swords, Users, Lightbulb, ArrowRight, ArrowLeft, ChevronDown, ChevronUp, X, BarChart3, TrendingUp, TrendingDown, Search, Send } from 'lucide-react';
+import { Loader2, Upload, FileText, CheckCircle2, PlusCircle, AlertCircle, ShieldCheck, Zap, Target, Swords, Users, Lightbulb, ArrowRight, ArrowLeft, ChevronDown, ChevronUp, X, BarChart3, TrendingUp, TrendingDown, Search, Send, Lock, Save } from 'lucide-react';
 import PageHero from '@/components/ui/PageHero';
 
 const SUPPORTED_TYPES = '.pdf,.csv,.xlsx,.xls';
 const SUPPORTED_LABELS = ['PDF', 'CSV', 'Excel'];
 
-// ── Module-level sub-components (not recreated on every render) ──
+const C = {
+  brandGreen: '#4ADE80', brandGreenDark: '#16A34A', brandDark: '#0D1A12',
+  bgApp: '#F6F4EE', bgCard: '#FFFFFF', bgCardSoft: '#FBFAF6',
+  textPrimary: '#14231A', textSecondary: '#5C6B61', textMuted: '#94A39A',
+  success: '#16A34A', successBg: '#E7F6EC',
+  warning: '#D97706', warningBg: '#FDF3E3',
+  danger: '#DC2626', dangerBg: '#FCEBEB',
+  opponent: '#8A9490', opponentLight: 'rgba(138,148,144,0.15)',
+};
+
 function Card({ children, className = '' }) {
   return (
     <div className={`rounded-2xl p-6 ${className}`}
-      style={{ backgroundColor: '#FAF7F2', border: '1px solid rgba(139,115,85,0.15)', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+      style={{ backgroundColor: C.bgCard, border: '1px solid rgba(20,35,26,0.06)', boxShadow: '0 1px 3px rgba(0,0,0,0.04)' }}>
       {children}
     </div>
   );
@@ -21,14 +30,29 @@ function SectionHeader({ icon: Icon, iconColor, title, subtitle }) {
   return (
     <div className="mb-4">
       <div className="flex items-center gap-2.5 mb-1">
-        <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${iconColor}15` }}>
-          <Icon className="w-4 h-4" style={{ color: iconColor }} />
+        <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${iconColor}18` }}>
+          <Icon className="w-4.5 h-4.5" style={{ color: iconColor }} />
         </div>
-        <h3 className="font-bold text-base" style={{ color: '#2C2416' }}>{title}</h3>
+        <h3 className="font-bold text-base" style={{ color: C.textPrimary }}>{title}</h3>
       </div>
-      {subtitle && <p className="text-xs mr-10" style={{ color: '#9A8672' }}>{subtitle}</p>}
+      {subtitle && <p className="text-xs mr-11" style={{ color: C.textMuted }}>{subtitle}</p>}
     </div>
   );
+}
+
+function computeAdvantage(stat) {
+  const ourPct = stat.our_pct;
+  const oppPct = stat.opponent_pct;
+  if (ourPct != null && oppPct != null) {
+    if (Math.abs(ourPct - oppPct) <= 3) return 'balanced';
+    if (stat.advantage === 'our' || stat.advantage === 'opponent') return stat.advantage;
+    return ourPct > oppPct ? 'our' : 'opponent';
+  }
+  const ourNum = parseFloat(String(stat.our_value).replace('%',''));
+  const oppNum = parseFloat(String(stat.opponent_value).replace('%',''));
+  if (!isNaN(ourNum) && !isNaN(oppNum) && ourNum === oppNum) return 'balanced';
+  if (stat.advantage === 'our' || stat.advantage === 'opponent') return stat.advantage;
+  return 'balanced';
 }
 
 function ComparisonBar({ stat, ourLabel, oppLabel }) {
@@ -36,98 +60,106 @@ function ComparisonBar({ stat, ourLabel, oppLabel }) {
   const oppPct = stat.opponent_pct != null ? stat.opponent_pct : null;
   const hasPct = ourPct != null && oppPct != null;
   const total = hasPct ? (ourPct + oppPct || 1) : 1;
-  const ourWidth = hasPct ? (ourPct / total) * 100 : 0;
-  const oppWidth = hasPct ? (oppPct / total) * 100 : 0;
-  const adv = stat.advantage;
+  const ourWidth = hasPct ? Math.max((ourPct / total) * 100, 2) : 50;
+  const oppWidth = hasPct ? Math.max((oppPct / total) * 100, 2) : 50;
+  const adv = computeAdvantage(stat);
+  const advLabel = adv === 'our' ? 'יתרון שלנו' : adv === 'opponent' ? 'יתרון ליריבה' : null;
+  const advColor = adv === 'our' ? C.success : adv === 'opponent' ? C.danger : C.textMuted;
+
   return (
-    <div className="mb-3">
-      <div className="flex items-center justify-between mb-1.5">
-        <span className="text-sm font-medium" style={{ color: '#5C4E38' }}>{stat.label}</span>
-        {adv && adv !== 'none' && (
-          adv === 'our'
-            ? <TrendingUp className="w-3.5 h-3.5" style={{ color: '#2A7050' }} />
-            : <TrendingDown className="w-3.5 h-3.5" style={{ color: '#B94040' }} />
-        )}
-      </div>
-      <div className="flex items-center gap-2">
-        <span className="text-xs font-bold w-10 text-right" style={{ color: adv === 'our' ? '#2A7050' : '#5C4E38' }}>{stat.our_value || '—'}</span>
-        <div className="flex-1 h-2.5 rounded-full overflow-hidden flex" style={{ backgroundColor: 'rgba(139,115,85,0.1)' }}>
-          {hasPct ? (
-            <>
-              <div className="h-full rounded-r-full transition-all duration-500" style={{ width: `${ourWidth}%`, backgroundColor: '#2A7050' }} />
-              <div className="h-full rounded-l-full transition-all duration-500" style={{ width: `${oppWidth}%`, backgroundColor: '#B94040' }} />
-            </>
-          ) : (
-            <div className="h-full w-full flex items-center justify-center">
-              <span className="text-[10px]" style={{ color: '#B5A490' }}>ערכים מספריים לא זמינים בקובץ</span>
-            </div>
+    <div className="mb-5 last:mb-0">
+      <div className="flex items-center justify-between mb-2">
+        <div className="flex items-center gap-2">
+          {advLabel && (
+            <span className="text-[10px] font-bold px-2 py-0.5 rounded-full"
+              style={{ backgroundColor: adv === 'our' ? C.successBg : C.dangerBg, color: advColor }}>
+              {advLabel}
+            </span>
           )}
         </div>
-        <span className="text-xs font-bold w-10 text-left" style={{ color: adv === 'opponent' ? '#B94040' : '#5C4E38' }}>{stat.opponent_value || '—'}</span>
+        <span className="text-sm font-bold" style={{ color: C.textPrimary }}>{stat.label}</span>
       </div>
-      <div className="flex justify-between mt-0.5">
-        <span className="text-[10px]" style={{ color: '#9A8672' }}>{ourLabel}</span>
-        <span className="text-[10px]" style={{ color: '#9A8672' }}>{oppLabel}</span>
+      <div className="flex items-center gap-3">
+        <span className="text-sm font-bold w-12 text-left tabular-nums" style={{ color: adv === 'opponent' ? C.opponent : C.textPrimary }}>
+          {stat.opponent_value || '—'}
+        </span>
+        <div className="flex-1 h-3 rounded-full overflow-hidden flex" style={{ backgroundColor: 'rgba(20,35,26,0.06)' }}>
+          {hasPct ? (
+            <>
+              <div className="h-full transition-all duration-700 ease-out" style={{
+                width: `${oppWidth}%`, backgroundColor: C.opponent, borderRadius: '9999px 0 0 9999px',
+              }} />
+              <div className="h-full transition-all duration-700 ease-out" style={{
+                width: `${ourWidth}%`, backgroundColor: C.success, borderRadius: '0 9999px 9999px 0',
+              }} />
+            </>
+          ) : (
+            <div className="h-full w-full rounded-full" style={{ backgroundColor: 'rgba(20,35,26,0.08)' }} />
+          )}
+        </div>
+        <span className="text-sm font-bold w-12 text-right tabular-nums" style={{ color: adv === 'our' ? C.success : C.textPrimary }}>
+          {stat.our_value || '—'}
+        </span>
+      </div>
+      <div className="flex justify-between mt-1">
+        <span className="text-[10px]" style={{ color: C.textMuted }}>{oppLabel}</span>
+        <span className="text-[10px]" style={{ color: C.textMuted }}>{ourLabel}</span>
       </div>
     </div>
   );
 }
 
-// Memoized team picker — prevents input focus loss on parent re-renders
+const CHAPTER_SECTIONS = [
+  { key: 'overview', label: 'סקירה' },
+  { key: 'possession', label: 'החזקה' },
+  { key: 'defense', label: 'הגנה' },
+  { key: 'duels', label: 'דו-קרבות' },
+  { key: 'players', label: 'שחקנים' },
+  { key: 'training', label: 'נושאי עבודה' },
+];
+
 const TeamPicker = React.memo(function TeamPicker({ originalTeamNames, onContinue }) {
-  // Dropdown: always the two file team names (for identification only)
-  // When user selects our team → opponent auto-fills with the other file team
   const [ourTeam, setOurTeam] = useState('');
   const [opponent, setOpponent] = useState('');
-
   const handleTeamChange = (selected) => {
     setOurTeam(selected);
-    // Auto-fill opponent with the OTHER file team (if opponent is empty or still matches a file team)
-    const other = selected === originalTeamNames.team_a
-      ? originalTeamNames.team_b
-      : selected === originalTeamNames.team_b
-        ? originalTeamNames.team_a
-        : '';
+    const other = selected === originalTeamNames.team_a ? originalTeamNames.team_b
+      : selected === originalTeamNames.team_b ? originalTeamNames.team_a : '';
     if (other && (opponent === '' || opponent === originalTeamNames.team_a || opponent === originalTeamNames.team_b)) {
       setOpponent(other);
     }
   };
-  const handleContinue = () => onContinue(ourTeam, opponent);
   return (
     <div className="space-y-6">
       <Card>
         <SectionHeader icon={Users} iconColor="#2A5FA8" title="זיהוי הקבוצות"
-          subtitle="בחר מי מהשתיים בקובץ זו הקבוצה שלך. השם יוחלף אוטומטית לשם הרשום במערכת. הקלד את שם היריבה כרצונך." />
+          subtitle="בחר מי מהשתיים בקובץ זו הקבוצה שלך. השם יוחלף אוטומטית לשם הרשום במערכת." />
         <div className="space-y-4">
           <div>
-            <label className="text-xs font-semibold mb-1.5 block" style={{ color: '#5C4E38' }}>הקבוצה שלי (לזיהוי)</label>
+            <label className="text-xs font-semibold mb-1.5 block" style={{ color: C.textSecondary }}>הקבוצה שלי (לזיהוי)</label>
             <select value={ourTeam} onChange={(e) => handleTeamChange(e.target.value)}
-              className="w-full p-3 rounded-xl text-sm"
-              style={{ backgroundColor: '#FAF7F2', border: '1px solid rgba(139,115,85,0.25)', color: '#2C2416' }}>
+              className="w-full p-3 rounded-xl text-sm" style={{ backgroundColor: C.bgCardSoft, border: '1px solid rgba(20,35,26,0.12)', color: C.textPrimary }}>
               <option value="">בחר מתוך הקבוצות בקובץ...</option>
               {originalTeamNames.team_a && <option value={originalTeamNames.team_a}>{originalTeamNames.team_a}</option>}
               {originalTeamNames.team_b && <option value={originalTeamNames.team_b}>{originalTeamNames.team_b}</option>}
             </select>
           </div>
           <div>
-            <label className="text-xs font-semibold mb-1.5 block" style={{ color: '#5C4E38' }}>הקבוצה היריבה</label>
-            <input type="text" value={opponent}
-              onChange={(e) => setOpponent(e.target.value)}
+            <label className="text-xs font-semibold mb-1.5 block" style={{ color: C.textSecondary }}>הקבוצה היריבה</label>
+            <input type="text" value={opponent} onChange={(e) => setOpponent(e.target.value)}
               placeholder="שם הקבוצה היריבה בעברית"
-              className="w-full p-3 rounded-xl text-sm"
-              style={{ backgroundColor: '#FAF7F2', border: '1px solid rgba(139,115,85,0.25)', color: '#2C2416' }} />
-            <p className="text-[10px] mt-1 mr-1" style={{ color: '#B5A490' }}>מומלץ לכתוב את שם הקבוצה בעברית, כדי שהניתוח יוצג בצורה אחידה.</p>
+              className="w-full p-3 rounded-xl text-sm" style={{ backgroundColor: C.bgCardSoft, border: '1px solid rgba(20,35,26,0.12)', color: C.textPrimary }} />
+            <p className="text-[10px] mt-1 mr-1" style={{ color: C.textMuted }}>מומלץ לכתוב את שם הקבוצה בעברית, כדי שהניתוח יוצג בצורה אחידה.</p>
           </div>
         </div>
       </Card>
-      <button onClick={handleContinue}
-        disabled={!ourTeam || !opponent}
+      <button onClick={() => onContinue(ourTeam, opponent)} disabled={!ourTeam || !opponent}
         className="w-full py-4 rounded-2xl text-base font-bold flex items-center justify-center gap-2 transition-all hover:opacity-90"
         style={{
-          backgroundColor: (!ourTeam || !opponent) ? 'rgba(139,115,85,0.15)' : '#2A7050',
+          backgroundColor: (!ourTeam || !opponent) ? 'rgba(20,35,26,0.08)' : C.success,
           color: '#fff', opacity: (!ourTeam || !opponent) ? 0.5 : 1,
           cursor: (!ourTeam || !opponent) ? 'not-allowed' : 'pointer',
-          boxShadow: (!ourTeam || !opponent) ? 'none' : '0 4px 14px rgba(42,112,80,0.25)'
+          boxShadow: (!ourTeam || !opponent) ? 'none' : '0 4px 14px rgba(22,163,74,0.25)'
         }}>
         <ArrowLeft className="w-5 h-5" /> המשך לניתוח
       </button>
@@ -135,7 +167,6 @@ const TeamPicker = React.memo(function TeamPicker({ originalTeamNames, onContinu
   );
 });
 
-// Memoized deep-dive — follow-up questions on the uploaded file
 const DeepDive = React.memo(function DeepDive({ fileUrl, ourTeam, opponent }) {
   const [question, setQuestion] = useState('');
   const [answer, setAnswer] = useState(null);
@@ -156,86 +187,66 @@ const DeepDive = React.memo(function DeepDive({ fileUrl, ourTeam, opponent }) {
     } finally { setLoading(false); }
   };
 
-  // Render the structured answer
-  const renderAnswer = () => {
-    if (!answer) return null;
-    const { title, blocks = [], no_data } = answer;
-
-    return (
-      <div className="mt-5 space-y-3" style={{ borderTop: '1px solid rgba(139,115,85,0.12)', paddingTop: '1rem' }}>
-        {/* Answer title */}
-        <div className="flex items-center gap-2 mb-3">
-          <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#7A4FA018' }}>
-            <Search className="w-3.5 h-3.5" style={{ color: '#7A4FA0' }} />
-          </div>
-          <h4 className="font-bold text-sm" style={{ color: '#2C2416' }}>{title}</h4>
-          {no_data && (
-            <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(185,64,64,0.08)', color: '#B94040' }}>
-              אין מידע בקובץ
-            </span>
-          )}
-        </div>
-
-        {/* Blocks */}
-        {blocks.map((block, i) => (
-          <div key={i} className="p-4 rounded-xl"
-            style={{ backgroundColor: 'rgba(122,79,160,0.03)', border: '1px solid rgba(122,79,160,0.12)' }}>
-            <h5 className="font-semibold text-sm mb-2" style={{ color: '#7A4FA0' }}>{block.subtitle}</h5>
-            <p className="text-sm leading-relaxed mb-2.5" style={{ color: '#5C4E38' }}>{block.content}</p>
-            {(block.highlights || []).length > 0 && (
-              <div className="flex flex-wrap gap-1.5">
-                {block.highlights.map((h, j) => (
-                  <span key={j} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs"
-                    style={{ backgroundColor: '#7A4FA010', border: '1px solid rgba(122,79,160,0.15)' }}>
-                    <span style={{ color: '#9A8672' }}>{h.label}:</span>
-                    <span className="font-bold" style={{ color: '#2C2416' }}>{h.value}</span>
-                  </span>
-                ))}
-              </div>
-            )}
-          </div>
-        ))}
-
-        {blocks.length === 0 && !loading && (
-          <p className="text-sm" style={{ color: '#9A8672' }}>אין מספיק מידע בקובץ כדי לענות על השאלה הזו.</p>
-        )}
-      </div>
-    );
-  };
-
   return (
     <Card className="mt-2">
       <SectionHeader icon={Search} iconColor="#7A4FA0"
         title="רוצה להעמיק על נושא מסוים?"
         subtitle="שאל כל שאלה שקשורה למשחק — המערכת בודקת את התשובה לפי המידע בקובץ בלבד" />
-
       <div className="flex gap-2.5">
         <textarea value={question} onChange={(e) => setQuestion(e.target.value)}
           onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); askQuestion(); } }}
           placeholder="לדוגמה: מה היה המערך שלהם ברוב המשחק? איך השתנה הקצב בחצי השני?"
-          rows={2}
-          className="flex-1 p-3 rounded-xl text-sm resize-none"
-          style={{ backgroundColor: '#FAF7F2', border: '1px solid rgba(139,115,85,0.25)', color: '#2C2416' }}
+          rows={2} className="flex-1 p-3 rounded-xl text-sm resize-none"
+          style={{ backgroundColor: C.bgCardSoft, border: '1px solid rgba(20,35,26,0.12)', color: C.textPrimary }}
           disabled={loading} />
         <button onClick={askQuestion} disabled={loading || !question.trim()}
           className="flex-shrink-0 px-4 rounded-xl flex items-center justify-center transition-all"
           style={{
-            backgroundColor: (loading || !question.trim()) ? 'rgba(139,115,85,0.1)' : '#7A4FA0',
-            color: (loading || !question.trim()) ? '#9A8672' : '#fff',
+            backgroundColor: (loading || !question.trim()) ? 'rgba(20,35,26,0.06)' : '#7A4FA0',
+            color: (loading || !question.trim()) ? C.textMuted : '#fff',
             cursor: (loading || !question.trim()) ? 'default' : 'pointer'
           }}>
           {loading ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
         </button>
       </div>
-
       {loading && (
-        <div className="flex items-center gap-2 py-3" style={{ color: '#9A8672' }}>
-          <Loader2 className="w-3.5 h-3.5 animate-spin" />
-          <span className="text-xs">מחפש תשובה בקובץ...</span>
+        <div className="flex items-center gap-2 py-3" style={{ color: C.textMuted }}>
+          <Loader2 className="w-3.5 h-3.5 animate-spin" /><span className="text-xs">מחפש תשובה בקובץ...</span>
         </div>
       )}
-
-      {renderAnswer()}
+      {answer && (
+        <div className="mt-5 space-y-3" style={{ borderTop: '1px solid rgba(20,35,26,0.08)', paddingTop: '1rem' }}>
+          <div className="flex items-center gap-2 mb-3">
+            <div className="w-7 h-7 rounded-lg flex items-center justify-center" style={{ backgroundColor: '#7A4FA018' }}>
+              <Search className="w-3.5 h-3.5" style={{ color: '#7A4FA0' }} />
+            </div>
+            <h4 className="font-bold text-sm" style={{ color: C.textPrimary }}>{answer.title}</h4>
+            {answer.no_data && (
+              <span className="text-xs px-2 py-0.5 rounded-full" style={{ backgroundColor: C.dangerBg, color: C.danger }}>אין מידע בקובץ</span>
+            )}
+          </div>
+          {(answer.blocks || []).map((block, i) => (
+            <div key={i} className="p-4 rounded-xl" style={{ backgroundColor: 'rgba(122,79,160,0.03)', border: '1px solid rgba(122,79,160,0.12)' }}>
+              <h5 className="font-semibold text-sm mb-2" style={{ color: '#7A4FA0' }}>{block.subtitle}</h5>
+              <p className="text-sm leading-relaxed mb-2.5" style={{ color: C.textSecondary }}>{block.content}</p>
+              {(block.highlights || []).length > 0 && (
+                <div className="flex flex-wrap gap-1.5">
+                  {block.highlights.map((h, j) => (
+                    <span key={j} className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs"
+                      style={{ backgroundColor: '#7A4FA010', border: '1px solid rgba(122,79,160,0.15)' }}>
+                      <span style={{ color: C.textMuted }}>{h.label}:</span>
+                      <span className="font-bold" style={{ color: C.textPrimary }}>{h.value}</span>
+                    </span>
+                  ))}
+                </div>
+              )}
+            </div>
+          ))}
+          {(answer.blocks || []).length === 0 && !loading && (
+            <p className="text-sm" style={{ color: C.textMuted }}>אין מספיק מידע בקובץ כדי לענות על השאלה הזו.</p>
+          )}
+        </div>
+      )}
     </Card>
   );
 });
@@ -254,7 +265,9 @@ export default function MatchFileAnalysis() {
   const [addedIssues, setAddedIssues] = useState(new Set());
   const [saving, setSaving] = useState(false);
   const [saveDone, setSaveDone] = useState(false);
+  const [activeChapter, setActiveChapter] = useState('overview');
   const fileInputRef = useRef();
+  const sectionRefs = useRef({});
 
   const handleFile = useCallback((f) => {
     if (!f) return;
@@ -273,11 +286,9 @@ export default function MatchFileAnalysis() {
     handleFile(e.dataTransfer.files[0]);
   }, [handleFile]);
 
-  // Step 1 → 2: Quick scan for team names (no auto-matching yet)
   const startTeamScan = async () => {
     if (!file) return;
-    setStep('scanning');
-    setError(null);
+    setStep('scanning'); setError(null);
     try {
       const uploadResult = await base44.integrations.Core.UploadFile({ file });
       const url = uploadResult.file_url || uploadResult?.data?.file_url;
@@ -285,107 +296,82 @@ export default function MatchFileAnalysis() {
       setFileUrl(url);
       const result = await base44.functions.invoke('analyzeMatchFile', { file_url: url, mode: 'identify_teams' });
       const teams = result.data || result;
-      const teamA = teams?.team_a || '';
-      const teamB = teams?.team_b || '';
-      setOriginalTeamNames({ team_a: teamA, team_b: teamB });
+      setOriginalTeamNames({ team_a: teams?.team_a || '', team_b: teams?.team_b || '' });
       setStep('pick_teams');
     } catch (e) {
       console.error('Team scan error:', e);
-      const msg = e?.response?.data?.error || e?.message || 'שגיאה לא ידועה';
-      setError('שגיאה בזיהוי הקבוצות: ' + msg);
+      setError('שגיאה בזיהוי הקבוצות: ' + (e?.message || 'שגיאה לא ידועה'));
       setStep('upload');
     }
   };
 
-  // Step 3 → 4: Full analysis — replaces file team name with active system team name
   const startFullAnalysis = async (ourTeamFilePick, opponentName) => {
-    if (!ourTeamFilePick || !opponentName) {
-      setError('יש להזין את שתי הקבוצות.');
-      return;
-    }
-    setStep('analyzing');
-    setError(null);
+    if (!ourTeamFilePick || !opponentName) { setError('יש להזין את שתי הקבוצות.'); return; }
+    setStep('analyzing'); setError(null);
     try {
-      // Get the user's currently active system team name
       let ourTeamDisplayName = ourTeamFilePick;
       if (selectedTeamId) {
         const userTeams = await base44.entities.Team.list();
         const activeTeam = userTeams.find(t => t.id === selectedTeamId);
-        if (activeTeam?.name) {
-          ourTeamDisplayName = activeTeam.name;
-        }
+        if (activeTeam?.name) ourTeamDisplayName = activeTeam.name;
       }
-      // identifiedTeams stores display names only (system name + typed opponent)
       setIdentifiedTeams({ ourTeam: ourTeamDisplayName, opponent: opponentName });
-
       const result = await base44.functions.invoke('analyzeMatchFile', {
-        file_url: fileUrl,
-        our_team_name: ourTeamDisplayName,
-        opponent_name: opponentName
+        file_url: fileUrl, our_team_name: ourTeamDisplayName, opponent_name: opponentName
       });
       const data = result.data || result;
       setAnalysis({ ...data, _ourTeamDisplayName: ourTeamDisplayName, _opponentName: opponentName });
       setStep('result');
-      setExpandedSections({ possession: true, defense: true, duels: true });
+      setExpandedSections({ overview: true, possession: true, defense: true, duels: true });
     } catch (e) {
       console.error('Full analysis error:', e);
-      const msg = e?.response?.data?.error || e?.message || 'שגיאה לא ידועה';
-      setError('שגיאה בניתוח הקובץ: ' + msg);
+      setError('שגיאה בניתוח הקובץ: ' + (e?.message || 'שגיאה לא ידועה'));
       setStep('pick_teams');
     }
   };
 
-  // Helper: parse a stat value string like "54%" or "320" into a number
+  useEffect(() => {
+    if (step !== 'result') return;
+    const observer = new IntersectionObserver((entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) setActiveChapter(entry.target.dataset.chapter);
+      }
+    }, { rootMargin: '-80px 0px -70% 0px' });
+    Object.values(sectionRefs.current).forEach(el => { if (el) observer.observe(el); });
+    return () => observer.disconnect();
+  }, [step, analysis]);
+
+  const handleNavigate = (key) => {
+    setActiveChapter(key);
+    sectionRefs.current[key]?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
+
   const parseStatNumber = (val) => {
     if (val == null) return 0;
-    const cleaned = String(val).replace('%', '').trim();
-    const n = parseFloat(cleaned);
+    const n = parseFloat(String(val).replace('%', '').trim());
     return isNaN(n) ? 0 : n;
   };
 
-  // Helper: map LLM stat arrays → MatchAnalysis stats object
   const mapStatsToMatchAnalysis = (allStats) => {
     const stats = { shots: 0, shots_on_target: 0, xg: 0, possession: 0, passes: 0, pass_accuracy: 0, tackles: 0, interceptions: 0, turnovers: 0, critical_errors: 0 };
-    if (!allStats || !allStats.length) return stats;
-
-    // Label → field mapping (Hebrew labels from LLM)
+    if (!allStats?.length) return stats;
     const labelMap = {
-      'החזקת כדור': 'possession',
-      'מסירות': 'passes',
-      'דיוק מסירות': 'pass_accuracy',
-      'בעיטות': 'shots',
-      'בעיטות למסגרת': 'shots_on_target',
-      'שערים צפויים': 'xg',
-      'תיקולים': 'tackles',
-      'חסימות': 'interceptions',
-      'איבודי כדור': 'turnovers',
-      'טעויות קריטיות': 'critical_errors',
-      'החלקות': 'tackles',
-      'חיסולים': 'interceptions',
-      'דו-קרבות קרקע': 'tackles',
-      'דו-קרבות אוויר': 'interceptions',
-      'xG': 'xg',
-      'PPDA': 'interceptions',
-      'מסירות מפתח': 'passes',
-      'איבודים': 'turnovers',
+      'החזקת כדור': 'possession', 'מסירות': 'passes', 'דיוק מסירות': 'pass_accuracy',
+      'בעיטות': 'shots', 'בעיטות למסגרת': 'shots_on_target', 'שערים צפויים': 'xg',
+      'תיקולים': 'tackles', 'חסימות': 'interceptions', 'איבודי כדור': 'turnovers',
+      'טעויות קריטיות': 'critical_errors', 'החלקות': 'tackles', 'חיסולים': 'interceptions',
+      'דו-קרבות קרקע': 'tackles', 'דו-קרבות אוויר': 'interceptions',
+      'xG': 'xg', 'PPDA': 'interceptions', 'מסירות מפתח': 'passes', 'איבודים': 'turnovers',
     };
-
     for (const s of allStats) {
-      // Skip stats where both value and pct are null/empty — data was not in the file
       if (!s.our_value && !s.opponent_value && s.our_pct == null && s.opponent_pct == null) continue;
-
       const label = s.label || '';
       let field = null;
-      for (const [key, val] of Object.entries(labelMap)) {
-        if (label.includes(key)) { field = val; break; }
-      }
+      for (const [key, val] of Object.entries(labelMap)) { if (label.includes(key)) { field = val; break; } }
       if (!field) continue;
-
-      // Use our_pct for percentage-based stats, our_value parsed for counts
       if (field === 'possession' || field === 'pass_accuracy') {
         stats[field] = s.our_pct != null ? s.our_pct : parseStatNumber(s.our_value);
       } else {
-        // For count-based stats: if our_pct is null (no real data), skip this stat
         if (s.our_pct == null && !s.our_value) continue;
         stats[field] = parseStatNumber(s.our_value);
       }
@@ -393,28 +379,23 @@ export default function MatchFileAnalysis() {
     return stats;
   };
 
-  // Save to MatchAnalysis
   const handleSaveToAnalysis = async () => {
     if (!identifiedTeams.ourTeam || !identifiedTeams.opponent) return;
     setSaving(true); setError(null);
     try {
       const userTeams = await base44.entities.Team.list();
       const ourTeamDisplayName = analysis._ourTeamDisplayName || identifiedTeams.ourTeam;
-
       let teamId = null;
       for (const t of userTeams) {
         if (t.name.toLowerCase().includes(ourTeamDisplayName.toLowerCase()) ||
-            ourTeamDisplayName.toLowerCase().includes(t.name.toLowerCase())) {
-          teamId = t.id; break;
-        }
+            ourTeamDisplayName.toLowerCase().includes(t.name.toLowerCase())) { teamId = t.id; break; }
       }
       if (!teamId) teamId = userTeams.length > 0 ? userTeams[0].id : identifiedTeams.ourTeam;
-
       const matchDate = analysis?.match_details?.date || new Date().toISOString().split('T')[0];
       const ourScore = analysis?.match_details?.our_score;
       const opponentScore = analysis?.match_details?.opponent_score;
-      const summaryReport = analysis?.summary_report;
-      const fullReport = analysis?.full_report;
+      const sr = analysis?.summary_report;
+      const fr = analysis?.full_report;
       const isFull = analysis?.analysis_type === 'full';
 
       const game = await base44.entities.GameSchedule.create({
@@ -426,104 +407,58 @@ export default function MatchFileAnalysis() {
 
       let freeNotes = '';
       if (isFull) {
-        freeNotes = [
-          '## סקירה טקטית', fullReport?.tactical_overview || '', '',
-          '## החזקת כדור ומסירות', fullReport?.possession_passing_summary || '', '',
-          '## הגנה ולחץ', fullReport?.defense_pressure_summary || '', '',
-          '## דו-קרבות ומעברים', fullReport?.duels_transitions_summary || '', '',
-          '## סיכום', fullReport?.executive_summary || ''
-        ].join('\n');
+        freeNotes = ['## סקירה טקטית', fr?.tactical_overview || '', '', '## החזקת כדור ומסירות', fr?.possession_passing_summary || '', '',
+          '## הגנה ולחץ', fr?.defense_pressure_summary || '', '', '## דו-קרבות ומעברים', fr?.duels_transitions_summary || '', '',
+          '## סיכום', fr?.executive_summary || ''].join('\n');
       } else {
-        freeNotes = [
-          '## מה היה במשחק', summaryReport?.what_happened || '', '',
-          '## מה הלך טוב', ...(summaryReport?.what_went_well || []).map(s => '- ' + s), '',
-          '## מה הלך פחות טוב', ...(summaryReport?.what_went_poorly || []).map(s => '- ' + s)
-        ].join('\n');
+        freeNotes = ['## מה היה במשחק', sr?.what_happened || '', '', '## מה הלך טוב',
+          ...(sr?.what_went_well || []).map(s => '- ' + s), '', '## מה הלך פחות טוב',
+          ...(sr?.what_went_poorly || []).map(s => '- ' + s)].join('\n');
       }
 
       const summary = await base44.entities.ProfessionalSummary.create({
         team_id: teamId, event_id: game.id, event_type: 'match', event_date: matchDate,
         event_label: `מול ${identifiedTeams.opponent}`,
-        topic: isFull ? (fullReport?.tactical_overview?.substring(0, 80) || 'ניתוח מלא') : (summaryReport?.what_happened?.substring(0, 80) || 'סיכום משחק'),
-        what_worked: isFull ? (fullReport?.possession_passing_summary || '') : (summaryReport?.what_went_well || []).join('\n'),
-        issues_found: isFull
-          ? ((fullReport?.key_issues || []).join('\n') || fullReport?.defense_pressure_summary || '')
-          : (summaryReport?.what_went_poorly || []).join('\n'),
-        tactical_insights: isFull ? (fullReport?.tactical_overview || '') : '',
+        topic: isFull ? (fr?.tactical_overview?.substring(0, 80) || 'ניתוח מלא') : (sr?.what_happened?.substring(0, 80) || 'סיכום משחק'),
+        what_worked: isFull ? (fr?.possession_passing_summary || '') : (sr?.what_went_well || []).join('\n'),
+        issues_found: isFull ? ((fr?.key_issues || []).join('\n') || fr?.defense_pressure_summary || '') : (sr?.what_went_poorly || []).join('\n'),
+        tactical_insights: isFull ? (fr?.tactical_overview || '') : '',
         result_our: ourScore || null, result_opponent: opponentScore || null, satisfaction: 3
       });
 
-      // Collect all stats from 3 categories
-      const allFullStats = [
-        ...(fullReport?.possession_passing_stats || []),
-        ...(fullReport?.defense_pressure_stats || []),
-        ...(fullReport?.duels_transitions_stats || []),
-      ];
+      const allFullStats = [...(fr?.possession_passing_stats || []), ...(fr?.defense_pressure_stats || []), ...(fr?.duels_transitions_stats || [])];
       const mappedStats = isFull ? mapStatsToMatchAnalysis(allFullStats) : null;
-
-      const issues = isFull
-        ? (fullReport?.key_issues || [])
-        : (summaryReport?.what_went_poorly || []);
+      const issues = isFull ? (fr?.key_issues || []) : (sr?.what_went_poorly || []);
 
       const analysisPayload = {
         team_id: teamId, summary_id: summary.id, opponent: identifiedTeams.opponent, date: matchDate,
         result: { our_score: ourScore || 0, opponent_score: opponentScore || 0 },
-        analysis_types: ['freeform'],
-        free_notes: freeNotes,
+        analysis_types: ['freeform'], free_notes: freeNotes,
         report: {
-          summary: isFull ? (fullReport?.executive_summary || '') : (summaryReport?.what_happened || ''),
-          positives: isFull ? [] : (summaryReport?.what_went_well || []),
-          issues: issues,
-          recommendations: isFull
-            ? (fullReport?.training_topics || []).map(t => `${t.topic} (${t.urgency})`)
-            : (summaryReport?.training_topics || [])
+          summary: isFull ? (fr?.executive_summary || '') : (sr?.what_happened || ''),
+          positives: isFull ? [] : (sr?.what_went_well || []),
+          issues,
+          recommendations: isFull ? (fr?.training_topics || []).map(t => `${t.topic} (${t.urgency})`) : (sr?.training_topics || [])
         },
         training_actions: isFull
-          ? (fullReport?.training_topics || []).map(t => ({
-              focus: t.topic,
-              drill_suggestion: t.rationale,
-              priority: t.urgency === 'דחוף' ? 'high' : 'medium',
-              completed: false
-            }))
-          : (summaryReport?.training_topics || []).map(t => ({
-              focus: t,
-              drill_suggestion: '',
-              priority: 'medium',
-              completed: false
-            }))
+          ? (fr?.training_topics || []).map(t => ({ focus: t.topic, drill_suggestion: t.rationale, priority: t.urgency === 'דחוף' ? 'high' : 'medium', completed: false }))
+          : (sr?.training_topics || []).map(t => ({ focus: t, drill_suggestion: '', priority: 'medium', completed: false }))
       };
-
-      if (isFull && mappedStats) {
-        analysisPayload.analysis_types.push('statistics');
-        analysisPayload.stats = mappedStats;
-      }
+      if (isFull && mappedStats) { analysisPayload.analysis_types.push('statistics'); analysisPayload.stats = mappedStats; }
       await base44.entities.MatchAnalysis.create(analysisPayload);
 
-      // Create KeyMatchSituation + TacticalGoal records for all issues
       for (const issue of issues) {
         try {
           await base44.entities.KeyMatchSituation.create({
-            team_id: teamId,
-            situation_name: issue.substring(0, 80),
-            situation_category: 'ניהול משחק',
-            description: issue,
-            status: 'active',
-            severity: 'medium',
-            source_match_id: game.id,
-            occurrence_count: 1
+            team_id: teamId, situation_name: issue.substring(0, 80), situation_category: 'ניהול משחק',
+            description: issue, status: 'active', severity: 'medium', source_match_id: game.id, occurrence_count: 1
           });
           await base44.entities.TacticalGoal.create({
-            team_id: teamId,
-            title: issue.substring(0, 80),
-            description: issue,
-            priority: 'medium',
-            status: 'active',
-            source: 'match',
-            source_match_id: game.id,
+            team_id: teamId, title: issue.substring(0, 80), description: issue,
+            priority: 'medium', status: 'active', source: 'match', source_match_id: game.id,
           });
         } catch {}
       }
-
       setSaveDone(true); setStep('saving');
     } catch (e) {
       setError('שגיאה בשמירה: ' + (e.message || ''));
@@ -532,113 +467,89 @@ export default function MatchFileAnalysis() {
 
   const toggleSection = (key) => setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
 
-  // (Card, SectionHeader, ComparisonBar moved to module level above)
-
-  // ── Stats section with comparison bars ──
   const StatsSection = ({ title, icon, iconColor, summary, stats, ourLabel, oppLabel, sectionKey }) => (
     <Card>
       <div className="flex items-center justify-between cursor-pointer" onClick={() => toggleSection(sectionKey)}>
         <div className="flex items-center gap-2.5">
-          <div className="w-8 h-8 rounded-lg flex items-center justify-center"
-            style={{ backgroundColor: `${iconColor}15` }}>
-            {React.createElement(icon, { className: "w-4 h-4", style: { color: iconColor } })}
+          <div className="w-9 h-9 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${iconColor}18` }}>
+            {React.createElement(icon, { className: "w-4.5 h-4.5", style: { color: iconColor } })}
           </div>
-          <h3 className="font-bold text-base" style={{ color: '#2C2416' }}>{title}</h3>
+          <h3 className="font-bold text-base" style={{ color: C.textPrimary }}>{title}</h3>
         </div>
-        {expandedSections[sectionKey] ? <ChevronUp className="w-4 h-4" style={{ color: '#9A8672' }} /> : <ChevronDown className="w-4 h-4" style={{ color: '#9A8672' }} />}
+        {expandedSections[sectionKey]
+          ? <ChevronUp className="w-5 h-5" style={{ color: C.textMuted }} />
+          : <ChevronDown className="w-5 h-5" style={{ color: C.textMuted }} />}
       </div>
       {expandedSections[sectionKey] && (
-        <div className="mt-4">
-          {summary && (
-            <p className="text-sm leading-relaxed mb-4" style={{ color: '#5C4E38' }}>{summary}</p>
-          )}
-          {stats && stats.length > 0 && (
-            <div>
-              {stats.map((s, i) => (
-                <ComparisonBar key={i} stat={s} ourLabel={ourLabel} oppLabel={oppLabel} />
-              ))}
-            </div>
-          )}
+        <div className="mt-5">
+          {summary && <p className="text-sm leading-relaxed mb-5" style={{ color: C.textSecondary }}>{summary}</p>}
+          {stats?.length > 0 && stats.map((s, i) => (
+            <ComparisonBar key={i} stat={s} ourLabel={ourLabel} oppLabel={oppLabel} />
+          ))}
         </div>
       )}
     </Card>
   );
 
-  // ── Step labels ──
   const stepLabels = { upload: 'העלאה', scanning: 'סריקה', pick_teams: 'זיהוי', analyzing: 'ניתוח', result: 'תוצאות', saving: 'שמירה' };
 
   return (
-    <div className="min-h-screen" style={{ backgroundColor: '#F4EFE6' }} dir="rtl">
+    <div className="min-h-screen" style={{ backgroundColor: C.bgApp }} dir="rtl">
       <div className="max-w-3xl mx-auto px-4 py-6">
-        {/* Hero */}
         <div className="mb-4">
-          <PageHero
-            icon={FileText}
-            title="ניתוח קובץ משחק"
-            subtitle="העלה דוח, תמונה או סטטיסטיקות — וקבל ניתוח מקצועי מלא"
-          />
+          <PageHero icon={FileText} title="ניתוח קובץ משחק" subtitle="העלה דוח, תמונה או סטטיסטיקות — וקבל ניתוח מקצועי מלא" />
         </div>
-        {/* Back + Stepper */}
+
         <div className="flex items-center justify-between mb-6">
           <a href="/" className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-all hover:opacity-80"
-            style={{ backgroundColor: 'rgba(139,115,85,0.06)', color: '#7A6B57', border: '1px solid rgba(139,115,85,0.15)' }}>
-            <ArrowRight className="w-3.5 h-3.5" style={{ transform: 'rotate(180deg)' }} /> דף הבית
+            style={{ backgroundColor: 'rgba(20,35,26,0.04)', color: C.textSecondary, border: '1px solid rgba(20,35,26,0.1)' }}>
+            <ArrowRight className="w-3.5 h-3.5" /> דף הבית
           </a>
-          <div className="flex items-center gap-1 text-[10px]" style={{ color: '#9A8672' }}>
+          <div className="flex items-center gap-1 text-[10px]" style={{ color: C.textMuted }}>
             {['upload','pick_teams','analyzing','result'].map((s, i) => (
               <React.Fragment key={s}>
                 {i > 0 && <span className="mx-0.5">›</span>}
-                <span className={step === s ? 'font-bold' : ''} style={{ color: step === s ? '#2A7050' : '#9A8672' }}>
-                  {stepLabels[s]}
-                </span>
+                <span className={step === s ? 'font-bold' : ''} style={{ color: step === s ? C.success : C.textMuted }}>{stepLabels[s]}</span>
               </React.Fragment>
             ))}
           </div>
         </div>
 
-        {/* Error */}
         {error && (
-          <div className="mb-5 p-4 rounded-xl flex items-start gap-2"
-            style={{ backgroundColor: 'rgba(185,64,64,0.07)', border: '1px solid rgba(185,64,64,0.18)' }}>
-            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#B94040' }} />
-            <p className="text-sm flex-1" style={{ color: '#B94040' }}>{error}</p>
-            <button onClick={() => setError(null)}><X className="w-4 h-4" style={{ color: '#B94040' }} /></button>
+          <div className="mb-5 p-4 rounded-xl flex items-start gap-2" style={{ backgroundColor: C.dangerBg, border: '1px solid rgba(220,38,38,0.18)' }}>
+            <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: C.danger }} />
+            <p className="text-sm flex-1" style={{ color: C.danger }}>{error}</p>
+            <button onClick={() => setError(null)}><X className="w-4 h-4" style={{ color: C.danger }} /></button>
           </div>
         )}
 
-        {/* ═══════════ STEP: UPLOAD ═══════════ */}
+        {/* UPLOAD */}
         {step === 'upload' && (
           <>
             <div onDragOver={(e) => { e.preventDefault(); setDragOver(true); }} onDragLeave={() => setDragOver(false)} onDrop={handleDrop}
               onClick={() => fileInputRef.current?.click()}
               className="rounded-2xl p-12 text-center cursor-pointer transition-all duration-200"
-              style={{
-                backgroundColor: dragOver ? 'rgba(42,112,80,0.06)' : '#FAF7F2',
-                border: `2px dashed ${dragOver ? '#2A7050' : 'rgba(42,112,80,0.25)'}`,
-              }}>
-              <Upload className="w-12 h-12 mx-auto mb-4" style={{ color: '#2A7050' }} />
-              <h2 className="text-xl font-bold mb-2" style={{ color: '#2C2416' }}>
+              style={{ backgroundColor: dragOver ? C.successBg : C.bgCard, border: `2px dashed ${dragOver ? C.success : 'rgba(20,35,26,0.18)'}` }}>
+              <Upload className="w-12 h-12 mx-auto mb-4" style={{ color: C.success }} />
+              <h2 className="text-xl font-bold mb-2" style={{ color: C.textPrimary }}>
                 {file ? 'הקובץ מוכן לניתוח' : 'גרור קובץ לכאן או לחץ לבחירה'}
               </h2>
-              <p className="text-sm mb-3" style={{ color: '#7A6B57' }}>
+              <p className="text-sm mb-3" style={{ color: C.textSecondary }}>
                 {file ? file.name : 'PDF, CSV, Excel — דוח Wyscout‏, Instat, או סיכום ידני'}
               </p>
               <div className="flex justify-center gap-2">
                 {SUPPORTED_LABELS.map(label => (
-                  <span key={label} className="px-3 py-1 rounded-full text-xs font-medium"
-                    style={{ backgroundColor: 'rgba(42,112,80,0.08)', color: '#2A7050' }}>{label}</span>
+                  <span key={label} className="px-3 py-1 rounded-full text-xs font-medium" style={{ backgroundColor: C.successBg, color: C.success }}>{label}</span>
                 ))}
               </div>
               <input ref={fileInputRef} type="file" accept={SUPPORTED_TYPES} className="hidden"
-                onClick={(e) => e.stopPropagation()}
-                onChange={(e) => handleFile(e.target.files[0])} />
+                onClick={(e) => e.stopPropagation()} onChange={(e) => handleFile(e.target.files[0])} />
             </div>
-
             {file && (
               <div className="mt-14 text-center">
                 <button onClick={startTeamScan}
                   className="px-8 py-4 rounded-2xl text-base font-bold flex items-center justify-center gap-2 mx-auto transition-all hover:opacity-90"
-                  style={{ backgroundColor: '#2A7050', color: '#fff', boxShadow: '0 4px 14px rgba(42,112,80,0.25)' }}>
+                  style={{ backgroundColor: C.success, color: '#fff', boxShadow: '0 4px 14px rgba(22,163,74,0.25)' }}>
                   <BarChart3 className="w-5 h-5" /> נתח את הקובץ
                 </button>
               </div>
@@ -646,40 +557,33 @@ export default function MatchFileAnalysis() {
           </>
         )}
 
-        {/* ═══════════ STEP: SCANNING ═══════════ */}
+        {/* SCANNING */}
         {step === 'scanning' && (
           <Card>
             <div className="text-center py-12">
-              <Loader2 className="w-10 h-10 animate-spin mx-auto mb-4" style={{ color: '#2A7050' }} />
-              <h3 className="font-bold text-lg mb-2" style={{ color: '#2C2416' }}>מזהה את הקבוצות בקובץ...</h3>
-              <p className="text-sm" style={{ color: '#7A6B57' }}>סורק את הנתונים ומזהה את שמות הקבוצות</p>
+              <Loader2 className="w-10 h-10 animate-spin mx-auto mb-4" style={{ color: C.success }} />
+              <h3 className="font-bold text-lg mb-2" style={{ color: C.textPrimary }}>מזהה את הקבוצות בקובץ...</h3>
+              <p className="text-sm" style={{ color: C.textSecondary }}>סורק את הנתונים ומזהה את שמות הקבוצות</p>
             </div>
           </Card>
         )}
 
-        {/* ═══════════ STEP: PICK TEAMS ═══════════ */}
-        {step === 'pick_teams' && (
-          <TeamPicker
-            originalTeamNames={originalTeamNames}
-            onContinue={startFullAnalysis}
-          />
-        )}
+        {/* PICK TEAMS */}
+        {step === 'pick_teams' && <TeamPicker originalTeamNames={originalTeamNames} onContinue={startFullAnalysis} />}
 
-        {/* ═══════════ STEP: ANALYZING ═══════════ */}
+        {/* ANALYZING */}
         {step === 'analyzing' && (
           <Card>
             <div className="text-center py-12">
-              <Loader2 className="w-10 h-10 animate-spin mx-auto mb-5" style={{ color: '#2A7050' }} />
-              <h3 className="font-bold text-lg mb-2" style={{ color: '#2C2416' }}>מפיק ניתוח מלא...</h3>
-              <p className="text-sm mb-1" style={{ color: '#7A6B57' }}>
-                מנתח את "{identifiedTeams.ourTeam}" מול "{identifiedTeams.opponent}"
-              </p>
-              <p className="text-xs" style={{ color: '#9A8672' }}>קורא נתונים, מזהה דפוסים, מפיק תובנות טקטיות</p>
+              <Loader2 className="w-10 h-10 animate-spin mx-auto mb-5" style={{ color: C.success }} />
+              <h3 className="font-bold text-lg mb-2" style={{ color: C.textPrimary }}>מפיק ניתוח מלא...</h3>
+              <p className="text-sm mb-1" style={{ color: C.textSecondary }}>מנתח את "{identifiedTeams.ourTeam}" מול "{identifiedTeams.opponent}"</p>
+              <p className="text-xs" style={{ color: C.textMuted }}>קורא נתונים, מזהה דפוסים, מפיק תובנות טקטיות</p>
             </div>
           </Card>
         )}
 
-        {/* ═══════════ STEP: RESULT ═══════════ */}
+        {/* RESULT */}
         {step === 'result' && analysis && (() => {
           const isFull = analysis.analysis_type === 'full';
           const fr = analysis.full_report;
@@ -688,54 +592,95 @@ export default function MatchFileAnalysis() {
           const ourLabel = analysis._ourTeamDisplayName || 'אנחנו';
           const oppLabel = analysis._opponentName || 'יריבה';
 
+          const heroStats = [];
+          if (isFull && fr) {
+            const allStats = [...(fr.possession_passing_stats || []), ...(fr.defense_pressure_stats || []), ...(fr.duels_transitions_stats || [])];
+            for (const s of allStats.slice(0, 3)) {
+              heroStats.push({ label: s.label, ourValue: s.our_value, oppValue: s.opponent_value, advantage: computeAdvantage(s) });
+            }
+          }
+
           return (
             <div className="space-y-5">
-              {/* ── Match header ── */}
-              <Card>
-                <div className="flex items-center justify-between flex-wrap gap-4">
-                  <div>
-                    <span className="px-3 py-1 rounded-full text-xs font-bold mb-3 inline-block"
-                      style={{ backgroundColor: isFull ? 'rgba(122,79,160,0.1)' : 'rgba(42,95,168,0.1)',
-                               color: isFull ? '#7A4FA0' : '#2A5FA8' }}>
-                      {isFull ? '📊 ניתוח מלא' : '📋 סיכום משחק'}
+              {/* Dark match header */}
+              <div className="rounded-2xl overflow-hidden" style={{ background: 'linear-gradient(135deg, #0D1A12 0%, #1A2F23 100%)' }}>
+                <div className="p-6 pb-4">
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center gap-2">
+                      {md?.date && <span className="text-xs px-2.5 py-1 rounded-full font-medium" style={{ backgroundColor: 'rgba(74,222,128,0.15)', color: C.brandGreen }}>{md.date}</span>}
+                      {md?.location && <span className="text-xs px-2.5 py-1 rounded-full" style={{ backgroundColor: 'rgba(255,255,255,0.08)', color: 'rgba(255,255,255,0.7)' }}>{md.location}</span>}
+                    </div>
+                    <span className="px-3 py-1 rounded-full text-xs font-bold"
+                      style={{ backgroundColor: isFull ? 'rgba(122,79,160,0.2)' : 'rgba(42,95,168,0.2)', color: isFull ? '#C4A5F0' : '#7ABAFF' }}>
+                      {isFull ? '📊 ניתוח מלא' : '📋 סיכום'}
                     </span>
-                    <h2 className="text-2xl font-extrabold" style={{ color: '#2C2416' }}>
-                      {ourLabel} מול {oppLabel}
-                    </h2>
-                    {(md?.date || md?.our_score !== undefined) && (
-                      <div className="flex items-center gap-3 mt-1.5">
-                        {md?.date && <span className="text-sm" style={{ color: '#7A6B57' }}>{md.date}</span>}
-                        {md?.our_score != null && (
-                          <span className="text-lg font-bold" style={{ color: '#2C2416' }}>
-                            {md.our_score} – {md.opponent_score}
-                          </span>
-                        )}
-                        {md?.location && <span className="text-xs px-2 py-0.5 rounded-full"
-                          style={{ backgroundColor: 'rgba(139,115,85,0.08)', color: '#7A6B57' }}>{md.location}</span>}
+                  </div>
+                  <h2 className="text-2xl font-extrabold text-white text-center mb-2">
+                    {ourLabel} מול {oppLabel}
+                  </h2>
+                  {md?.our_score != null && (
+                    <p className="text-4xl font-black text-center mb-4" style={{ color: C.brandGreen }}>
+                      {md.our_score} – {md.opponent_score}
+                    </p>
+                  )}
+                </div>
+
+                {/* Hero stat cards */}
+                {heroStats.length > 0 && (
+                  <div className="grid grid-cols-3 gap-3 px-6 pb-6">
+                    {heroStats.map((hs, i) => (
+                      <div key={i} className="rounded-xl p-3 text-center" style={{ backgroundColor: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
+                        <p className="text-[10px] font-medium mb-1" style={{ color: 'rgba(255,255,255,0.5)' }}>{hs.label}</p>
+                        <p className="text-xl font-black" style={{ color: hs.advantage === 'our' ? C.brandGreen : hs.advantage === 'opponent' ? '#FF6B6B' : 'white' }}>
+                          {hs.ourValue}
+                        </p>
+                        <p className="text-[10px]" style={{ color: 'rgba(255,255,255,0.4)' }}>{hs.oppValue}</p>
+                        <span className="text-[9px] px-2 py-0.5 rounded-full mt-1 inline-block"
+                          style={{
+                            backgroundColor: hs.advantage === 'our' ? 'rgba(74,222,128,0.15)' : hs.advantage === 'opponent' ? 'rgba(255,107,107,0.15)' : 'rgba(255,255,255,0.06)',
+                            color: hs.advantage === 'our' ? C.brandGreen : hs.advantage === 'opponent' ? '#FF6B6B' : 'rgba(255,255,255,0.5)'
+                          }}>
+                          {hs.advantage === 'our' ? 'יתרון שלנו' : hs.advantage === 'opponent' ? 'יתרון ליריבה' : 'מאוזן'}
+                        </span>
                       </div>
-                    )}
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Chapter navigation (full only) */}
+              {isFull && fr && (
+                <div className="sticky top-0 z-20 py-2" style={{ backgroundColor: C.bgApp }}>
+                  <div className="flex gap-2 overflow-x-auto pb-1 justify-center">
+                    {CHAPTER_SECTIONS.map(ch => (
+                      <button key={ch.key} onClick={() => handleNavigate(ch.key)}
+                        className="px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all"
+                        style={{
+                          backgroundColor: activeChapter === ch.key ? C.brandDark : 'rgba(20,35,26,0.05)',
+                          color: activeChapter === ch.key ? '#fff' : C.textSecondary,
+                        }}>
+                        {ch.label}
+                      </button>
+                    ))}
                   </div>
                 </div>
-              </Card>
+              )}
 
-              {/* ── SUMMARY MODE ── */}
+              {/* SUMMARY MODE */}
               {!isFull && sr && (
                 <>
                   <Card>
-                    <SectionHeader icon={Target} iconColor="#2A7050" title="מה היה במשחק" />
-                    <p className="text-sm leading-relaxed" style={{ color: '#5C4E38' }}>
-                      {sr.what_happened || 'אין מידע בקובץ.'}
-                    </p>
+                    <SectionHeader icon={Target} iconColor={C.success} title="מה היה במשחק" />
+                    <p className="text-sm leading-relaxed" style={{ color: C.textSecondary }}>{sr.what_happened || 'אין מידע בקובץ.'}</p>
                   </Card>
                   {(sr.what_went_well || []).length > 0 && (
                     <Card>
-                      <SectionHeader icon={CheckCircle2} iconColor="#2A7050" title="מה הלך טוב" />
+                      <SectionHeader icon={CheckCircle2} iconColor={C.success} title="מה הלך טוב" />
                       <div className="space-y-2">
                         {sr.what_went_well.map((item, i) => (
-                          <div key={i} className="flex items-start gap-2.5 p-3 rounded-xl"
-                            style={{ backgroundColor: 'rgba(42,112,80,0.06)', border: '1px solid rgba(42,112,80,0.12)' }}>
-                            <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: '#2A7050' }} />
-                            <p className="text-sm" style={{ color: '#2C2416' }}>{item}</p>
+                          <div key={i} className="flex items-start gap-2.5 p-3 rounded-xl" style={{ backgroundColor: C.successBg, border: '1px solid rgba(22,163,74,0.12)' }}>
+                            <CheckCircle2 className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: C.success }} />
+                            <p className="text-sm" style={{ color: C.textPrimary }}>{item}</p>
                           </div>
                         ))}
                       </div>
@@ -743,22 +688,18 @@ export default function MatchFileAnalysis() {
                   )}
                   {(sr.what_went_poorly || []).length > 0 && (
                     <Card>
-                      <SectionHeader icon={AlertCircle} iconColor="#B94040" title="מה הלך פחות טוב" />
+                      <SectionHeader icon={AlertCircle} iconColor={C.danger} title="מה הלך פחות טוב" />
                       <div className="space-y-2">
                         {sr.what_went_poorly.map((item, i) => {
                           const isAdded = addedIssues.has(i);
                           return (
                             <div key={i} className="flex items-start gap-2.5 p-3 rounded-xl"
-                              style={{
-                                backgroundColor: isAdded ? 'rgba(42,112,80,0.05)' : 'rgba(185,64,64,0.05)',
-                                border: `1px solid ${isAdded ? 'rgba(42,112,80,0.14)' : 'rgba(185,64,64,0.12)'}`
-                              }}>
-                              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5"
-                                style={{ color: isAdded ? '#2A7050' : '#B94040' }} />
-                              <p className="text-sm flex-1" style={{ color: '#2C2416' }}>{item}</p>
+                              style={{ backgroundColor: isAdded ? C.successBg : C.dangerBg, border: `1px solid ${isAdded ? 'rgba(22,163,74,0.14)' : 'rgba(220,38,38,0.12)'}` }}>
+                              <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" style={{ color: isAdded ? C.success : C.danger }} />
+                              <p className="text-sm flex-1" style={{ color: C.textPrimary }}>{item}</p>
                               <button onClick={() => setAddedIssues(prev => { const n = new Set(prev); n.has(i) ? n.delete(i) : n.add(i); return n; })}
                                 className={`flex-shrink-0 w-7 h-7 rounded-lg flex items-center justify-center transition-all ${isAdded ? 'rotate-45' : ''}`}
-                                style={{ backgroundColor: isAdded ? 'rgba(42,112,80,0.12)' : 'rgba(185,64,64,0.1)', color: isAdded ? '#2A7050' : '#B94040' }}>
+                                style={{ backgroundColor: isAdded ? 'rgba(22,163,74,0.12)' : 'rgba(220,38,38,0.1)', color: isAdded ? C.success : C.danger }}>
                                 <PlusCircle className="w-4 h-4" />
                               </button>
                             </div>
@@ -769,12 +710,11 @@ export default function MatchFileAnalysis() {
                   )}
                   {(sr.training_topics || []).length > 0 && (
                     <Card>
-                      <SectionHeader icon={Lightbulb} iconColor="#D97706" title="נושאים לעבודה באימון הבא" />
+                      <SectionHeader icon={Lightbulb} iconColor={C.warning} title="נושאים לעבודה באימון הבא" />
                       <div className="space-y-2">
                         {sr.training_topics.map((item, i) => (
-                          <div key={i} className="p-3 rounded-xl"
-                            style={{ backgroundColor: 'rgba(217,119,6,0.05)', border: '1px solid rgba(217,119,6,0.12)' }}>
-                            <p className="text-sm font-medium" style={{ color: '#2C2416' }}>{item}</p>
+                          <div key={i} className="p-3 rounded-xl" style={{ backgroundColor: C.warningBg, border: '1px solid rgba(217,119,6,0.12)' }}>
+                            <p className="text-sm font-medium" style={{ color: C.textPrimary }}>{item}</p>
                           </div>
                         ))}
                       </div>
@@ -783,139 +723,167 @@ export default function MatchFileAnalysis() {
                 </>
               )}
 
-              {/* ── FULL MODE ── */}
+              {/* FULL MODE */}
               {isFull && fr && (
                 <>
-                  {/* Tactical Overview */}
-                  <Card>
-                    <SectionHeader icon={Target} iconColor="#2A7050" title="סקירה טקטית" />
-                    <p className="text-sm leading-relaxed" style={{ color: '#5C4E38' }}>
-                      {fr.tactical_overview || 'אין מידע מספק בקובץ.'}
-                    </p>
-                  </Card>
+                  <div ref={el => sectionRefs.current.overview = el} data-chapter="overview">
+                    <StatsSection title="סקירה טקטית" icon={Target} iconColor={C.success}
+                      summary={fr.tactical_overview} stats={[]} ourLabel={ourLabel} oppLabel={oppLabel} sectionKey="overview" />
+                  </div>
+                  <div ref={el => sectionRefs.current.possession = el} data-chapter="possession">
+                    <StatsSection title="החזקת כדור ומסירות" icon={BarChart3} iconColor="#2563EB"
+                      summary={fr.possession_passing_summary} stats={fr.possession_passing_stats}
+                      ourLabel={ourLabel} oppLabel={oppLabel} sectionKey="possession" />
+                  </div>
+                  <div ref={el => sectionRefs.current.defense = el} data-chapter="defense">
+                    <StatsSection title="הגנה ולחץ" icon={ShieldCheck} iconColor={C.success}
+                      summary={fr.defense_pressure_summary} stats={fr.defense_pressure_stats}
+                      ourLabel={ourLabel} oppLabel={oppLabel} sectionKey="defense" />
+                  </div>
+                  <div ref={el => sectionRefs.current.duels = el} data-chapter="duels">
+                    <StatsSection title="דו-קרבות ומעברים" icon={Swords} iconColor={C.warning}
+                      summary={fr.duels_transitions_summary} stats={fr.duels_transitions_stats}
+                      ourLabel={ourLabel} oppLabel={oppLabel} sectionKey="duels" />
+                  </div>
 
-                  {/* Possession */}
-                  <StatsSection title="החזקת כדור ומסירות" icon={BarChart3} iconColor="#2A5FA8"
-                    summary={fr.possession_passing_summary} stats={fr.possession_passing_stats}
-                    ourLabel={ourLabel} oppLabel={oppLabel} sectionKey="possession" />
-
-                  {/* Defense */}
-                  <StatsSection title="הגנה ולחץ" icon={ShieldCheck} iconColor="#B94040"
-                    summary={fr.defense_pressure_summary} stats={fr.defense_pressure_stats}
-                    ourLabel={ourLabel} oppLabel={oppLabel} sectionKey="defense" />
-
-                  {/* Duels */}
-                  <StatsSection title="דו-קרבות ומעברים" icon={Swords} iconColor="#9A6A10"
-                    summary={fr.duels_transitions_summary} stats={fr.duels_transitions_stats}
-                    ourLabel={ourLabel} oppLabel={oppLabel} sectionKey="duels" />
-
-                  {/* Standout Players — shown only on screen, NOT saved */}
-                  {(fr.standout_players || []).length > 0 && (
-                    <Card>
-                      <SectionHeader icon={Users} iconColor="#7A4FA0" title="שחקנים בולטים"
-                        subtitle="מוצג בדוח הזה בלבד — לא נשמר בניתוח המשחקים" />
-                      <div className="grid md:grid-cols-2 gap-3">
-                        {fr.standout_players.map((p, i) => (
-                          <div key={i} className="p-4 rounded-xl"
-                            style={{ backgroundColor: 'rgba(122,79,160,0.04)', border: '1px solid rgba(122,79,160,0.12)' }}>
-                            <div className="flex items-center gap-2 mb-2">
-                              <span className="font-bold text-sm" style={{ color: '#2C2416' }}>{p.name}</span>
-                              <span className="text-xs px-2 py-0.5 rounded-full"
-                                style={{ backgroundColor: 'rgba(122,79,160,0.1)', color: '#7A4FA0' }}>{p.position}</span>
-                            </div>
-                            <p className="text-xs mb-2.5" style={{ color: '#5C4E38' }}>{p.summary}</p>
-                            {(p.stats || []).length > 0 && (
-                              <div className="flex flex-wrap gap-1.5">
-                                {p.stats.map((s, j) => (
-                                  <span key={j} className="text-[10px] px-2 py-1 rounded-full"
-                                    style={{ backgroundColor: 'rgba(139,115,85,0.06)', color: '#7A6B57' }}>
-                                    {s.label}: {s.value}
-                                  </span>
-                                ))}
+                  {/* Standout Players */}
+                  <div ref={el => sectionRefs.current.players = el} data-chapter="players">
+                    {(fr.standout_players || []).length > 0 && (
+                      <Card>
+                        <SectionHeader icon={Users} iconColor={C.brandDark} title="שחקנים בולטים"
+                          subtitle="מוצג בדוח זה בלבד — לא נשמר בניתוח המשחקים" />
+                        <div className="flex items-center gap-1.5 mb-4">
+                          <Lock className="w-3 h-3" style={{ color: C.textMuted }} />
+                          <span className="text-[10px]" style={{ color: C.textMuted }}>מוצג בדוח זה בלבד — לא נשמר בניתוח המשחקים</span>
+                        </div>
+                        <div className="grid md:grid-cols-2 gap-3">
+                          {fr.standout_players.map((p, i) => {
+                            const initials = (p.name || '').split(' ').map(w => w[0]).join('').substring(0, 2).toUpperCase();
+                            return (
+                              <div key={i} className="p-4 rounded-xl" style={{ backgroundColor: C.bgCard, border: '1px solid rgba(20,35,26,0.08)' }}>
+                                <div className="flex items-center gap-3 mb-3">
+                                  <div className="w-10 h-10 rounded-full flex items-center justify-center text-sm font-black text-white"
+                                    style={{ backgroundColor: C.brandDark }}>
+                                    {initials}
+                                  </div>
+                                  <div>
+                                    <span className="font-bold text-sm block" style={{ color: C.textPrimary }}>{p.name}</span>
+                                    <span className="text-[10px] px-2 py-0.5 rounded-full"
+                                      style={{ backgroundColor: 'rgba(20,35,26,0.06)', color: C.textSecondary }}>{p.position}</span>
+                                  </div>
+                                </div>
+                                <p className="text-xs leading-relaxed mb-3" style={{ color: C.textSecondary }}>{p.summary}</p>
+                                {(p.stats || []).length > 0 && (
+                                  <div className="flex flex-wrap gap-1.5">
+                                    {p.stats.map((s, j) => (
+                                      <span key={j} className="inline-flex items-center gap-1 text-[10px] px-2.5 py-1 rounded-full"
+                                        style={{ backgroundColor: C.successBg, color: C.success, border: '1px solid rgba(22,163,74,0.12)' }}>
+                                        <span style={{ color: C.textSecondary }}>{s.label}:</span>
+                                        <span className="font-bold">{s.value}</span>
+                                      </span>
+                                    ))}
+                                  </div>
+                                )}
                               </div>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                    </Card>
-                  )}
+                            );
+                          })}
+                        </div>
+                      </Card>
+                    )}
+                  </div>
 
                   {/* Training Topics */}
-                  {(fr.training_topics || []).length > 0 && (
-                    <Card>
-                      <SectionHeader icon={Lightbulb} iconColor="#D97706" title="נושאי עבודה לאימון הבא" />
-                      <div className="space-y-2.5">
-                        {fr.training_topics.map((t, i) => (
-                          <div key={i} className="p-4 rounded-xl flex items-start gap-3"
-                            style={{
-                              backgroundColor: t.urgency === 'דחוף' ? 'rgba(185,64,64,0.05)' : 'rgba(217,119,6,0.04)',
-                              border: `1px solid ${t.urgency === 'דחוף' ? 'rgba(185,64,64,0.16)' : 'rgba(217,119,6,0.14)'}`
-                            }}>
-                            <span className="flex-shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold"
-                              style={{ backgroundColor: t.urgency === 'דחוף' ? '#B94040' : '#D97706', color: '#fff' }}>
-                              {t.urgency}
-                            </span>
-                            <div>
-                              <p className="font-semibold text-sm" style={{ color: '#2C2416' }}>{t.topic}</p>
-                              <p className="text-xs mt-1 leading-relaxed" style={{ color: '#7A6B57' }}>{t.rationale}</p>
+                  <div ref={el => sectionRefs.current.training = el} data-chapter="training">
+                    {(fr.training_topics || []).length > 0 && (
+                      <Card>
+                        <SectionHeader icon={Lightbulb} iconColor={C.warning} title="נושאי עבודה לאימון הבא" />
+                        <div className="space-y-2.5">
+                          {fr.training_topics.map((t, i) => (
+                            <div key={i} className="p-4 rounded-xl flex items-start gap-3"
+                              style={{
+                                backgroundColor: t.urgency === 'דחוף' ? C.dangerBg : C.warningBg,
+                                border: `1px solid ${t.urgency === 'דחוף' ? 'rgba(220,38,38,0.16)' : 'rgba(217,119,6,0.14)'}`
+                              }}>
+                              <span className="flex-shrink-0 px-2.5 py-1 rounded-full text-[10px] font-bold"
+                                style={{ backgroundColor: t.urgency === 'דחוף' ? C.danger : C.warning, color: '#fff' }}>
+                                {t.urgency}
+                              </span>
+                              <div>
+                                <p className="font-semibold text-sm" style={{ color: C.textPrimary }}>{t.topic}</p>
+                                <p className="text-xs mt-1 leading-relaxed" style={{ color: C.textSecondary }}>{t.rationale}</p>
+                              </div>
                             </div>
-                          </div>
-                        ))}
-                      </div>
-                    </Card>
-                  )}
+                          ))}
+                        </div>
+                      </Card>
+                    )}
 
-                  {/* Executive Summary */}
-                  {fr.executive_summary && (
-                    <Card>
-                      <SectionHeader icon={Zap} iconColor="#9A6A10" title="סיכום מנהלים" />
-                      <p className="text-sm leading-relaxed" style={{ color: '#5C4E38' }}>
-                        {fr.executive_summary}
-                      </p>
-                    </Card>
-                  )}
+                    {/* Executive Summary */}
+                    {fr.executive_summary && (
+                      <Card className="mt-5">
+                        <SectionHeader icon={Zap} iconColor="#9A6A10" title="סיכום מנהלים" />
+                        <p className="text-sm leading-relaxed" style={{ color: C.textSecondary }}>{fr.executive_summary}</p>
+                      </Card>
+                    )}
+                  </div>
                 </>
               )}
 
-              {/* ── Deep Dive ── */}
+              {/* Deep Dive */}
               <DeepDive fileUrl={fileUrl} ourTeam={analysis._ourTeamDisplayName || identifiedTeams.ourTeam} opponent={identifiedTeams.opponent} />
 
-              {/* ── Save button ── */}
-              <button onClick={handleSaveToAnalysis} disabled={saving}
-                className="w-full py-4 rounded-2xl text-base font-bold flex items-center justify-center gap-2 transition-all hover:opacity-90"
-                style={{ backgroundColor: '#2A7050', color: '#fff', boxShadow: '0 4px 14px rgba(42,112,80,0.25)', opacity: saving ? 0.7 : 1 }}>
-                {saving ? <><Loader2 className="w-5 h-5 animate-spin" /> שומר...</> : <><ArrowLeft className="w-5 h-5" /> שמירה לניתוח משחקים</>}
-              </button>
+              {/* Save / New File buttons */}
+              <div className="flex gap-3">
+                <button onClick={handleSaveToAnalysis} disabled={saving || saveDone}
+                  className="flex-1 py-4 rounded-2xl text-base font-bold flex items-center justify-center gap-2 transition-all hover:opacity-90"
+                  style={{
+                    backgroundColor: saveDone ? C.successBg : C.success,
+                    color: saveDone ? C.success : '#fff',
+                    boxShadow: saveDone ? 'none' : '0 4px 14px rgba(22,163,74,0.25)',
+                    opacity: saving ? 0.7 : 1
+                  }}>
+                  {saving ? <><Loader2 className="w-5 h-5 animate-spin" /> שומר...</>
+                    : saveDone ? <><CheckCircle2 className="w-5 h-5" /> נשמר</>
+                    : <><Save className="w-5 h-5" /> שמור ניתוח</>}
+                </button>
+                <button onClick={() => {
+                  setStep('upload'); setFile(null); setFileUrl(null); setAnalysis(null);
+                  setIdentifiedTeams({ ourTeam: '', opponent: '' }); setOriginalTeamNames({ team_a: '', team_b: '' });
+                  setAddedIssues(new Set()); setSaveDone(false);
+                }}
+                  className="px-6 py-4 rounded-2xl text-base font-bold flex items-center justify-center gap-2 transition-all hover:opacity-90"
+                  style={{ backgroundColor: 'rgba(20,35,26,0.05)', color: C.textSecondary, border: '1px solid rgba(20,35,26,0.1)' }}>
+                  <Upload className="w-5 h-5" /> קובץ חדש
+                </button>
+              </div>
             </div>
           );
         })()}
 
-        {/* ═══════════ STEP: SAVE DONE ═══════════ */}
+        {/* SAVE DONE */}
         {step === 'saving' && saveDone && (
           <div className="space-y-5">
             <Card>
               <div className="text-center py-8">
-                <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4"
-                  style={{ backgroundColor: 'rgba(42,112,80,0.1)' }}>
-                  <CheckCircle2 className="w-8 h-8" style={{ color: '#2A7050' }} />
+                <div className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-4" style={{ backgroundColor: C.successBg }}>
+                  <CheckCircle2 className="w-8 h-8" style={{ color: C.success }} />
                 </div>
-                <h3 className="font-bold text-xl mb-2" style={{ color: '#2C2416' }}>הניתוח נשמר בהצלחה</h3>
-                <p className="text-sm mb-6" style={{ color: '#7A6B57' }}>
+                <h3 className="font-bold text-xl mb-2" style={{ color: C.textPrimary }}>הניתוח נשמר בהצלחה</h3>
+                <p className="text-sm mb-6" style={{ color: C.textSecondary }}>
                   "{analysis._ourTeamDisplayName || identifiedTeams.ourTeam}" מול "{identifiedTeams.opponent}" — נוסף לתיק המשחק
                 </p>
                 <div className="flex gap-3 justify-center">
                   <button onClick={() => {
                     setStep('upload'); setFile(null); setFileUrl(null); setAnalysis(null);
-                    setIdentifiedTeams({ ourTeam: '', opponent: '' });
-                    setOriginalTeamNames({ team_a: '', team_b: '' });
+                    setIdentifiedTeams({ ourTeam: '', opponent: '' }); setOriginalTeamNames({ team_a: '', team_b: '' });
                     setAddedIssues(new Set()); setSaveDone(false);
                   }}
-                    className="px-6 py-3 rounded-xl text-sm font-bold" style={{ backgroundColor: '#2A7050', color: '#fff' }}>
+                    className="px-6 py-3 rounded-xl text-sm font-bold" style={{ backgroundColor: C.success, color: '#fff' }}>
                     ניתוח קובץ נוסף
                   </button>
                   <a href="/?view=match" className="px-6 py-3 rounded-xl text-sm font-bold"
-                  style={{ backgroundColor: 'rgba(42,95,168,0.08)', color: '#2A5FA8', border: '1px solid rgba(42,95,168,0.2)' }}>
-                  מעבר לניתוחי משחקים
+                    style={{ backgroundColor: 'rgba(37,99,235,0.08)', color: '#2563EB', border: '1px solid rgba(37,99,235,0.2)' }}>
+                    מעבר לניתוחי משחקים
                   </a>
                 </div>
               </div>
