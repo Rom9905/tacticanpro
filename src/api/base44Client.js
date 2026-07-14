@@ -336,6 +336,7 @@ async function handleAnalyzeMatchFile(params) {
   const { data, error } = await supabase.functions.invoke('analyze-match-file', {
     body: {
       mode: params?.mode || 'full',
+      file_url: params?.file_url || '',
       file_content: params?.file_content || '',
       our_team_name: params?.our_team_name || '',
       opponent_name: params?.opponent_name || '',

@@ -160,7 +160,7 @@ serve(async (req) => {
   }
 
   try {
-    const { mode, file_content, our_team_name, opponent_name, question } = await req.json();
+    const { mode, file_url, file_content, our_team_name, opponent_name, question } = await req.json();
     const apiKey = Deno.env.get("GEMINI_API_KEY");
     if (!apiKey) {
       return new Response(JSON.stringify({ error: "GEMINI_API_KEY not configured" }), {
@@ -168,13 +168,82 @@ serve(async (req) => {
       });
     }
 
+    // Resolve file content: use provided text, or fetch from URL
+    let resolvedContent = file_content || "";
+    if (!resolvedContent && file_url) {
+      try {
+        const fileResp = await fetch(file_url);
+        if (fileResp.ok) {
+          const contentType = fileResp.headers.get("content-type") || "";
+          if (contentType.includes("application/json")) {
+            resolvedContent = await fileResp.text();
+          } else if (contentType.includes("text") || contentType.includes("csv")) {
+            resolvedContent = await fileResp.text();
+          } else {
+            // Binary file (PDF/Excel) — send as base64 inline data to Gemini
+            const arrayBuf = await fileResp.arrayBuffer();
+            const bytes = new Uint8Array(arrayBuf);
+            let binary = "";
+            for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+            const base64 = btoa(binary);
+            // Use Gemini inline_data for binary files
+            let userPrompt: string;
+            if (mode === "identify_teams") {
+              userPrompt = buildIdentifyTeamsPrompt("(הקובץ מצורף כקובץ בינארי)", { our_team_name, opponent_name });
+            } else if (mode === "deep_dive") {
+              userPrompt = buildDeepDivePrompt("(הקובץ מצורף כקובץ בינארי)", question, our_team_name || "", opponent_name || "");
+            } else {
+              userPrompt = buildFullAnalysisPrompt("(הקובץ מצורף כקובץ בינארי)", our_team_name || "הקבוצה שלנו", opponent_name || "היריבה");
+            }
+
+            const mimeType = contentType.split(";")[0].trim() || "application/pdf";
+            const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                system_instruction: { parts: [{ text: SYSTEM_PROMPT }] },
+                contents: [{ parts: [
+                  { inline_data: { mime_type: mimeType, data: base64 } },
+                  { text: userPrompt }
+                ] }],
+                generationConfig: {
+                  temperature: 0.2,
+                  maxOutputTokens: 8192,
+                  responseMimeType: "application/json",
+                },
+              }),
+            });
+
+            if (!response.ok) {
+              const err = await response.text();
+              return new Response(JSON.stringify({ error: `Gemini API error: ${response.status}`, details: err }), {
+                status: 502, headers: CORS_HEADERS,
+              });
+            }
+
+            const result = await response.json();
+            const text = result.candidates?.[0]?.content?.parts?.[0]?.text || "";
+            const jsonMatch = text.match(/\{[\s\S]*\}/);
+            if (!jsonMatch) {
+              return new Response(JSON.stringify({ error: "Failed to parse Gemini response", raw: text }), {
+                status: 500, headers: CORS_HEADERS,
+              });
+            }
+            return new Response(JSON.stringify({ data: JSON.parse(jsonMatch[0]) }), { headers: CORS_HEADERS });
+          }
+        }
+      } catch (fetchErr) {
+        resolvedContent = `(שגיאה בקריאת הקובץ: ${fetchErr.message})`;
+      }
+    }
+
     let userPrompt: string;
     if (mode === "identify_teams") {
-      userPrompt = buildIdentifyTeamsPrompt(file_content, { our_team_name, opponent_name });
+      userPrompt = buildIdentifyTeamsPrompt(resolvedContent, { our_team_name, opponent_name });
     } else if (mode === "deep_dive") {
-      userPrompt = buildDeepDivePrompt(file_content, question, our_team_name || "", opponent_name || "");
+      userPrompt = buildDeepDivePrompt(resolvedContent, question, our_team_name || "", opponent_name || "");
     } else {
-      userPrompt = buildFullAnalysisPrompt(file_content, our_team_name || "הקבוצה שלנו", opponent_name || "היריבה");
+      userPrompt = buildFullAnalysisPrompt(resolvedContent, our_team_name || "הקבוצה שלנו", opponent_name || "היריבה");
     }
 
     const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
