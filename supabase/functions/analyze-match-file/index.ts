@@ -1,16 +1,37 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent";
 
-const SYSTEM_PROMPT = `אתה מנתח כדורגל מקצועי. אתה מקבל קובץ נתוני משחק ומנתח אותו.
+const SYSTEM_PROMPT = `אתה אנליסט כדורגל בכיר וחלק ממערכת TACTICANPRO. אתה מנתח דוחות משחק (PDF/CSV/Excel — Wyscout, Instat, ידני) ומפיק ניתוח טקטי מפורט.
 
-כללי ברזל:
-1. אל תמציא מספרים. אם הנתון לא מופיע בקובץ – כתוב "לא צוין בקובץ".
-2. אל תנחש תוצאות, שמות שחקנים, או סטטיסטיקות שלא מופיעים מפורשות בקובץ.
-3. כל מספר שאתה מציג חייב להגיע ישירות מהנתונים שהתקבלו.
-4. אם אין מספיק מידע לניתוח מסוים – ציין זאת בפירוש.
-5. תמיד ענה בעברית.
-6. תמיד החזר JSON תקין בלבד, בלי טקסט נוסף לפני או אחרי.`;
+כל הפלט בעברית מלאה וטבעית. אל תשתמש ב-** או ב-* או בסימוני markdown. אל תמציא מידע. אל תמציא מספרים. תמיד החזר JSON תקין בלבד, בלי טקסט נוסף לפני או אחרי.
+
+3 חוקים קריטיים (לא מתפשרים):
+
+חוק 1 — לקרוא מספרים אמיתיים מהקובץ:
+פתח את הקובץ. קרא כל טבלה, כל שורה, כל עמודה. חפש מספרים: אחוזים, ספירות, מדדים.
+
+חוק 2 — אף פעם לא 0 בתור ברירת מחדל:
+0 מותר רק אם בקובץ באמת כתוב 0.
+אם לא מצאת ערך — אל תכניס אותו לסטטיסטיקות בכלל.
+our_pct/opponent_pct: null = לא זמין (אף פעם לא 0 כ"לא יודע").
+
+חוק 3 — אל תמציא, אל תשער, אל תחשב בראש:
+"36%" בקובץ = "36%" בפלט. לא 35%, לא 40%, לא 0.
+"14 בעיטות" בקובץ = "14" בפלט.
+
+מיפוי מונחים לעברית (חובה):
+Possession = "החזקת כדור", xG = "שערים צפויים", PPDA = "מדד לחץ הגנתי",
+Recoveries = "השבת כדור", Sliding tackles = "החלקות", Clearances = "חיסולים",
+Interceptions = "חסימות", Passes to final third = "מסירות לשליש האחרון",
+Pass accuracy = "דיוק מסירות", Shots on target = "בעיטות למסגרת",
+Ground duels = "דו-קרבות קרקע", Aerial duels = "דו-קרבות אוויר",
+Key passes = "מסירות מפתח", Turnovers/losses = "איבודי כדור", Fouls = "עבירות".
+
+ערכים: "63%" לא "63/37". "14" לא "14 מתוך 24".
+advantage: "our" / "opponent" / "none".
+טון: אנליסט בכיר, ספציפי, לא כללי.
+שמות שחקנים: באנגלית כמו בקובץ.`;
 
 function buildIdentifyTeamsPrompt(fileContent: string, hints: { our_team_name?: string; opponent_name?: string }) {
   return `מהקובץ הבא, זהה את שתי הקבוצות המשתתפות במשחק.
@@ -25,34 +46,52 @@ ${fileContent}`;
 }
 
 function buildFullAnalysisPrompt(fileContent: string, ourTeam: string, opponent: string) {
-  return `נתח את קובץ נתוני המשחק הבא של ${ourTeam} מול ${opponent}.
+  return `נתח את קובץ נתוני המשחק הבא. הקבוצה שלנו: "${ourTeam}". היריבה: "${opponent}".
+תמיד השתמש בשמות "${ourTeam}" ו-"${opponent}" — אף פעם לא השמות מהקובץ.
 
-החזר JSON בפורמט הבא (בעברית):
+קביעת עומק הנתונים (analysis_type):
+- "summary" = קובץ קצר (תוצאה, סטטיסטיקות בודדות, סיכום קצר)
+- "full" = קובץ ארוך ומפורט (נתוני שחקנים, מסירות, דו-קרבות, לחץ, נתונים טקטיים מלאים)
+
+החזר JSON בפורמט:
 {
-  "analysis_type": "full",
-  "match_details": { "date": "YYYY-MM-DD או לא צוין", "our_score": number|null, "opponent_score": number|null, "location": "בית/חוץ/לא צוין" },
-  "full_report": {
-    "tactical_overview": "סקירה טקטית כללית",
-    "possession_passing_summary": "סיכום החזקה ומסירות",
-    "possession_passing_stats": [{ "label": "שם מדד", "our_value": "ערך", "opponent_value": "ערך", "our_pct": number|null, "opponent_pct": number|null, "advantage": "our_team|opponent|none" }],
-    "defense_pressure_summary": "סיכום הגנה",
-    "defense_pressure_stats": [{ "label": "שם מדד", "our_value": "ערך", "opponent_value": "ערך", "our_pct": number|null, "opponent_pct": number|null, "advantage": "our_team|opponent|none" }],
-    "duels_transitions_summary": "סיכום דו-קרבות",
-    "duels_transitions_stats": [{ "label": "שם מדד", "our_value": "ערך", "opponent_value": "ערך", "our_pct": number|null, "opponent_pct": number|null, "advantage": "our_team|opponent|none" }],
-    "key_issues": ["בעיה 1", "בעיה 2"],
-    "training_topics": [{ "topic": "נושא", "urgency": "גבוהה|בינונית|רגיל", "rationale": "הסבר" }],
-    "standout_players": [{ "name": "שם", "positive": true, "note": "הערה" }],
-    "executive_summary": "סיכום מנהלים קצר"
+  "analysis_type": "summary" | "full",
+  "match_details": {
+    "date": "YYYY-MM-DD" | null,
+    "our_score": number | null,
+    "opponent_score": number | null,
+    "location": "בית" | "חוץ"
   },
   "summary_report": {
-    "what_happened": "מה קרה במשחק",
-    "what_went_well": ["דבר טוב 1"],
-    "what_went_poorly": ["דבר רע 1"],
-    "training_topics": ["נושא לאימון 1"]
+    "what_happened": "פסקה — מה קרה, עם מספרים אמיתיים מהקובץ",
+    "what_went_well": ["דבר חיובי עם מספרים"],
+    "what_went_poorly": ["בעיה ספציפית עם מספרים"],
+    "training_topics": ["נושא לאימון"]
+  },
+  "full_report": {
+    "tactical_overview": "מערך, קו הגנה, מאיפה הגיעו הגולים",
+    "possession_passing_summary": "סיכום החזקה ומסירות",
+    "possession_passing_stats": [{"label": "שם מדד בעברית", "our_value": "ערך", "opponent_value": "ערך", "our_pct": number|null, "opponent_pct": number|null, "advantage": "our"|"opponent"|"none"}],
+    "defense_pressure_summary": "סיכום הגנה ולחץ",
+    "defense_pressure_stats": [{"label": "שם מדד", "our_value": "ערך", "opponent_value": "ערך", "our_pct": number|null, "opponent_pct": number|null, "advantage": "our"|"opponent"|"none"}],
+    "duels_transitions_summary": "סיכום דו-קרבות ומעברים",
+    "duels_transitions_stats": [{"label": "שם מדד", "our_value": "ערך", "opponent_value": "ערך", "our_pct": number|null, "opponent_pct": number|null, "advantage": "our"|"opponent"|"none"}],
+    "standout_players": [{"name": "שם באנגלית", "position": "עמדה בעברית", "summary": "תיאור תרומתו", "stats": [{"label": "מדד", "value": "ערך"}]}],
+    "training_topics": [{"topic": "נושא", "urgency": "דחוף"|"חשוב", "rationale": "הסבר"}],
+    "key_issues": ["בעיה מרכזית 1", "בעיה מרכזית 2"],
+    "executive_summary": "3-4 משפטים — המסקנה הכי חשובה"
   }
 }
 
-זכור: רק נתונים שמופיעים בקובץ! אל תמציא מספרים.
+חוקי תוכן:
+- possession_passing_stats: 4-6 מדדים (רק מה שקיים בקובץ)
+- defense_pressure_stats: 4-6 מדדים
+- duels_transitions_stats: 3-5 מדדים
+- standout_players: 4-5 שחקנים
+- training_topics: 3-6 נושאים
+- key_issues: 3-6 בעיות
+- summary_report: תמיד יהיה קיים (גם ב-full)
+- full_report: רק אם analysis_type="full", אחרת null
 
 תוכן הקובץ:
 ${fileContent}`;
@@ -63,27 +102,43 @@ function buildDeepDivePrompt(fileContent: string, question: string, ourTeam: str
 
 "${question}"
 
+פלט אך ורק על סמך מה שיש בקובץ — אל תמציא, אל תשער.
+תמיד השתמש בשמות "${ourTeam}" ו-"${opponent}" — אף פעם לא השמות מהקובץ.
+שמות שחקנים: באנגלית כמו בקובץ.
+אל תשתמש ב-markdown.
+
 החזר JSON בפורמט:
 {
-  "title": "כותרת התשובה",
-  "blocks": [{ "subtitle": "כותרת משנה", "content": "תוכן", "highlights": ["נקודה חשובה"] }],
+  "title": "כותרת קצרה בעברית (עד 6 מילים), כהצהרה. דוגמאות: פריסת המערכים במשחק, שליטה במרכז המגרש",
+  "blocks": [
+    {
+      "subtitle": "כותרת משנה (3-5 מילים)",
+      "content": "1-3 משפטים בעברית",
+      "highlights": [{"label": "שם מדד", "value": "ערך עם יחידות כמו 54%"}]
+    }
+  ],
   "no_data": false
 }
 
-אם אין בקובץ מידע רלוונטי לשאלה, החזר: {"title": "אין מידע", "blocks": [], "no_data": true}
+no_data: true אך ורק אם המידע לא קיים בקובץ — במקרה כזה blocks=[], title="אין מידע בקובץ".
+מידע חלקי — no_data=false, תן מה שיש, ציין מה חסר.
+highlights: 0-4 נקודות מספריות בכל block.
+
+אם אין בקובץ מידע רלוונטי לשאלה, החזר: {"title": "אין מידע בקובץ", "blocks": [], "no_data": true}
 
 תוכן הקובץ:
 ${fileContent}`;
 }
 
+const CORS_HEADERS = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Content-Type": "application/json",
+};
+
 serve(async (req) => {
   if (req.method === "OPTIONS") {
-    return new Response("ok", {
-      headers: {
-        "Access-Control-Allow-Origin": "*",
-        "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-      },
-    });
+    return new Response("ok", { headers: CORS_HEADERS });
   }
 
   try {
@@ -91,8 +146,7 @@ serve(async (req) => {
     const apiKey = Deno.env.get("GEMINI_API_KEY");
     if (!apiKey) {
       return new Response(JSON.stringify({ error: "GEMINI_API_KEY not configured" }), {
-        status: 500,
-        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+        status: 500, headers: CORS_HEADERS,
       });
     }
 
@@ -113,7 +167,7 @@ serve(async (req) => {
         contents: [{ parts: [{ text: userPrompt }] }],
         generationConfig: {
           temperature: 0.2,
-          maxOutputTokens: 4096,
+          maxOutputTokens: 8192,
           responseMimeType: "application/json",
         },
       }),
@@ -122,8 +176,7 @@ serve(async (req) => {
     if (!response.ok) {
       const err = await response.text();
       return new Response(JSON.stringify({ error: `Gemini API error: ${response.status}`, details: err }), {
-        status: 502,
-        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+        status: 502, headers: CORS_HEADERS,
       });
     }
 
@@ -133,19 +186,17 @@ serve(async (req) => {
     const jsonMatch = text.match(/\{[\s\S]*\}/);
     if (!jsonMatch) {
       return new Response(JSON.stringify({ error: "Failed to parse Gemini response", raw: text }), {
-        status: 500,
-        headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+        status: 500, headers: CORS_HEADERS,
       });
     }
 
     const parsed = JSON.parse(jsonMatch[0]);
     return new Response(JSON.stringify({ data: parsed }), {
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      headers: CORS_HEADERS,
     });
   } catch (err) {
     return new Response(JSON.stringify({ error: err.message }), {
-      status: 500,
-      headers: { "Content-Type": "application/json", "Access-Control-Allow-Origin": "*" },
+      status: 500, headers: CORS_HEADERS,
     });
   }
 });
