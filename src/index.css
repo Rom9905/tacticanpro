@@ -177,3 +177,53 @@
   .sienna-accessibility-button,
   [class*="sienna"] { bottom: 80px !important; }
 }
+/* ════════════════════════════════════════════════════════════
+   theme-cream — remaps dark slate utility classes to the warm
+   light palette. Wrap a formerly-dark page in .theme-cream to
+   render it on the unified cream background.
+   ════════════════════════════════════════════════════════════ */
+.theme-cream .bg-slate-950,
+.theme-cream .bg-slate-900 { background-color: #FFFFFF !important; }
+.theme-cream .bg-slate-900\/50,
+.theme-cream .bg-slate-900\/60,
+.theme-cream .bg-slate-900\/80 { background-color: #FFFFFF !important; }
+.theme-cream .bg-slate-800,
+.theme-cream .bg-slate-800\/50,
+.theme-cream .bg-slate-800\/60 { background-color: #FAF7F2 !important; }
+.theme-cream .hover\:bg-slate-800:hover,
+.theme-cream .hover\:bg-slate-700:hover { background-color: rgba(139,115,85,0.10) !important; }
+
+.theme-cream .border-slate-800,
+.theme-cream .border-slate-700 { border-color: rgba(139,115,85,0.18) !important; }
+
+.theme-cream .text-white { color: #2C2416; }
+.theme-cream .text-slate-100,
+.theme-cream .text-slate-200,
+.theme-cream .text-slate-300 { color: #5C4E38 !important; }
+.theme-cream .text-slate-400 { color: #7A6B57 !important; }
+.theme-cream .text-slate-500,
+.theme-cream .text-slate-600 { color: #9A8672 !important; }
+.theme-cream .hover\:text-white:hover { color: #2C2416 !important; }
+
+/* keep white text on solid/gradient colored surfaces (buttons, icon tiles) */
+.theme-cream [class*="bg-emerald-5"], .theme-cream [class*="bg-emerald-6"], .theme-cream [class*="bg-emerald-7"],
+.theme-cream [class*="bg-blue-5"], .theme-cream [class*="bg-blue-6"], .theme-cream [class*="bg-blue-7"],
+.theme-cream [class*="bg-red-5"], .theme-cream [class*="bg-red-6"],
+.theme-cream [class*="bg-amber-5"], .theme-cream [class*="bg-amber-6"],
+.theme-cream [class*="bg-purple-5"], .theme-cream [class*="bg-purple-6"],
+.theme-cream [class*="bg-gradient"] { color: #FFFFFF; }
+.theme-cream [class*="bg-emerald-5"] .text-white, .theme-cream [class*="bg-emerald-6"] .text-white,
+.theme-cream [class*="bg-blue-5"] .text-white, .theme-cream [class*="bg-blue-6"] .text-white,
+.theme-cream [class*="bg-gradient"] .text-white,
+.theme-cream [class*="bg-gradient"] { color: #FFFFFF !important; }
+
+/* subtle tinted surfaces that assumed a dark backdrop */
+.theme-cream .bg-emerald-500\/20 { background-color: rgba(42,112,80,0.10) !important; }
+.theme-cream .text-emerald-400 { color: #2A7050 !important; }
+.theme-cream .bg-blue-500\/20 { background-color: rgba(42,95,168,0.10) !important; }
+.theme-cream .text-blue-400 { color: #2A5FA8 !important; }
+.theme-cream .bg-red-500\/20 { background-color: rgba(185,64,64,0.10) !important; }
+.theme-cream .text-red-400 { color: #B94040 !important; }
+.theme-cream .bg-amber-500\/20 { background-color: rgba(217,119,6,0.10) !important; }
+.theme-cream .text-amber-400 { color: #D97706 !important; }
+.theme-cream .text-purple-400 { color: #7A2A8A !important; }

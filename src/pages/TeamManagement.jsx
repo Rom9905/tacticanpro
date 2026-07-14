@@ -165,7 +165,7 @@ export default function TeamManagement({ initialTab, initialPreselect } = {}) {
   const positions = [...new Set(players.map(p => p.position).filter(Boolean))];
 
   return (
-    <div className="min-h-screen p-4 md:p-6" style={{ background: 'linear-gradient(180deg, #0A1410 0%, #0D1A12 55%, #0A1410 100%)' }} dir={dir}>
+    <div className="min-h-screen p-4 md:p-6 theme-cream" style={{ backgroundColor: '#F4EFE6' }} dir={dir}>
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
