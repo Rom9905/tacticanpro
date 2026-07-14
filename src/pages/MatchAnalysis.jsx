@@ -32,6 +32,7 @@ import VideoAnalysis from '../components/analysis/VideoAnalysis';
 import FreeFormAnalysis from '../components/analysis/FreeFormAnalysis';
 import WeeklySummary from '../components/analysis/WeeklySummary';
 import ProblemHeatmap from '../components/analysis/ProblemHeatmap';
+import TrendsTab from '../components/analysis/TrendsTab';
 import MatchAnalysisModal from '../components/analysis/MatchAnalysisModal';
 import { syncMatchRatingsToPlayers } from '@/lib/playerRatingSync';
 
@@ -422,6 +423,10 @@ export default function MatchAnalysis() {
               <AlertCircle className="w-4 h-4 ml-2" />
               {isHe ? 'מפת בעיות' : 'Problem Map'}
             </TabsTrigger>
+            <TabsTrigger value="trends" className="data-[state=active]:text-emerald-400">
+              <TrendingUp className="w-4 h-4 ml-2" />
+              {isHe ? 'מגמות' : 'Trends'}
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="list" className="mt-4">
@@ -521,6 +526,10 @@ export default function MatchAnalysis() {
 
           <TabsContent value="heatmap">
             <ProblemHeatmap analyses={analyses} teamId={selectedTeamId} />
+          </TabsContent>
+
+          <TabsContent value="trends" className="mt-4">
+            <TrendsTab analyses={analyses} teamId={selectedTeamId} />
           </TabsContent>
         </Tabs>
 

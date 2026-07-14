@@ -5,6 +5,7 @@ import { Badge } from '@/components/ui/badge';
 import { base44 } from '@/api/base44Client';
 import EditPlayerRatingsModal from './EditPlayerRatingsModal';
 import DeepAnalysisSection from './DeepAnalysisSection';
+import TrainingImpactCard from './TrainingImpactCard';
 import BottomLine from '@/components/ui/BottomLine';
 import { buildGameStyleContext } from '@/hooks/useGameStyle';
 import { generateTacticalProblems } from '@/lib/tacticalProblemsEngine';
@@ -442,6 +443,9 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
                 </div>
               </>
             ) : null}
+
+            {/* Training Impact — did the training work pay off? */}
+            <TrainingImpactCard analysis={analysis} />
 
             {/* Deep Analysis */}
             <DeepAnalysisSection analysis={analysis} onRefresh={onRefresh} />
