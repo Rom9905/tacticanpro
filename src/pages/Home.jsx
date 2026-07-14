@@ -94,7 +94,7 @@ export default function Home() {
         safeQuery(base44.entities.MatchAnalysis.filter({ team_id: teamId }, '-date', 50), 'MatchAnalysis'),
         safeQuery(base44.entities.Player.filter({ team_id: teamId }), 'Player'),
         safeQuery(base44.entities.GameSchedule.filter({ team_id: teamId }, 'game_date', 100), 'GameSchedule'),
-        safeQuery(base44.entities.TacticalGoal.filter({ team_id: teamId }, '-created_date', 30), 'TacticalGoal'),
+        safeQuery(base44.entities.TacticalGoal.filter({ team_id: teamId }, '-created_date', 100), 'TacticalGoal'),
         safeQuery(base44.entities.ProfessionalSummary.filter({ team_id: teamId }, '-event_date', 50), 'ProfessionalSummary'),
       ]);
 
