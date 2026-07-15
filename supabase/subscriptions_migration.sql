@@ -38,15 +38,22 @@ CREATE POLICY "Admin full access to subscriptions"
   );
 
 -- 6. Auto-create inactive subscription when a new user signs up
-CREATE OR REPLACE FUNCTION create_subscription_on_signup()
-RETURNS TRIGGER AS $$
+-- IMPORTANT: must be schema-qualified + SET search_path, because GoTrue
+-- (supabase_auth_admin) runs with search_path=auth — an unqualified table
+-- name here breaks ALL signups with "Database error saving new user".
+-- Exception-safe so a failure here can never block user creation.
+CREATE OR REPLACE FUNCTION public.create_subscription_on_signup()
+RETURNS TRIGGER SECURITY DEFINER SET search_path = public AS $$
 BEGIN
-  INSERT INTO subscriptions (user_id, status, plan)
+  INSERT INTO public.subscriptions (user_id, status, plan)
   VALUES (NEW.id, 'inactive', 'monthly')
   ON CONFLICT (user_id) DO NOTHING;
   RETURN NEW;
+EXCEPTION WHEN OTHERS THEN
+  RAISE LOG 'create_subscription_on_signup failed: %', SQLERRM;
+  RETURN NEW;
 END;
-$$ LANGUAGE plpgsql SECURITY DEFINER;
+$$ LANGUAGE plpgsql;
 
 DROP TRIGGER IF EXISTS on_auth_user_created_subscription ON auth.users;
 CREATE TRIGGER on_auth_user_created_subscription
