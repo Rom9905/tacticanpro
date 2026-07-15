@@ -70,6 +70,11 @@ const AuthenticatedApp = () => {
         <Route path="/admin" element={<Admin />} />
         <Route path="/payment" element={<Payment />} />
         <Route path="/payment-success" element={<PaymentSuccess />} />
+        {/* Legal pages must stay reachable without an active subscription —
+            they're linked from the payment terms checkbox. */}
+        <Route path="/terms" element={<Terms />} />
+        <Route path="/cancellation-policy" element={<CancellationPolicy />} />
+        <Route path="/accessibility" element={<AccessibilityStatement />} />
         <Route path="*" element={<SubscriptionBlocked />} />
       </Routes>
     );
