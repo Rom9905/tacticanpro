@@ -18,6 +18,8 @@ import UserManagement from '@/pages/UserManagement';
 import Admin from '@/pages/Admin';
 import SubscriptionBlocked from '@/pages/SubscriptionBlocked';
 import Login from '@/pages/Login';
+import Payment from '@/pages/Payment';
+import PaymentSuccess from '@/pages/PaymentSuccess';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -66,6 +68,8 @@ const AuthenticatedApp = () => {
     return (
       <Routes>
         <Route path="/admin" element={<Admin />} />
+        <Route path="/payment" element={<Payment />} />
+        <Route path="/payment-success" element={<PaymentSuccess />} />
         <Route path="*" element={<SubscriptionBlocked />} />
       </Routes>
     );
@@ -99,6 +103,8 @@ const AuthenticatedApp = () => {
         </LayoutWrapper>
       } />
       <Route path="/pricing-plans" element={<PricingPlans />} />
+      <Route path="/payment" element={<Payment />} />
+      <Route path="/payment-success" element={<PaymentSuccess />} />
       <Route path="/terms" element={<Terms />} />
       <Route path="/cancellation-policy" element={<CancellationPolicy />} />
       <Route path="/accessibility" element={<AccessibilityStatement />} />
