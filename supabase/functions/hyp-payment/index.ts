@@ -1,7 +1,7 @@
 // hyp-payment: creates a signed HYP (Yaad Pay) payment URL for the authenticated user.
 // The HYP credentials live only in Supabase secrets — never in client code.
 //
-// POST { plan: 'monthly' | 'annual' }
+// POST { plan: 'monthly' | 'season_monthly' | 'season_full' }
 // → { url: 'https://pay.hyp.co.il/p/?action=pay&...signed...' }
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -15,9 +15,11 @@ const corsHeaders = {
 const HYP_BASE = 'https://pay.hyp.co.il/p/';
 
 // Server-side source of truth for pricing — the client never sends amounts.
+// The season pass can be paid either monthly (150₪ recurring) or in full (1,800₪).
 const PLANS: Record<string, { amount: number; info: string; hk: boolean }> = {
   monthly: { amount: 199, info: 'TacticanPro - מנוי חודשי מתחדש', hk: true },
-  annual: { amount: 1800, info: 'TacticanPro - מנוי עונתי עד יוני', hk: false },
+  season_monthly: { amount: 150, info: 'TacticanPro - מנוי עונתי (תשלום חודשי)', hk: true },
+  season_full: { amount: 1800, info: 'TacticanPro - מנוי עונתי (תשלום מלא)', hk: false },
 };
 
 Deno.serve(async (req) => {
@@ -71,7 +73,9 @@ Deno.serve(async (req) => {
       SendHesh: 'True',
       email: user.email || '',
       Sign: 'True',
-      tmp: '1',
+      // Template 3: no address/city/zip fields (tested empirically) —
+      // still collects first/last name + email, which the invoice needs.
+      tmp: '3',
     });
     if (planDef.hk) {
       // הוראת קבע — monthly recurring charge (requires HK enabled on the terminal)

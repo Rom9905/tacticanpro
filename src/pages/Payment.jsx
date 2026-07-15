@@ -33,18 +33,24 @@ const MONTHLY_FEATURES = [
 
 const SEASON_FEATURES = [
   'כל מה שבמסלול החודשי',
-  'תקף עד תחילת יוני — כל העונה',
-  'שווה ערך ל-150₪ לחודש בלבד',
-  'תשלום אחד של 1,800₪',
-  'מתחדש בתום העונה לפי המחיר העדכני — ניתן לבטל',
+  'רק 150₪ לחודש — המחיר המשתלם ביותר',
+  'בחירה בין תשלום חודשי לתשלום מלא מראש',
+  'תשלום מלא מראש: 1,800₪ עד תום העונה',
+  'התחייבות לעונה — ניתן לבטל לפי התקנון',
 ];
 
 export default function Payment() {
   const { user } = useAuth();
   const [loadingPlan, setLoadingPlan] = useState(null);
   const [error, setError] = useState(null);
+  const [seasonMode, setSeasonMode] = useState('monthly'); // 'monthly' (150/mo) | 'full' (1800)
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   const startPayment = async (plan) => {
+    if (!termsAccepted) {
+      setError('יש לקרוא ולאשר את תקנון השימוש ומדיניות הביטולים כדי להמשיך');
+      return;
+    }
     setLoadingPlan(plan);
     setError(null);
     try {
@@ -129,7 +135,7 @@ export default function Payment() {
               </ul>
               <button onClick={() => startPayment('monthly')} disabled={!!loadingPlan}
                 className="payment-cta-outline w-full font-bold rounded-full flex items-center justify-center gap-2"
-                style={{ backgroundColor: 'transparent', border: '1.5px solid #4ADE80', color: '#4ADE80', height: 52, fontSize: 16, fontFamily: 'Heebo, sans-serif', cursor: loadingPlan ? 'wait' : 'pointer', opacity: loadingPlan && loadingPlan !== 'monthly' ? 0.5 : 1 }}>
+                style={{ backgroundColor: 'transparent', border: '1.5px solid #4ADE80', color: '#4ADE80', height: 52, fontSize: 16, fontFamily: 'Heebo, sans-serif', cursor: loadingPlan ? 'wait' : 'pointer', opacity: (!termsAccepted || (loadingPlan && loadingPlan !== 'monthly')) ? 0.55 : 1 }}>
                 {loadingPlan === 'monthly' ? <><Loader2 className="w-4 h-4 animate-spin" /> מעביר לתשלום...</> : 'לתשלום מאובטח'}
               </button>
             </div>
@@ -145,14 +151,48 @@ export default function Payment() {
                 fontFamily: 'Heebo, sans-serif', fontWeight: 700, fontSize: 13, padding: '6px 16px', borderRadius: 9999,
               }}>הכי משתלם</div>
               <h3 style={{ fontWeight: 700, fontSize: 20, color: '#FAF7F0', marginBottom: 4 }}>עונתי</h3>
-              <p style={{ fontSize: 15, color: 'rgba(232,245,236,0.6)', marginBottom: 20 }}>עד תחילת יוני — כל העונה במחיר מוזל</p>
-              <div className="flex items-baseline gap-2" style={{ marginBottom: 4 }}>
-                <span style={{ fontFamily: 'Heebo, sans-serif', fontWeight: 900, fontSize: 56, color: '#4ADE80', lineHeight: 1 }}>150₪</span>
-                <span style={{ fontSize: 16, color: 'rgba(232,245,236,0.6)' }}>/ לחודש</span>
+              <p style={{ fontSize: 15, color: 'rgba(232,245,236,0.6)', marginBottom: 16 }}>כל העונה במחיר המשתלם ביותר</p>
+
+              {/* Billing mode toggle: monthly 150 vs full 1,800 upfront */}
+              <div style={{ display: 'flex', gap: 6, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: 4, marginBottom: 16 }}>
+                {[
+                  { key: 'monthly', label: 'תשלום חודשי' },
+                  { key: 'full', label: 'תשלום מלא' },
+                ].map(opt => (
+                  <button key={opt.key} type="button" onClick={() => setSeasonMode(opt.key)}
+                    style={{
+                      flex: 1, height: 38, borderRadius: 9, border: 'none', cursor: 'pointer',
+                      fontFamily: 'Heebo, sans-serif', fontWeight: 700, fontSize: 14,
+                      backgroundColor: seasonMode === opt.key ? '#4ADE80' : 'transparent',
+                      color: seasonMode === opt.key ? '#0D1A12' : 'rgba(232,245,236,0.7)',
+                      transition: 'all 150ms ease-out',
+                    }}>
+                    {opt.label}
+                  </button>
+                ))}
               </div>
-              <p style={{ fontSize: 14, color: 'rgba(232,245,236,0.5)', marginBottom: 20 }}>
-                במקום <span style={{ textDecoration: 'line-through' }}>199₪</span> · חיוב חד-פעמי של 1,800₪
-              </p>
+
+              {seasonMode === 'monthly' ? (
+                <>
+                  <div className="flex items-baseline gap-2" style={{ marginBottom: 4 }}>
+                    <span style={{ fontFamily: 'Heebo, sans-serif', fontWeight: 900, fontSize: 56, color: '#4ADE80', lineHeight: 1 }}>150₪</span>
+                    <span style={{ fontSize: 16, color: 'rgba(232,245,236,0.6)' }}>/ לחודש</span>
+                  </div>
+                  <p style={{ fontSize: 14, color: 'rgba(232,245,236,0.5)', marginBottom: 20 }}>
+                    במקום <span style={{ textDecoration: 'line-through' }}>199₪</span> · חיוב חודשי מתחדש של 150₪
+                  </p>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-baseline gap-2" style={{ marginBottom: 4 }}>
+                    <span style={{ fontFamily: 'Heebo, sans-serif', fontWeight: 900, fontSize: 56, color: '#4ADE80', lineHeight: 1 }}>1,800₪</span>
+                    <span style={{ fontSize: 16, color: 'rgba(232,245,236,0.6)' }}>מראש</span>
+                  </div>
+                  <p style={{ fontSize: 14, color: 'rgba(232,245,236,0.5)', marginBottom: 20 }}>
+                    תשלום אחד · שווה ערך ל-150₪ לחודש · תקף עד תום העונה
+                  </p>
+                </>
+              )}
               <ul style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 32, padding: 0, listStyle: 'none' }}>
                 {SEASON_FEATURES.map((f, i) => (
                   <li key={i} className="flex items-start gap-2.5" style={{ fontSize: 15, color: '#E8F5EC' }}>
@@ -161,15 +201,38 @@ export default function Payment() {
                   </li>
                 ))}
               </ul>
-              <button onClick={() => startPayment('annual')} disabled={!!loadingPlan}
-                className="payment-cta-solid w-full font-bold rounded-full flex items-center justify-center gap-2"
-                style={{ backgroundColor: '#4ADE80', color: '#0D1A12', height: 52, fontSize: 16, fontFamily: 'Heebo, sans-serif', border: 'none', cursor: loadingPlan ? 'wait' : 'pointer', opacity: loadingPlan && loadingPlan !== 'annual' ? 0.5 : 1 }}>
-                {loadingPlan === 'annual' ? <><Loader2 className="w-4 h-4 animate-spin" /> מעביר לתשלום...</> : 'לתשלום מאובטח'}
-              </button>
+              {(() => {
+                const seasonPlan = seasonMode === 'full' ? 'season_full' : 'season_monthly';
+                return (
+                  <button onClick={() => startPayment(seasonPlan)} disabled={!!loadingPlan}
+                    className="payment-cta-solid w-full font-bold rounded-full flex items-center justify-center gap-2"
+                    style={{ backgroundColor: '#4ADE80', color: '#0D1A12', height: 52, fontSize: 16, fontFamily: 'Heebo, sans-serif', border: 'none', cursor: loadingPlan ? 'wait' : 'pointer', opacity: (!termsAccepted || (loadingPlan && loadingPlan !== seasonPlan)) ? 0.55 : 1 }}>
+                    {loadingPlan === seasonPlan ? <><Loader2 className="w-4 h-4 animate-spin" /> מעביר לתשלום...</> : 'לתשלום מאובטח'}
+                  </button>
+                );
+              })()}
             </div>
           </div>
 
-          <p style={{ fontSize: 13, color: 'rgba(232,245,236,0.5)', marginTop: 32, textAlign: 'center', display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>
+          {/* Terms acceptance — required before any payment can start */}
+          <label htmlFor="terms-accept" style={{
+            maxWidth: 560, width: '100%', marginTop: 36, display: 'flex', alignItems: 'flex-start', gap: 12,
+            cursor: 'pointer', backgroundColor: 'rgba(255,255,255,0.03)', border: `1px solid ${termsAccepted ? 'rgba(74,222,128,.4)' : 'rgba(255,255,255,0.08)'}`,
+            borderRadius: 14, padding: '16px 18px', transition: 'border-color 150ms ease-out',
+          }}>
+            <input id="terms-accept" type="checkbox" checked={termsAccepted}
+              onChange={e => { setTermsAccepted(e.target.checked); if (e.target.checked) setError(null); }}
+              style={{ width: 20, height: 20, marginTop: 2, accentColor: '#4ADE80', flexShrink: 0, cursor: 'pointer' }} />
+            <span style={{ fontSize: 14, lineHeight: 1.6, color: 'rgba(232,245,236,0.85)' }}>
+              קראתי ואני מאשר/ת את{' '}
+              <Link to="/terms" target="_blank" style={{ color: '#4ADE80', textDecoration: 'underline' }}>תקנון השימוש</Link>
+              {' '}ואת{' '}
+              <Link to="/cancellation-policy" target="_blank" style={{ color: '#4ADE80', textDecoration: 'underline' }}>מדיניות הביטולים</Link>
+              , כולל תנאי המסלול, החיוב המתחדש וההתחייבות לתקופה.
+            </span>
+          </label>
+
+          <p style={{ fontSize: 13, color: 'rgba(232,245,236,0.5)', marginTop: 20, textAlign: 'center', display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>
             <ShieldCheck style={{ width: 15, height: 15, color: '#4ADE80' }} />
             התשלום מתבצע בדף מאובטח של HYP — פרטי האשראי לא עוברים דרך המערכת שלנו
           </p>

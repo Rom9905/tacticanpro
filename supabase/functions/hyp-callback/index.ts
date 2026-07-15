@@ -16,6 +16,16 @@ const corsHeaders = {
 
 const HYP_BASE = 'https://pay.hyp.co.il/p/';
 
+// Billing keys (carried in the Order field) → expected amount, the DB plan the
+// subscriptions table stores (CHECK allows only monthly|annual), and whether the
+// coverage rolls monthly (HK recurring) or runs to the end of the season.
+const BILLING: Record<string, { amount: number; dbPlan: 'monthly' | 'annual'; rolling: boolean }> = {
+  monthly: { amount: 199, dbPlan: 'monthly', rolling: true },
+  season_monthly: { amount: 150, dbPlan: 'annual', rolling: true },
+  season_full: { amount: 1800, dbPlan: 'annual', rolling: false },
+  annual: { amount: 1800, dbPlan: 'annual', rolling: false }, // legacy alias
+};
+
 // Season pass ("annual") is valid until June 1st. If we're already past June 1,
 // the pass covers the season ending next year.
 function seasonEndDate(now: Date): Date {
@@ -81,17 +91,17 @@ Deno.serve(async (req) => {
       return json({ ok: false, error: 'אימות התשלום נכשל — פנה לתמיכה' }, 400);
     }
 
-    // ── Parse Order: userId|plan|timestamp ──
-    const [userId, plan] = order.split('|');
-    if (!userId || !['monthly', 'annual'].includes(plan)) {
+    // ── Parse Order: userId|billingKey|timestamp ──
+    const [userId, billingKey] = order.split('|');
+    const billing = BILLING[billingKey];
+    if (!userId || !billing) {
       console.error('Bad Order field:', order);
       return json({ ok: false, error: 'הזמנה לא מזוהה — פנה לתמיכה עם מספר עסקה ' + transactionId }, 400);
     }
 
     // Amount sanity check against server-side pricing
-    const expected = plan === 'monthly' ? 199 : 1800;
-    if (Math.round(parseFloat(amount)) !== expected) {
-      console.error(`Amount mismatch: got ${amount}, expected ${expected} for ${plan}`);
+    if (Math.round(parseFloat(amount)) !== billing.amount) {
+      console.error(`Amount mismatch: got ${amount}, expected ${billing.amount} for ${billingKey}`);
       return json({ ok: false, error: 'סכום לא תואם — פנה לתמיכה' }, 400);
     }
 
@@ -102,14 +112,14 @@ Deno.serve(async (req) => {
     );
 
     const now = new Date();
-    const endDate = plan === 'monthly' ? monthlyEndDate(now) : seasonEndDate(now);
+    const endDate = billing.rolling ? monthlyEndDate(now) : seasonEndDate(now);
 
     const { error: upsertError } = await admin
       .from('subscriptions')
       .upsert({
         user_id: userId,
         status: 'active',
-        plan,
+        plan: billing.dbPlan,
         start_date: now.toISOString(),
         end_date: endDate.toISOString(),
       }, { onConflict: 'user_id' });
@@ -119,8 +129,8 @@ Deno.serve(async (req) => {
       return json({ ok: false, error: 'התשלום התקבל אך עדכון המנוי נכשל — פנה לתמיכה עם מספר עסקה ' + transactionId }, 500);
     }
 
-    console.log(`Subscription activated: user=${userId} plan=${plan} tx=${transactionId} until=${endDate.toISOString()}`);
-    return json({ ok: true, plan, end_date: endDate.toISOString(), transaction_id: transactionId });
+    console.log(`Subscription activated: user=${userId} billing=${billingKey} plan=${billing.dbPlan} tx=${transactionId} until=${endDate.toISOString()}`);
+    return json({ ok: true, plan: billing.dbPlan, end_date: endDate.toISOString(), transaction_id: transactionId });
   } catch (e) {
     console.error('hyp-callback error:', e);
     return json({ ok: false, error: 'שגיאה פנימית' }, 500);
