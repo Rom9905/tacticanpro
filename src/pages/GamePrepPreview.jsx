@@ -8,6 +8,8 @@ import GamePrepForm from '@/components/gameprep/GamePrepForm';
 import MatchAnalysisModal from '@/components/analysis/MatchAnalysisModal';
 import MatchAnalysisHero from '@/components/analysis/MatchAnalysisHero';
 import MatchReportCard from '@/components/analysis/MatchReportCard';
+import TeamForm from '@/components/team/TeamForm';
+import LineupBuilder from '@/components/team/LineupBuilder';
 import { MA, matchAnalysisStyles } from '@/components/analysis/matchAnalysisTheme';
 
 const players = [
@@ -225,6 +227,8 @@ export default function GamePrepPreview() {
         {tabBtn('form', 'טופס יצירת הכנה')}
         {tabBtn('match', 'מודל ניתוח משחק')}
         {tabBtn('matchpage', 'עמוד ניתוח משחקים')}
+        {tabBtn('teamform', 'הקמת קבוצה')}
+        {tabBtn('lineup7', 'הרכב 7 על 7')}
       </div>
 
       <div style={{ padding: 16 }}>
@@ -268,6 +272,20 @@ export default function GamePrepPreview() {
               </div>
             </div>
           </div>
+        </div>
+      )}
+
+      {tab === 'teamform' && (
+        <TeamForm isOpen={true} onClose={() => setTab('hub')} team={null} onSave={() => setTab('hub')} />
+      )}
+
+      {tab === 'lineup7' && (
+        <div style={{ padding: 16, background: '#0f172a', minHeight: '100vh' }} dir="rtl">
+          <LineupBuilder
+            team={{ format: '7v7', age_group: 'ילדים', formation: '2-3-1', name: 'ילדי דוגמה' }}
+            players={players.map(p => ({ ...p, availability: 'זמין' }))}
+            onUpdate={() => {}}
+          />
         </div>
       )}
 

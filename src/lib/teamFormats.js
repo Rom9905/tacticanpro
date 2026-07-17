@@ -142,34 +142,47 @@ export const FORMATS = {
   '7v7': {
     key: '7v7',
     label: '7 על 7',
+    subtitle: 'מגרש קטן · שני חצאים של 25 דק\'',
     lineupSize: 7,
     benchSize: 5,
     halfMinutes: 25,
     formations: Object.keys(LAYOUTS_7),
     defaultFormation: '2-3-1',
     layouts: LAYOUTS_7,
+    // Pitch design: fewer players = a smaller pitch, so markings shrink
+    // and tokens grow to keep the board readable.
+    pitch: { tokenScale: 1.3, markingScale: 0.7 },
   },
   '9v9': {
     key: '9v9',
     label: '9 על 9',
+    subtitle: 'מגרש בינוני · שני חצאים של 30 דק\'',
     lineupSize: 9,
     benchSize: 7,
     halfMinutes: 30,
     formations: Object.keys(LAYOUTS_9),
     defaultFormation: '3-3-2',
     layouts: LAYOUTS_9,
+    pitch: { tokenScale: 1.15, markingScale: 0.85 },
   },
   '11v11': {
     key: '11v11',
     label: '11 על 11',
+    subtitle: 'מגרש מלא · שני חצאים של 45 דק\'',
     lineupSize: 11,
     benchSize: 9,
     halfMinutes: 45,
     formations: Object.keys(LAYOUTS_11),
     defaultFormation: '4-4-2',
     layouts: LAYOUTS_11,
+    pitch: { tokenScale: 1, markingScale: 1 },
   },
 };
+
+// Per-format pitch design tokens (token size / marking proportions).
+export function pitchStyleFor(teamOrKey) {
+  return getFormat(teamOrKey).pitch;
+}
 
 export const FORMAT_KEYS = ['7v7', '9v9', '11v11'];
 

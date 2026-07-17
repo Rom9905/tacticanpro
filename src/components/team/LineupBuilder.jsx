@@ -20,7 +20,7 @@ import { validateLineup } from '../lineup/PositionRules';
 import { generateReadinessReport, autoFixDuplicates } from '../lineup/CriticalIssuesEngine';
 import { useLang } from '@/lib/LanguageContext';
 import {
-  getFormat, formationsFor, layoutFor, positionMappingFor, FORMATION_DESCRIPTIONS,
+  getFormat, formationsFor, layoutFor, positionMappingFor, pitchStyleFor, FORMATION_DESCRIPTIONS,
 } from '@/lib/teamFormats';
 
 export default function LineupBuilder({ team, players, onUpdate }) {
@@ -45,6 +45,14 @@ export default function LineupBuilder({ team, players, onUpdate }) {
   const lineupSize = teamFormat.lineupSize;
   const benchMax = teamFormat.benchSize;
   const positionMapping = positionMappingFor(team, currentFormation);
+  // Pitch design per format: markings shrink and tokens grow on small pitches.
+  const { tokenScale, markingScale } = pitchStyleFor(team);
+  // SVG marking geometry (viewBox 65x100), centred on x=32.5.
+  const penW = 35 * markingScale, penX = 32.5 - penW / 2;
+  const goalW = 19 * markingScale, goalX = 32.5 - goalW / 2;
+  const penD = 14 * markingScale, goalD = 6 * markingScale;
+  const circleR = 8 * markingScale;
+  const tokenPx = Math.round(36 * tokenScale);
 
   useEffect(() => {
     const fmt = getFormat(team);
@@ -432,17 +440,17 @@ export default function LineupBuilder({ team, players, onUpdate }) {
                 <rect x="2" y="2" width="61" height="96" fill="none" stroke="#2d5a3d" strokeWidth="0.4" />
                 {/* Half-way line (horizontal, across width) */}
                 <line x1="2" y1="50" x2="63" y2="50" stroke="#2d5a3d" strokeWidth="0.4" />
-                {/* Center circle */}
-                <circle cx="32.5" cy="50" r="8" fill="none" stroke="#2d5a3d" strokeWidth="0.4" />
+                {/* Center circle — scaled to the team's format */}
+                <circle cx="32.5" cy="50" r={circleR} fill="none" stroke="#2d5a3d" strokeWidth="0.4" />
                 <circle cx="32.5" cy="50" r="0.6" fill="#2d5a3d" />
                 {/* Top penalty area */}
-                <rect x="15" y="2" width="35" height="14" fill="none" stroke="#2d5a3d" strokeWidth="0.4" />
+                <rect x={penX} y="2" width={penW} height={penD} fill="none" stroke="#2d5a3d" strokeWidth="0.4" />
                 {/* Bottom penalty area */}
-                <rect x="15" y="84" width="35" height="14" fill="none" stroke="#2d5a3d" strokeWidth="0.4" />
+                <rect x={penX} y={98 - penD} width={penW} height={penD} fill="none" stroke="#2d5a3d" strokeWidth="0.4" />
                 {/* Top goal area */}
-                <rect x="23" y="2" width="19" height="6" fill="none" stroke="#2d5a3d" strokeWidth="0.4" />
+                <rect x={goalX} y="2" width={goalW} height={goalD} fill="none" stroke="#2d5a3d" strokeWidth="0.4" />
                 {/* Bottom goal area */}
-                <rect x="23" y="92" width="19" height="6" fill="none" stroke="#2d5a3d" strokeWidth="0.4" />
+                <rect x={goalX} y={98 - goalD} width={goalW} height={goalD} fill="none" stroke="#2d5a3d" strokeWidth="0.4" />
                 {/* Top goal */}
                 <rect x="27" y="0" width="11" height="2" fill="none" stroke="#2d5a3d" strokeWidth="0.4" />
                 {/* Bottom goal */}
@@ -471,8 +479,10 @@ export default function LineupBuilder({ team, players, onUpdate }) {
                     onClick={() => handleSlotClick(index)}
                   >
                     <div className="flex flex-col items-center gap-0.5">
-                      <div className={`
-                        relative w-9 h-9 rounded-full flex items-center justify-center overflow-hidden
+                      <div
+                        style={{ width: tokenPx, height: tokenPx }}
+                        className={`
+                        relative rounded-full flex items-center justify-center overflow-hidden
                         transition-all duration-200
                         ${player
                           ? 'bg-emerald-600 text-white shadow-lg shadow-emerald-500/40'

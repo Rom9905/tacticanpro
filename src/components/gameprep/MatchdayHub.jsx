@@ -2,7 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { base44, setActiveAITeam } from '@/api/base44Client';
 import { objectFingerprint } from '@/lib/analysisFingerprint';
 import { useIsMobile } from '@/hooks/use-mobile';
-import { getFormat, layoutFor } from '@/lib/teamFormats';
+import { getFormat, layoutFor, pitchStyleFor } from '@/lib/teamFormats';
 import {
   ShieldCheck, Crosshair, Sparkles, Scale, Printer, Lightbulb, ArrowRight, Loader2
 } from 'lucide-react';
@@ -63,14 +63,16 @@ function resultType(ma) {
 
 // ─── Pitch Component ───
 function PitchView({ players, lineupIds, formation, team, dark, large, isMobile }) {
+  // Fewer players = a smaller pitch: markings shrink, tokens grow.
+  const { tokenScale, markingScale } = pitchStyleFor(team);
   const h = large ? (isMobile ? 440 : 600) : (isMobile ? 340 : 400);
-  const tokenSize = large ? 38 : 30;
-  const fontSize = large ? 13 : 11;
+  const tokenSize = Math.round((large ? 38 : 30) * tokenScale);
+  const fontSize = Math.round((large ? 13 : 11) * tokenScale);
   const nameSize = large ? 10 : 9;
   const inset = large ? 14 : 10;
-  const penW = large ? 180 : 120;
-  const penH = large ? 64 : 44;
-  const circleR = large ? 50 : 35;
+  const penW = Math.round((large ? 180 : 120) * markingScale);
+  const penH = Math.round((large ? 64 : 44) * markingScale);
+  const circleR = Math.round((large ? 50 : 35) * markingScale);
 
   const lineColor = dark ? 'rgba(74,222,128,.35)' : 'rgba(255,255,255,.4)';
   const bg = dark
