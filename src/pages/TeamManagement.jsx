@@ -39,6 +39,7 @@ import PlayerComparison from '../components/comparison/PlayerComparison';
 import GameStyleTab from '../components/team/GameStyleTab';
 import { useTeam } from '@/components/TeamContext';
 import { useLang } from '@/lib/LanguageContext';
+import { formatBadgeLabel } from '@/lib/teamFormats';
 
 export default function TeamManagement({ initialTab, initialPreselect } = {}) {
   const hasPlan = useSubscriptionGuard();
@@ -205,17 +206,22 @@ export default function TeamManagement({ initialTab, initialPreselect } = {}) {
                       <Users className="w-7 h-7 text-white" />
                     </div>
                     <div>
-                      <h2 className="text-xl font-bold text-white">{selectedTeam.name}</h2>
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h2 className="text-xl font-bold text-white">{selectedTeam.name}</h2>
+                        <span className="text-xs font-bold px-2.5 py-1 rounded-full"
+                          style={{ backgroundColor: 'rgba(74,222,128,0.15)', color: '#4ADE80', border: '1px solid rgba(74,222,128,0.35)' }}>
+                          {formatBadgeLabel(selectedTeam)}
+                        </span>
+                      </div>
                       <div className="flex items-center gap-3 text-sm text-slate-400">
-                        {selectedTeam.age_group && <span>{selectedTeam.age_group}</span>}
-                        {selectedTeam.league && <span>• {selectedTeam.league}</span>}
+                        {selectedTeam.league && <span>{selectedTeam.league}</span>}
                       </div>
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-3">
                     <div className="px-3 py-1.5 rounded-lg bg-slate-800 text-sm">
                       <span className="text-slate-400">{isHe ? 'מערך:' : 'Formation:'} </span>
-                      <span className="text-white font-medium">{selectedTeam.formation || '4-4-2'}</span>
+                      <span className="text-white font-medium">{selectedTeam.formation || '—'}</span>
                     </div>
                     <div className="px-3 py-1.5 rounded-lg bg-slate-800 text-sm">
                       <span className="text-slate-400">{isHe ? 'סגנון:' : 'Style:'} </span>

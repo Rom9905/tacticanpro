@@ -242,6 +242,7 @@ export default function GamePrepPreview() {
       {tab === 'form' && (
         <GamePrepForm
           teamId="team-1"
+          team={{ format: '9v9', age_group: 'ילדים' }}
           players={players}
           generalPreps={[]}
           onClose={() => setTab('hub')}

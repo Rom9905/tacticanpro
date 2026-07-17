@@ -16,6 +16,12 @@
       ],
       "description": "\u05e7\u05d1\u05d5\u05e6\u05ea \u05d2\u05d9\u05dc"
     },
+    "format": {
+      "type": "string",
+      "enum": ["7v7", "9v9", "11v11"],
+      "default": "11v11",
+      "description": "\u05e4\u05d5\u05e8\u05de\u05d8 \u05de\u05e9\u05d7\u05e7 \u2014 7 \u05e2\u05dc 7 / 9 \u05e2\u05dc 9 / 11 \u05e2\u05dc 11"
+    },
     "league": {
       "type": "string",
       "description": "\u05dc\u05d9\u05d2\u05d4"

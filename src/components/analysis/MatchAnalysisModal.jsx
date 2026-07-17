@@ -12,6 +12,7 @@ import { generateTacticalProblems } from '@/lib/tacticalProblemsEngine';
 import { syncTacticalProblemsToGoals } from '@/lib/tacticalGoalsSync';
 import { matchFingerprint } from '@/lib/analysisFingerprint';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { isKidsTeam, isYouthFormat } from '@/lib/teamFormats';
 import { MA, resultTheme, ratingColor } from './matchAnalysisTheme';
 import {
   Loader2, BarChart3, Video, FileText, Clock, Target, BookOpen,
@@ -112,6 +113,7 @@ export default function MatchAnalysisModal({ open, onClose, analysis, teamName, 
   const [localRatings, setLocalRatings] = useState(null);
   const [_teamGameStyle, setTeamGameStyle] = useState(null);
   const [_teamGameStyleNotes, setTeamGameStyleNotes] = useState('');
+  const [teamRow, setTeamRow] = useState(null);
   const [deletingType, setDeletingType] = useState(null);
   const [showAllTopics, setShowAllTopics] = useState(false);
   const [deepOpen, setDeepOpen] = useState(false);
@@ -137,6 +139,7 @@ export default function MatchAnalysisModal({ open, onClose, analysis, teamName, 
         base44.entities.Team.filter({ id: analysis.team_id }).then(teams => {
           const team = teams[0];
           if (team) {
+            setTeamRow(team);
             setTeamGameStyle(team.game_style || null);
             setTeamGameStyleNotes(team.game_style_notes || '');
           }
@@ -255,8 +258,12 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
   const tacticalProblems = React.useMemo(() => {
     if (!analysis) return [];
     if (analysis.tactical_problems?.length > 0) return analysis.tactical_problems;
+    // Wait for the team row before generating: kids teams get a
+    // development-first rule set, and the result is cached to the DB —
+    // generating early would cache the wrong (adult) style.
+    if (analysis.team_id && !teamRow) return [];
     try {
-      const generated = generateTacticalProblems(analysis);
+      const generated = generateTacticalProblems(analysis, { kids: isKidsTeam(teamRow) });
       if (generated.length > 0 && analysis.id) {
         base44.entities.MatchAnalysis.update(analysis.id, { tactical_problems: generated }).catch(() => {});
       }
@@ -265,7 +272,7 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
       console.error('tactical problems engine failed:', err);
       return [];
     }
-  }, [analysis?.id, analysis?.tactical_problems]);
+  }, [analysis?.id, analysis?.tactical_problems, teamRow]);
 
   useEffect(() => {
     if (open && analysis?.id && tacticalProblems.length > 0) {
@@ -351,7 +358,12 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
   const remainingTopics = trainingTopics.slice(3);
   const visibleTopics = showAllTopics ? trainingTopics : urgentTopics;
 
-  const bars = BAR_METRICS.filter(m => analysis.stats?.[m.key] != null && !Number.isNaN(Number(analysis.stats[m.key])));
+  // Youth formats (7v7/9v9) de-emphasize expected-goals style metrics —
+  // participation and basics matter more than xG at that age.
+  const youthFormat = isYouthFormat(teamRow);
+  const bars = BAR_METRICS
+    .filter(m => !(youthFormat && m.key === 'xg'))
+    .filter(m => analysis.stats?.[m.key] != null && !Number.isNaN(Number(analysis.stats[m.key])));
 
   const metaParts = [];
   if (analysis.date) metaParts.push(format(new Date(analysis.date), 'd בMMMM', { locale: he }));

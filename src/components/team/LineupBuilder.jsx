@@ -16,77 +16,12 @@ import {
 } from "@/components/ui/select";
 import PlayerSlotPanel from '../lineup/PlayerSlotPanel';
 import LineupRecommendations from '../lineup/LineupRecommendations';
-import { validateLineup, POSITION_MAPPING } from '../lineup/PositionRules';
+import { validateLineup } from '../lineup/PositionRules';
 import { generateReadinessReport, autoFixDuplicates } from '../lineup/CriticalIssuesEngine';
 import { useLang } from '@/lib/LanguageContext';
-
-// Formation descriptions
-const formationDescriptions = {
-  '4-4-2': 'מערך מאוזן קלאסי - מתאים למשחק ישיר',
-  '4-3-3': 'מערך התקפי עם שליטה ברוחב',
-  '4-2-3-1': 'מערך גמיש עם קשר עשר',
-  '3-5-2': 'שליטה באמצע + גמישות בצד',
-  '3-4-3': 'מערך אגרסיבי עם לחץ גבוה',
-  '5-3-2': 'מערך הגנתי עם יציבות',
-  '5-4-1': 'הגנה עמוקה + קונטרה',
-  '4-1-4-1': 'עוגן הגנתי + רוחב התקפי',
-};
-
-// Formation positions (relative % on field)
-// y=92 = GK (bottom), y=75 = DEF, y=50 = MID, y=20 = FWD (top)
-// x = horizontal spread (left to right)
-const formationPositions = {
-  '4-4-2': [
-    { x: 50, y: 92 }, // GK
-    { x: 15, y: 75 }, { x: 37, y: 75 }, { x: 63, y: 75 }, { x: 85, y: 75 }, // DEF L,CB,CB,R
-    { x: 15, y: 50 }, { x: 38, y: 50 }, { x: 62, y: 50 }, { x: 85, y: 50 }, // MID L,CM,CM,R
-    { x: 35, y: 22 }, { x: 65, y: 22 }, // FWD
-  ],
-  '4-3-3': [
-    { x: 50, y: 92 },
-    { x: 15, y: 75 }, { x: 37, y: 75 }, { x: 63, y: 75 }, { x: 85, y: 75 },
-    { x: 25, y: 50 }, { x: 50, y: 50 }, { x: 75, y: 50 },
-    { x: 18, y: 20 }, { x: 50, y: 16 }, { x: 82, y: 20 },
-  ],
-  '4-2-3-1': [
-    { x: 50, y: 92 },
-    { x: 15, y: 75 }, { x: 37, y: 75 }, { x: 63, y: 75 }, { x: 85, y: 75 }, // DEF
-    { x: 33, y: 57 }, { x: 67, y: 57 }, // DM pair
-    { x: 18, y: 38 }, { x: 50, y: 36 }, { x: 82, y: 38 }, // AM trio
-    { x: 50, y: 16 }, // ST
-  ],
-  '3-5-2': [
-    { x: 50, y: 92 },
-    { x: 22, y: 75 }, { x: 50, y: 75 }, { x: 78, y: 75 }, // 3 DEF
-    { x: 10, y: 52 }, { x: 30, y: 52 }, { x: 50, y: 50 }, { x: 70, y: 52 }, { x: 90, y: 52 }, // 5 MID
-    { x: 35, y: 22 }, { x: 65, y: 22 }, // 2 FWD
-  ],
-  '3-4-3': [
-    { x: 50, y: 92 },
-    { x: 22, y: 75 }, { x: 50, y: 75 }, { x: 78, y: 75 },
-    { x: 15, y: 52 }, { x: 40, y: 52 }, { x: 60, y: 52 }, { x: 85, y: 52 },
-    { x: 18, y: 20 }, { x: 50, y: 16 }, { x: 82, y: 20 },
-  ],
-  '5-3-2': [
-    { x: 50, y: 92 },
-    { x: 10, y: 72 }, { x: 27, y: 75 }, { x: 50, y: 76 }, { x: 73, y: 75 }, { x: 90, y: 72 }, // 5 DEF
-    { x: 25, y: 50 }, { x: 50, y: 48 }, { x: 75, y: 50 }, // 3 MID
-    { x: 35, y: 22 }, { x: 65, y: 22 }, // 2 FWD
-  ],
-  '5-4-1': [
-    { x: 50, y: 92 },
-    { x: 10, y: 72 }, { x: 27, y: 75 }, { x: 50, y: 76 }, { x: 73, y: 75 }, { x: 90, y: 72 },
-    { x: 15, y: 50 }, { x: 38, y: 50 }, { x: 62, y: 50 }, { x: 85, y: 50 },
-    { x: 50, y: 18 },
-  ],
-  '4-1-4-1': [
-    { x: 50, y: 92 },
-    { x: 15, y: 75 }, { x: 37, y: 75 }, { x: 63, y: 75 }, { x: 85, y: 75 }, // DEF
-    { x: 50, y: 62 }, // DM
-    { x: 12, y: 44 }, { x: 35, y: 44 }, { x: 65, y: 44 }, { x: 88, y: 44 }, // MID
-    { x: 50, y: 18 }, // ST
-  ],
-};
+import {
+  getFormat, formationsFor, layoutFor, positionMappingFor, FORMATION_DESCRIPTIONS,
+} from '@/lib/teamFormats';
 
 export default function LineupBuilder({ team, players, onUpdate }) {
   const { t: langT } = useLang();
@@ -95,7 +30,8 @@ export default function LineupBuilder({ team, players, onUpdate }) {
   const [bench, setBench] = useState([]);
   const [selectedSlot, setSelectedSlot] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [currentFormation, setCurrentFormation] = useState(team?.formation || '4-4-2');
+  const teamFormat = getFormat(team);
+  const [currentFormation, setCurrentFormation] = useState(team?.formation || teamFormat.defaultFormation);
   const [activeTab, setActiveTab] = useState('match');
   const [templates, setTemplates] = useState([]);
   const [selectedTemplate, setSelectedTemplate] = useState(null);
@@ -104,10 +40,16 @@ export default function LineupBuilder({ team, players, onUpdate }) {
   const [templateName, setTemplateName] = useState('');
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
 
-  const positions = formationPositions[currentFormation] || formationPositions['4-4-2'];
+  // Layout comes from the team's format (7v7 / 9v9 / 11v11).
+  const positions = layoutFor(team, currentFormation);
+  const lineupSize = teamFormat.lineupSize;
+  const benchMax = teamFormat.benchSize;
+  const positionMapping = positionMappingFor(team, currentFormation);
 
   useEffect(() => {
-    setCurrentFormation(team?.formation || '4-4-2');
+    const fmt = getFormat(team);
+    const f = team?.formation;
+    setCurrentFormation(fmt.formations.includes(f) ? f : fmt.defaultFormation);
     loadTemplates();
   }, [team]);
 
@@ -229,7 +171,7 @@ export default function LineupBuilder({ team, players, onUpdate }) {
     formationId: currentFormation,
     slots: positions.map((pos, index) => ({
       slotIndex: index,
-      positionCode: POSITION_MAPPING[index],
+      positionCode: positionMapping[index],
       positionCoords: pos,
       player: lineup[index],
       playerId: lineup[index]?.id || null,
@@ -251,15 +193,15 @@ export default function LineupBuilder({ team, players, onUpdate }) {
   const [showDebugSnapshot, setShowDebugSnapshot] = React.useState(false);
   
   // Advanced validation - RUNS ON SNAPSHOT
-  const validation = validateLineup(lineup, positions);
+  const validation = validateLineup(lineup, positions, positionMapping);
   
   // Generate readiness report - RUNS ON SNAPSHOT with activeSnapshot
   const readinessReport = generateReadinessReport(team || {}, lineup, positions, activeLineupSnapshot);
   
   // Legacy warnings for basic checks
   const basicWarnings = [];
-  if (filledCount < 11) {
-    basicWarnings.push(`חסרים ${11 - filledCount} שחקנים`);
+  if (filledCount < lineupSize) {
+    basicWarnings.push(`חסרים ${lineupSize - filledCount} שחקנים`);
   }
   
   const allWarnings = [...basicWarnings, ...validation.issues.map(i => i.message)];
@@ -332,7 +274,7 @@ export default function LineupBuilder({ team, players, onUpdate }) {
   };
 
   const handleAddToBench = (player) => {
-    if (bench.length < 9 && !bench.find(b => b.player.id === player.id)) {
+    if (bench.length < benchMax && !bench.find(b => b.player.id === player.id)) {
       setBench([...bench, { player, subType: 'חילוף לפי מצב' }]);
     }
   };
@@ -466,9 +408,9 @@ export default function LineupBuilder({ team, players, onUpdate }) {
               <SelectValue />
             </SelectTrigger>
             <SelectContent className="bg-slate-800 border-slate-700">
-              {Object.keys(formationPositions).map(formation => (
+              {formationsFor(team).map(formation => (
                 <SelectItem key={formation} value={formation}>
-                  {formation} — {formationDescriptions[formation]?.split(' - ')[1] || ''}
+                  {formation} — {FORMATION_DESCRIPTIONS[formation]?.split(' - ')[1] || FORMATION_DESCRIPTIONS[formation]?.split(' — ')[1] || ''}
                 </SelectItem>
               ))}
             </SelectContent>
@@ -582,12 +524,12 @@ export default function LineupBuilder({ team, players, onUpdate }) {
         {/* Actions */}
         <div className="flex justify-between items-center mt-4">
           <div className="flex items-center gap-2 text-sm">
-            {filledCount === 11 && allWarnings.length === 0 ? (
+            {filledCount === lineupSize && allWarnings.length === 0 ? (
               <span className="text-emerald-400 font-semibold flex items-center gap-1">
                 <CheckCircle className="w-4 h-4" /> {isHe ? 'הרכב מלא ✓' : 'Full Lineup ✓'}
               </span>
             ) : (
-              <span className="text-slate-400">{filledCount}/11 {isHe ? 'שחקנים בהרכב' : 'players'}</span>
+              <span className="text-slate-400">{filledCount}/{lineupSize} {isHe ? 'שחקנים בהרכב' : 'players'}</span>
             )}
           </div>
           <div className="flex gap-2">
@@ -624,7 +566,7 @@ export default function LineupBuilder({ team, players, onUpdate }) {
                 <CardContent className="space-y-2 pt-0">
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-400">{isHe ? 'שחקנים בהרכב:' : 'In lineup:'}</span>
-                    <span className={filledCount === 11 ? 'text-emerald-400 font-semibold' : 'text-white'}>{filledCount}/11</span>
+                    <span className={filledCount === lineupSize ? 'text-emerald-400 font-semibold' : 'text-white'}>{filledCount}/{lineupSize}</span>
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-400">{isHe ? 'זמינים בסגל:' : 'Available:'}</span>
@@ -636,10 +578,10 @@ export default function LineupBuilder({ team, players, onUpdate }) {
                   </div>
                   <div className="flex justify-between text-sm">
                     <span className="text-slate-400">{isHe ? 'עמדות חסרות:' : 'Missing slots:'}</span>
-                    {filledCount === 11 ? (
+                    {filledCount === lineupSize ? (
                       <span className="text-emerald-400 text-xs">{isHe ? 'אין ✓' : 'None ✓'}</span>
                     ) : (
-                      <span className="text-red-400 text-xs">{11 - filledCount} {isHe ? 'עמדות' : 'slots'}</span>
+                      <span className="text-red-400 text-xs">{lineupSize - filledCount} {isHe ? 'עמדות' : 'slots'}</span>
                     )}
                   </div>
         
@@ -715,7 +657,7 @@ export default function LineupBuilder({ team, players, onUpdate }) {
                                   size="sm"
                                   variant="ghost"
                                   onClick={() => handleAddToBench(player)}
-                                  disabled={bench.length >= 9}
+                                  disabled={bench.length >= benchMax}
                                   className="h-7 px-2 text-slate-400 hover:bg-slate-700"
                                 >
                                   {isHe ? 'לספסל' : 'Bench'}
@@ -750,7 +692,7 @@ export default function LineupBuilder({ team, players, onUpdate }) {
                 <CardHeader className="pb-3">
                   <CardTitle className="text-base flex items-center gap-2" style={{ color: 'var(--text-primary)' }}>
                     <Star className="w-4 h-4 text-amber-400" />
-                    {isHe ? `ספסל מחליפים (${bench.length}/9)` : `Substitutes Bench (${bench.length}/9)`}
+                    {isHe ? `ספסל מחליפים (${bench.length}/${benchMax})` : `Substitutes Bench (${bench.length}/${benchMax})`}
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
@@ -811,14 +753,14 @@ export default function LineupBuilder({ team, players, onUpdate }) {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--surface-card)' }}>
                   <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>שחקנים בהרכב</p>
-                  <p className="text-2xl font-bold mt-1" style={{ color: filledCount === 11 ? 'var(--state-good-text)' : 'var(--text-primary)' }}>
-                    {filledCount}/11
+                  <p className="text-2xl font-bold mt-1" style={{ color: filledCount === lineupSize ? 'var(--state-good-text)' : 'var(--text-primary)' }}>
+                    {filledCount}/{lineupSize}
                   </p>
                 </div>
                 <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--surface-card)' }}>
                   <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>מחליפים</p>
                   <p className="text-2xl font-bold mt-1" style={{ color: 'var(--text-primary)' }}>
-                    {bench.length}/9
+                    {bench.length}/{benchMax}
                   </p>
                 </div>
                 <div className="p-4 rounded-lg" style={{ backgroundColor: 'var(--surface-card)' }}>
@@ -960,7 +902,7 @@ export default function LineupBuilder({ team, players, onUpdate }) {
               <div>
                 <h4 className="font-semibold mb-2" style={{ color: 'var(--text-primary)' }}>מערך משחק:</h4>
                 <p className="text-sm" style={{ color: 'var(--text-secondary)' }}>
-                  {currentFormation} - {formationDescriptions[currentFormation] || 'מערך מאוזן'}
+                  {currentFormation} - {FORMATION_DESCRIPTIONS[currentFormation] || 'מערך מאוזן'}
                 </p>
               </div>
         </div>}

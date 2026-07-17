@@ -9,10 +9,10 @@ import {
   Dialog, DialogContent, DialogHeader, DialogTitle,
 } from "@/components/ui/dialog";
 import { useLang } from '@/lib/LanguageContext';
+import { FORMATS, FORMAT_KEYS, formationsFor, getFormat } from '@/lib/teamFormats';
 
 const AGE_GROUPS_HE = ['ילדים', 'נערים', 'נוער', 'בוגרים'];
 const AGE_GROUPS_EN = ['Children', 'Youth', 'Juniors', 'Adults'];
-const formations = ['4-4-2', '4-3-3', '4-2-3-1', '3-5-2', '3-4-3', '5-3-2', '5-4-1', '4-1-4-1'];
 const PLAYING_STYLES_HE = ['התקפי', 'מאוזן', 'הגנתי', 'החזקת כדור', 'קונטרה'];
 const PLAYING_STYLES_EN = ['Attacking', 'Balanced', 'Defensive', 'Possession', 'Counter-Attack'];
 
@@ -24,7 +24,7 @@ export default function TeamForm({ isOpen, onClose, team, onSave }) {
   const _playingStyles = isHe ? PLAYING_STYLES_HE : PLAYING_STYLES_EN;
 
   const [formData, setFormData] = useState({
-    name: '', age_group: '', league: '', formation: '4-4-2',
+    name: '', age_group: '', league: '', format: '11v11', formation: '4-4-2',
     playing_style: 'מאוזן', tactical_focus: '',
   });
 
@@ -32,13 +32,28 @@ export default function TeamForm({ isOpen, onClose, team, onSave }) {
     if (team) {
       setFormData({
         name: team.name || '', age_group: team.age_group || '',
-        league: team.league || '', formation: team.formation || '4-4-2',
+        league: team.league || '', format: team.format || '11v11',
+        formation: team.formation || getFormat(team.format || '11v11').defaultFormation,
         playing_style: team.playing_style || 'מאוזן', tactical_focus: team.tactical_focus || '',
       });
     } else {
-      setFormData({ name: '', age_group: '', league: '', formation: '4-4-2', playing_style: 'מאוזן', tactical_focus: '' });
+      setFormData({ name: '', age_group: '', league: '', format: '11v11', formation: '4-4-2', playing_style: 'מאוזן', tactical_focus: '' });
     }
   }, [team, isOpen]);
+
+  const formations = formationsFor(formData.format);
+
+  // Switching format invalidates a formation from another format —
+  // snap to the new format's default.
+  const handleFormatChange = (format) => {
+    setFormData(prev => ({
+      ...prev,
+      format,
+      formation: formationsFor(format).includes(prev.formation)
+        ? prev.formation
+        : getFormat(format).defaultFormation,
+    }));
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -80,6 +95,22 @@ export default function TeamForm({ isOpen, onClose, team, onSave }) {
               <Label>{isHe ? 'ליגה' : 'League'}</Label>
               <Input value={formData.league} onChange={(e) => setFormData(prev => ({ ...prev, league: e.target.value }))} className="bg-slate-800 border-slate-700 text-white" />
             </div>
+          </div>
+
+          <div>
+            <Label>{isHe ? 'פורמט משחק' : 'Match Format'}</Label>
+            <Select value={formData.format} onValueChange={handleFormatChange}>
+              <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent className="bg-slate-800 border-slate-700">
+                {FORMAT_KEYS.map((key) => (
+                  <SelectItem key={key} value={key} className="text-white hover:bg-slate-700">
+                    {FORMATS[key].label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
 
           <div className="grid grid-cols-2 gap-4">

@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
-import { base44 } from '@/api/base44Client';
+import { base44, setActiveAITeam } from '@/api/base44Client';
 import { objectFingerprint } from '@/lib/analysisFingerprint';
 import { Loader2, Copy, Users, RefreshCw } from 'lucide-react';
 
@@ -9,6 +9,15 @@ export default function PlayerReportModal({ open, onClose, player, matchAnalyses
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
+
+  // Player reports must adapt to the team's format/age (kids → development tone).
+  useEffect(() => {
+    if (open && player?.team_id) {
+      base44.entities.Team.filter({ id: player.team_id })
+        .then(teams => setActiveAITeam(teams[0] || null))
+        .catch(() => {});
+    }
+  }, [open, player?.team_id]);
 
   // The report builds and refreshes itself from the player's data — no button.
   const fingerprint = useMemo(() => objectFingerprint({

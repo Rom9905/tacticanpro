@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44, setActiveAITeam } from '@/api/base44Client';
 import { useTeam } from '@/components/TeamContext';
 import { Loader2, Target, Dumbbell, Users, BarChart2, ArrowLeft } from 'lucide-react';
 import DashboardTopBar from '@/components/dashboard/DashboardTopBar';
@@ -56,6 +56,11 @@ export default function TrainingCenter() {
   useEffect(() => {
     if (selectedTeamId) loadData();
   }, [selectedTeamId]);
+
+  // AI prompts fired from this page carry the team's format/age context.
+  useEffect(() => {
+    setActiveAITeam(teams.find(t => t.id === selectedTeamId) || null);
+  }, [teams, selectedTeamId]);
 
   const loadData = async () => {
     const [topicsData, summariesData, playersData, programsData, analysesData, evalsData] = await Promise.all([
@@ -214,6 +219,7 @@ export default function TrainingCenter() {
         {activeTab === 'gameprep' && (
           <GamePrepTab
             teamId={selectedTeamId}
+            team={teams.find(t => t.id === selectedTeamId)}
             players={players}
             matchAnalyses={analyses}
             onRefresh={loadData}

@@ -184,8 +184,9 @@ export const checkPositionFit = (player, positionName) => {
   };
 };
 
-// Validate entire lineup
-export const validateLineup = (lineup, _positions) => {
+// Validate entire lineup. `mapping` maps slot index → Hebrew position
+// name for the active format/formation; defaults to the 11v11 mapping.
+export const validateLineup = (lineup, _positions, mapping = POSITION_MAPPING) => {
   const issues = [];
   const warnings = [];
   const info = [];
@@ -209,7 +210,7 @@ export const validateLineup = (lineup, _positions) => {
     usedPlayerIds.add(player.id);
     
     // Check position fit
-    const positionName = POSITION_MAPPING[index];
+    const positionName = mapping[index];
     const fitResult = checkPositionFit(player, positionName);
     
     if (!fitResult.allowed) {

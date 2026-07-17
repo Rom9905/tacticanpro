@@ -1,26 +1,13 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44, setActiveAITeam } from '@/api/base44Client';
 import { objectFingerprint } from '@/lib/analysisFingerprint';
 import { useIsMobile } from '@/hooks/use-mobile';
+import { getFormat, layoutFor } from '@/lib/teamFormats';
 import {
   ShieldCheck, Crosshair, Sparkles, Scale, Printer, Lightbulb, ArrowRight, Loader2
 } from 'lucide-react';
 
 const SHADOW_CARD = '0 1px 2px rgba(13,26,18,.05), 0 4px 12px rgba(13,26,18,.06)';
-
-const LINEUP_433 = [
-  { pos: 'GK', x: 50, y: 90 },
-  { pos: 'RB', x: 85, y: 73 },
-  { pos: 'RCB', x: 63, y: 77 },
-  { pos: 'LCB', x: 37, y: 77 },
-  { pos: 'LB', x: 15, y: 73 },
-  { pos: 'CDM', x: 50, y: 58 },
-  { pos: 'RCM', x: 71, y: 50 },
-  { pos: 'LCM', x: 29, y: 50 },
-  { pos: 'RW', x: 82, y: 28 },
-  { pos: 'ST', x: 50, y: 23 },
-  { pos: 'LW', x: 18, y: 28 },
-];
 
 function useCountdown(targetDate) {
   const [now, setNow] = useState(Date.now());
@@ -75,7 +62,7 @@ function resultType(ma) {
 }
 
 // ─── Pitch Component ───
-function PitchView({ players, lineupIds, formation, dark, large, isMobile }) {
+function PitchView({ players, lineupIds, formation, team, dark, large, isMobile }) {
   const h = large ? (isMobile ? 440 : 600) : (isMobile ? 340 : 400);
   const tokenSize = large ? 38 : 30;
   const fontSize = large ? 13 : 11;
@@ -90,7 +77,10 @@ function PitchView({ players, lineupIds, formation, dark, large, isMobile }) {
     ? 'radial-gradient(ellipse at 50% 30%,#1B4229,#122B1B)'
     : 'linear-gradient(180deg,#2F7A4D,#276B42)';
 
-  const slots = LINEUP_433.map((slot, i) => {
+  // Slot layout follows the team's format (7/9/11 players) and its own
+  // formation — the recommended lineup is ours, not the opponent's.
+  const layout = layoutFor(team, team?.formation);
+  const slots = layout.map((slot, i) => {
     const pid = lineupIds?.[i];
     const p = pid ? players.find(pl => pl.id === pid) : null;
     return { ...slot, player: p, number: p?.number || (i + 1) };
@@ -105,7 +95,7 @@ function PitchView({ players, lineupIds, formation, dark, large, isMobile }) {
       <div style={{ position: 'absolute', left: '50%', bottom: inset, transform: 'translateX(-50%)', width: penW, height: penH, border: `1.5px solid ${lineColor}`, borderBottom: 'none' }} />
       {large && (
         <div style={{ position: 'absolute', top: 18, right: 18, padding: '5px 12px', borderRadius: 8, background: 'rgba(13,26,18,.7)', border: '1px solid rgba(74,222,128,.25)', fontSize: 12, fontWeight: 700, color: '#4ADE80' }}>
-          {formation || '4-3-3'} · הרכב מומלץ
+          {team?.formation || getFormat(team).defaultFormation} · הרכב מומלץ
         </div>
       )}
       {slots.map((s, i) => (
@@ -231,7 +221,7 @@ function EditModal({ prep, onClose, onSave }) {
 }
 
 // ─── Work Mode ───
-function WorkMode({ prep, analysis, players, matchAnalyses, onShowBalance, onShowReport, onShowEdit, generating, isMobile }) {
+function WorkMode({ prep, analysis, players, matchAnalyses, team, onShowBalance, onShowReport, onShowEdit, generating, isMobile }) {
   const balance = getBalanceData(matchAnalyses, prep.opponent_formation);
   const formation = prep.opponent_formation || '4-3-3';
 
@@ -369,8 +359,8 @@ function WorkMode({ prep, analysis, players, matchAnalyses, onShowBalance, onSho
 
         {/* Pitch */}
         <div style={{ borderRadius: 14, padding: 18, background: '#fff', boxShadow: SHADOW_CARD }}>
-          <p style={{ margin: '0 0 12px', fontSize: 12, fontWeight: 700, color: '#14231A' }}>הרכב מומלץ · {formation}</p>
-          <PitchView players={players} lineupIds={prep.recommended_lineup} formation={formation} dark={false} large={false} isMobile={isMobile} />
+          <p style={{ margin: '0 0 12px', fontSize: 12, fontWeight: 700, color: '#14231A' }}>הרכב מומלץ · {team?.formation || getFormat(team).defaultFormation}</p>
+          <PitchView players={players} lineupIds={prep.recommended_lineup} formation={formation} team={team} dark={false} large={false} isMobile={isMobile} />
         </div>
       </div>
     </div>
@@ -378,7 +368,7 @@ function WorkMode({ prep, analysis, players, matchAnalyses, onShowBalance, onSho
 }
 
 // ─── Matchday Night Mode ───
-function MatchdayMode({ prep, analysis, players, matchAnalyses, onShowReport, onShowEdit, isMobile }) {
+function MatchdayMode({ prep, analysis, players, matchAnalyses, team, onShowReport, onShowEdit, isMobile }) {
   const formation = prep.opponent_formation || '4-3-3';
   const balance = getBalanceData(matchAnalyses, formation);
 
@@ -422,7 +412,7 @@ function MatchdayMode({ prep, analysis, players, matchAnalyses, onShowReport, on
 
         {/* Center pitch */}
         <div style={{ order: isMobile ? 1 : 0 }}>
-          <PitchView players={players} lineupIds={prep.recommended_lineup} formation={formation} dark={true} large={true} isMobile={isMobile} />
+          <PitchView players={players} lineupIds={prep.recommended_lineup} formation={formation} team={team} dark={true} large={true} isMobile={isMobile} />
         </div>
 
         {/* Left rail */}
@@ -588,7 +578,10 @@ export default function MatchdayHub({ prep: initialPrep, players, matchAnalyses,
   const formation = prep.opponent_formation || '4-3-3';
 
   useEffect(() => {
-    base44.entities.Team.filter({ id: prep.team_id }).then(teams => setTeam(teams[0] || null));
+    base44.entities.Team.filter({ id: prep.team_id }).then(teams => {
+      setTeam(teams[0] || null);
+      setActiveAITeam(teams[0] || null); // prep analysis prompts carry format/age
+    });
   }, [prep.team_id]);
 
   // Identity of the scouting data. The prep analysis builds itself and refreshes
@@ -746,7 +739,7 @@ ${prep.opponent_patterns ? `דפוסים: ${prep.opponent_patterns}` : ''}
         {/* ─── CONTENT ─── */}
         {!isMatchday && view === 'prep' && (
           <WorkMode
-            prep={prep} analysis={analysis} players={players} matchAnalyses={matchAnalyses}
+            prep={prep} analysis={analysis} players={players} matchAnalyses={matchAnalyses} team={team}
             onShowBalance={() => setView('balance')}
             onShowReport={() => setShowReport(true)}
             onShowEdit={() => setShowEdit(true)}
@@ -759,7 +752,7 @@ ${prep.opponent_patterns ? `דפוסים: ${prep.opponent_patterns}` : ''}
         )}
         {isMatchday && (
           <MatchdayMode
-            prep={prep} analysis={analysis} players={players} matchAnalyses={matchAnalyses}
+            prep={prep} analysis={analysis} players={players} matchAnalyses={matchAnalyses} team={team}
             onShowReport={() => setShowReport(true)}
             onShowEdit={() => setShowEdit(true)}
             isMobile={isMobile}

@@ -269,6 +269,14 @@ function buildStubFromSchema(schema) {
   return {};
 }
 
+// ─── Active team AI context (multi-format support) ───
+// Pages register the selected team here; every LLM prompt then carries
+// the team's format (7v7/9v9/11v11) and age group, so the analysis tone
+// adapts (development-first for kids, full tactical depth for seniors)
+// without threading the team through all 18 call sites.
+let _activeAITeam = null;
+export function setActiveAITeam(team) { _activeAITeam = team || null; }
+
 const integrations = {
   Core: {
     async InvokeLLM({ prompt, response_json_schema } = {}) {
@@ -279,8 +287,12 @@ const integrations = {
         return { response: '', __ai_error: message };
       };
       try {
+        // Lazy import avoids a static cycle (teamFormats has no deps, but
+        // keeps base44Client's module graph flat).
+        const { buildFormatAIContext } = await import('@/lib/teamFormats');
+        const fullPrompt = `${prompt}${buildFormatAIContext(_activeAITeam)}`;
         const { data, error } = await supabase.functions.invoke('invoke-llm', {
-          body: { prompt, response_json_schema: response_json_schema || null },
+          body: { prompt: fullPrompt, response_json_schema: response_json_schema || null },
         });
         if (error) throw error;
         if (data?.error) {

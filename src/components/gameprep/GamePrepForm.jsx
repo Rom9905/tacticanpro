@@ -3,8 +3,8 @@ import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { X, Shield, Users, ChevronDown } from 'lucide-react';
+import { formationsFor, lineupSizeFor } from '@/lib/teamFormats';
 
-const FORMATIONS = ['4-4-2', '4-3-3', '4-2-3-1', '3-5-2', '3-4-3', '5-3-2', '5-4-1', '4-1-4-1'];
 const ATTACK_STYLES = ['לחץ גבוה', 'בנייה מהגנה', 'כדורים ארוכים', 'קטנגות', 'התקפה מהירה', 'כדורים גבוהים', 'התקפה מהצדדים'];
 const DEFENSE_STYLES = ['לחץ גבוה', 'בלוק נמוך', 'בלוק בינוני', 'סימון אישי', 'איזורית', 'לחץ על הכדור'];
 const STRENGTH_LEVELS = ['חלש', 'בינוני', 'חזק', 'חזק מאוד'];
@@ -39,7 +39,9 @@ function TextInput({ value, onChange, placeholder }) {
   );
 }
 
-export default function GamePrepForm({ teamId, players, generalPreps, onClose, onSaved }) {
+export default function GamePrepForm({ teamId, team, players, generalPreps, onClose, onSaved }) {
+  const FORMATIONS = formationsFor(team);
+  const lineupSize = lineupSizeFor(team);
   const [prepType, setPrepType] = useState(null); // null = choose, 'general', 'opponent'
   const [name, setName] = useState('');
   const [date, setDate] = useState(new Date().toISOString().split('T')[0]);
@@ -218,7 +220,7 @@ export default function GamePrepForm({ teamId, players, generalPreps, onClose, o
                   className="flex items-center gap-2 text-sm font-semibold"
                   style={{ color: '#2A5FA8' }}>
                   <Users className="w-4 h-4" />
-                  הרכב מומלץ ({selectedLineup.length}/11)
+                  הרכב מומלץ ({selectedLineup.length}/{lineupSize})
                   <ChevronDown className={`w-3.5 h-3.5 transition-transform ${showLineupPicker ? 'rotate-180' : ''}`} />
                 </button>
                 {showLineupPicker && (
@@ -228,7 +230,7 @@ export default function GamePrepForm({ teamId, players, generalPreps, onClose, o
                       const sel = selectedLineup.includes(p.id);
                       return (
                         <button key={p.id} onClick={() => {
-                          setSelectedLineup(prev => sel ? prev.filter(id => id !== p.id) : prev.length < 11 ? [...prev, p.id] : prev);
+                          setSelectedLineup(prev => sel ? prev.filter(id => id !== p.id) : prev.length < lineupSize ? [...prev, p.id] : prev);
                         }}
                           className="w-full flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs text-right transition-all"
                           style={{

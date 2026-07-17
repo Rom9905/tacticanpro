@@ -19,7 +19,56 @@ const CATEGORIES = {
   GAME_MGMT: 'ניהול משחק',
 };
 
-function generateTacticalProblems(analysis) {
+/**
+ * Kids-mode problems (7v7/9v9 or age_group ילדים): development-first,
+ * basic principles only — no adult concepts (בלוק נמוך, xG, PPDA).
+ */
+function generateKidsProblems(analysis) {
+  const problems = [];
+  const stats = analysis.stats || {};
+  const opponent = analysis.opponent || 'היריבה';
+  const push = (category, phase, severity, text, root_cause, training_action) =>
+    problems.push({ category, phase, severity, text, root_cause, training_action });
+
+  if (stats.possession != null && stats.possession < 40) {
+    push(
+      CATEGORIES.BUILD_UP, 'buildup', 'medium',
+      `הילדים החזיקו מעט בכדור מול ${opponent} — זו הזדמנות לעבוד על אומץ עם הכדור: לקבל, להרים ראש, ולחפש חבר פנוי במקום לבעוט קדימה.`,
+      `בגיל הזה זה טבעי — הביטחון עם הכדור נבנה דרך הרבה מגעים בכדור באימונים.`,
+      `משחקונים קטנים (3v3 / 4v4) עם הרבה מגעים בכדור לכל ילד. לעודד כל ניסיון לשחק, גם כשהוא לא מצליח.`
+    );
+  }
+
+  if (stats.turnovers != null && stats.turnovers >= 15) {
+    push(
+      CATEGORIES.BALL_LOSS, 'transitions', 'low',
+      `היו הרבה איבודי כדור מול ${opponent} — חלק מהלמידה. החשוב הוא שהילדים ממשיכים לנסות לשחק ולא מפחדים מהכדור.`,
+      `קבלת החלטות בגיל צעיר משתפרת דרך התנסות, לא דרך ביקורת.`,
+      `תרגילי שליטה בכדור ומשחקי 1 על 1 — כל הצלחה בדריבל נחגגת. בלי ריצות עונשין.`
+    );
+  }
+
+  if (stats.shots != null && stats.shots < 5) {
+    push(
+      CATEGORIES.FINAL_THIRD, 'organized_attack', 'medium',
+      `מעט בעיטות לשער מול ${opponent} — נעודד את הילדים להעז לבעוט ולסיים מצבים, גם ממצבים לא מושלמים.`,
+      `ילדים לפעמים מחפשים את המסירה ה"בטוחה" במקום לקחת אחריות מול השער.`,
+      `תרגילי סיומת קצרים עם הרבה חזרות: כל ילד בועט הרבה פעמים, כל שער נחגג.`
+    );
+  }
+
+  push(
+    CATEGORIES.GAME_MGMT, 'game_management', 'low',
+    `תזכורת לפורמט צעיר: מיצוב בסיסי ורוחב במגרש — לעודד את הילדים להיפתח לרוחב ולא להתקבץ סביב הכדור.`,
+    `התקבצות סביב הכדור טבעית בגילאים צעירים; רוחב ומיצוב נלמדים בהדרגה.`,
+    `משחק עם שערים רחבים או אזורי רוחב חובה — נקודה לקבוצה שמעבירה את הכדור דרך האגף.`
+  );
+
+  return problems.slice(0, 4);
+}
+
+function generateTacticalProblems(analysis, { kids = false } = {}) {
+  if (kids) return generateKidsProblems(analysis);
   const problems = [];
   const stats = analysis.stats || {};
   const result = analysis.result || {};

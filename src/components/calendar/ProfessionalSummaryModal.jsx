@@ -5,6 +5,7 @@ import { CheckCircle2, XCircle, Brain, ArrowRight, Star, Dumbbell, Swords, X, Pl
 import { base44 } from '@/api/base44Client';
 import { useLang } from '@/lib/LanguageContext';
 import { trackEvent } from '@/hooks/useAnalytics';
+import { formationsFor, matchDurationFor } from '@/lib/teamFormats';
 
 const TACTICAL_TOPICS_HE = [
   'לחץ גבוה', 'בנייה מהגנה', 'מעברים התקפיים', 'מעברים הגנתיים',
@@ -66,10 +67,12 @@ export default function ProfessionalSummaryModal({ open, onClose, event, onSaved
   const [saving, setSaving] = useState(false);
   const [scorers, setScorers] = useState([]); // { playerId, type: 'שער'|'בישול', minute: '' }
   const [players, setPlayers] = useState([]);
+  const [team, setTeam] = useState(null);
 
   useEffect(() => {
     if (open && event?.team_id) {
       base44.entities.Player.filter({ team_id: event.team_id }).then(setPlayers).catch(() => {});
+      base44.entities.Team.filter({ id: event.team_id }).then(t => setTeam(t[0] || null)).catch(() => {});
     }
   }, [open, event?.team_id]);
 
@@ -77,7 +80,8 @@ export default function ProfessionalSummaryModal({ open, onClose, event, onSaved
   const removeScorerRow = (idx) => setScorers(prev => prev.filter((_, i) => i !== idx));
   const updateScorerRow = (idx, field, value) => setScorers(prev => prev.map((r, i) => i === idx ? { ...r, [field]: value } : r));
 
-  const FORMATIONS = ['4-4-2', '4-3-3', '4-2-3-1', '3-5-2', '3-4-3', '5-3-2', '5-4-1', '4-1-4-1'];
+  // Opponent formations follow the team's format (a 9v9 opponent plays 9v9).
+  const FORMATIONS = formationsFor(team);
   const ATTACK_STYLES = ['לחץ גבוה', 'בנייה מהגנה', 'כדורים ארוכים', 'קטנגות', 'התקפה מהירה', 'כדורים גבוהים', 'התקפה מהצדדים'];
 
   useEffect(() => {
@@ -104,7 +108,8 @@ export default function ProfessionalSummaryModal({ open, onClose, event, onSaved
       event_type: isTraining ? 'training' : 'match',
       event_date: d.toISOString().split('T')[0],
       event_label: isTraining ? `Training — ${d.toLocaleDateString('he-IL')}` : `vs ${event.opponent}`,
-      duration_minutes: isTraining ? (event.parsedNotes?.duration || 90) : 90,
+      // Match length follows the team's format: 2x25 (7v7), 2x30 (9v9), 2x45 (11v11).
+      duration_minutes: isTraining ? (event.parsedNotes?.duration || 90) : matchDurationFor(team).total,
       topic: topic || '',
       tactical_topics: tacticalTopics,
       what_worked: whatWorked,

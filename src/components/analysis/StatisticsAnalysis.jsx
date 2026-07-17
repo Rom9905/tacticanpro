@@ -5,6 +5,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Loader2, Sparkles } from 'lucide-react';
+import { isYouthFormat } from '@/lib/teamFormats';
 
 export default function StatisticsAnalysis({ isOpen, onClose, onSave, team, existingMatch }) {
   const [formData, setFormData] = useState({
@@ -200,10 +201,13 @@ export default function StatisticsAnalysis({ isOpen, onClose, onSave, team, exis
     });
   };
 
+  // Youth formats (7v7/9v9) drop xG — participation and basics are the
+  // story at that age, not expected-goals models.
+  const youthFormat = isYouthFormat(team);
   const statFields = [
     { key: 'shots', label: 'בעיטות לשער' },
     { key: 'shots_on_target', label: 'בעיטות למסגרת' },
-    { key: 'xg', label: 'xG (שערים צפויים)', step: 0.1 },
+    ...(youthFormat ? [] : [{ key: 'xg', label: 'xG (שערים צפויים)', step: 0.1 }]),
     { key: 'possession', label: 'אחוז שליטה', max: 100 },
     { key: 'passes', label: 'מסירות' },
     { key: 'pass_accuracy', label: 'דיוק מסירות (%)', max: 100 },

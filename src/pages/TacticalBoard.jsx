@@ -32,6 +32,7 @@ import {
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
+import { layoutFor } from '@/lib/teamFormats';
 
 
 import {
@@ -148,8 +149,11 @@ export default function TacticalBoard() {
   useEffect(() => {
     if (selectedTeamId) {
       loadBoards(selectedTeamId);
+      // Re-seed tokens for the selected team's format (7/9/11 a side).
+      const team = teams.find(t => t.id === selectedTeamId);
+      if (team) initializePlayers(team);
     }
-  }, [selectedTeamId]);
+  }, [selectedTeamId, teams]);
 
   const loadTeams = async () => {
     const user = await base44.auth.me();
@@ -166,21 +170,16 @@ export default function TacticalBoard() {
     setSavedBoards(data);
   };
 
-  const initializePlayers = () => {
-    // Default 4-4-2 formation - landscape 200x90
-    const homePositions = [
-      { x: 20, y: 45 },  // GK
-      { x: 45, y: 20 }, { x: 45, y: 38 }, { x: 45, y: 52 }, { x: 45, y: 70 },  // DEF
-      { x: 80, y: 20 }, { x: 80, y: 38 }, { x: 80, y: 52 }, { x: 80, y: 70 },  // MID
-      { x: 120, y: 32 }, { x: 120, y: 58 },  // FWD
-    ];
-    
-    const awayPositions = [
-      { x: 180, y: 45 },  // GK
-      { x: 155, y: 70 }, { x: 155, y: 52 }, { x: 155, y: 38 }, { x: 155, y: 20 },  // DEF
-      { x: 120, y: 70 }, { x: 120, y: 52 }, { x: 120, y: 38 }, { x: 120, y: 20 },  // MID
-      { x: 80, y: 58 }, { x: 80, y: 32 },  // FWD
-    ];
+  const initializePlayers = (team = null) => {
+    // Token count and default shape follow the team's format (7v7/9v9/11v11).
+    // The format's default-formation layout is portrait (x across, y down,
+    // GK at y≈92); remap it onto the landscape 200x90 board, home attacking right.
+    const layout = layoutFor(team, team?.formation);
+    const homePositions = layout.map(slot => ({
+      x: Math.round(20 + ((92 - slot.y) / 72) * 100),
+      y: Math.round(5 + (slot.x / 100) * 80),
+    }));
+    const awayPositions = homePositions.map(p => ({ x: 200 - p.x, y: 90 - p.y }));
 
     const home = homePositions.map((pos, i) => ({ id: `home-${i}`, ...pos, number: i + 1 }));
     const away = awayPositions.map((pos, i) => ({ id: `away-${i}`, ...pos, number: i + 1 }));
@@ -260,7 +259,7 @@ export default function TacticalBoard() {
 
   const handleReset = () => {
     saveState();
-    initializePlayers();
+    initializePlayers(teams.find(t => t.id === selectedTeamId));
     setBall({ x: 50, y: 50 });
     setDrawings([]);
     setFrames([]);

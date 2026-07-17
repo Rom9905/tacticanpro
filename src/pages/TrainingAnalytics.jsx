@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44, setActiveAITeam } from '@/api/base44Client';
 import { useTeam } from '@/components/TeamContext';
 import { useLang } from '@/lib/LanguageContext';
 import { listFingerprint } from '@/lib/analysisFingerprint';
@@ -49,6 +49,11 @@ export default function TrainingAnalytics() {
   useEffect(() => {
     if (selectedTeamId) loadData();
   }, [selectedTeamId, timeRange]);
+
+  // Period-analysis prompts carry the team's format/age context.
+  useEffect(() => {
+    setActiveAITeam(teams.find(t => t.id === selectedTeamId) || null);
+  }, [teams, selectedTeamId]);
 
   const loadData = async () => {
     const [summariesData, playersData, programsData, evalsData] = await Promise.all([

@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import GamePrepList from './GamePrepList';
 import MatchdayHub from './MatchdayHub';
 
-export default function GamePrepTab({ teamId, players, matchAnalyses, onRefresh }) {
+export default function GamePrepTab({ teamId, team, players, matchAnalyses, onRefresh }) {
   const [selectedPrep, setSelectedPrep] = useState(null);
 
   if (selectedPrep) {
@@ -17,5 +17,5 @@ export default function GamePrepTab({ teamId, players, matchAnalyses, onRefresh 
     );
   }
 
-  return <GamePrepList teamId={teamId} players={players} onRefresh={onRefresh} onSelectPrep={setSelectedPrep} />;
+  return <GamePrepList teamId={teamId} team={team} players={players} onRefresh={onRefresh} onSelectPrep={setSelectedPrep} />;
 }

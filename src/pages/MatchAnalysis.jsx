@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44, setActiveAITeam } from '@/api/base44Client';
 import { motion } from 'framer-motion';
 import { useLang } from '@/lib/LanguageContext';
 import { useSubscriptionGuard } from '@/components/useSubscriptionGuard';
@@ -110,6 +110,11 @@ export default function MatchAnalysis() {
       loadAnalyses(selectedTeamId);
     }
   }, [selectedTeamId]);
+
+  // Every AI prompt from this page should know the team's format/age.
+  useEffect(() => {
+    setActiveAITeam(teams.find(t => t.id === selectedTeamId) || null);
+  }, [teams, selectedTeamId]);
 
   // Season scoreboard — only matches with a recorded result count toward W/D/L and goals.
   const seasonStats = React.useMemo(() => {
