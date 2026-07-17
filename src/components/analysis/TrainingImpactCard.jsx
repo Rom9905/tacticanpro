@@ -1,10 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Dumbbell, CheckCircle2, AlertCircle, HelpCircle, Loader2, Sparkles } from 'lucide-react';
+import { Dumbbell, CheckCircle2, AlertCircle, HelpCircle, Loader2, RefreshCw } from 'lucide-react';
 import { computeTrainingImpact } from '@/lib/trendsEngine';
+import { objectFingerprint } from '@/lib/analysisFingerprint';
 
 // Shows whether issues trained on since the previous match actually improved in this match.
 // Self-loading: fetches trainings, goals and match history for the analysis' team.
+// The mentor summary builds itself — no manual trigger — and the goal-progress
+// write it does is guarded so re-opening the match can't bump progress twice.
 export default function TrainingImpactCard({ analysis }) {
   const [impact, setImpact] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -16,6 +19,7 @@ export default function TrainingImpactCard({ analysis }) {
     let cancelled = false;
     (async () => {
       setLoading(true);
+      setAiVerdict(null);
       const [allAnalyses, summaries, goals] = await Promise.all([
         base44.entities.MatchAnalysis.filter({ team_id: analysis.team_id }, '-date', 50),
         base44.entities.ProfessionalSummary.filter({ team_id: analysis.team_id, event_type: 'training' }, '-event_date', 60),
@@ -50,8 +54,12 @@ ${itemLines}
     });
     if (!result?.__ai_error && result?.verdict) {
       setAiVerdict(result.verdict);
-      // Persist verdict + progress on the goals
+      try { localStorage.setItem(`impact_${fingerprint}`, result.verdict); } catch { /* ignore */ }
+      // Persist verdict + progress on the goals — but only once per match. A goal
+      // already stamped with this match's date was counted on a previous open, so
+      // skip it to keep progress from drifting every time the modal is reopened.
       for (const it of impact.items) {
+        if (it.goal.last_seen_date === analysis.date) continue;
         const note = it.verdict === 'improved'
           ? `שיפור נצפה במשחק מול ${analysis.opponent} (${new Date(analysis.date).toLocaleDateString('he-IL')}) אחרי ${it.trainingCount} אימונים`
           : `עדיין נצפה במשחק מול ${analysis.opponent} (${new Date(analysis.date).toLocaleDateString('he-IL')})`;
@@ -64,6 +72,29 @@ ${itemLines}
     }
     setAiLoading(false);
   };
+
+  // Fingerprint of the impact verdicts — a stable identity for this summary so it
+  // caches and doesn't regenerate on every open.
+  const fingerprint = React.useMemo(
+    () => objectFingerprint({
+      match: analysis?.id,
+      items: (impact?.items || []).map(it => [it.goal.id, it.verdict, it.trainingCount]),
+    }),
+    [analysis?.id, impact],
+  );
+
+  const generateRef = useRef(generateAiVerdict);
+  generateRef.current = generateAiVerdict;
+
+  // Build the mentor summary on its own once the impact is known: reuse the
+  // cached text when the verdicts are unchanged, otherwise generate.
+  useEffect(() => {
+    if (!impact || !impact.items?.length) return;
+    let cached = null;
+    try { cached = localStorage.getItem(`impact_${fingerprint}`); } catch { /* ignore */ }
+    if (cached) { setAiVerdict(cached); return; }
+    generateRef.current();
+  }, [fingerprint, impact]);
 
   if (loading) {
     return (
@@ -101,13 +132,11 @@ ${itemLines}
           <Dumbbell className="w-4 h-4" style={{ color: '#16A34A' }} />
           השפעת האימונים · {impact.trainings.length} אימונים מאז {impact.prevMatch ? `המשחק מול ${impact.prevMatch.opponent}` : 'המשחק הקודם'}
         </p>
-        {!aiVerdict && (
-          <button onClick={generateAiVerdict} disabled={aiLoading}
-            style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '5px 12px', borderRadius: 8, fontSize: 11, fontWeight: 700, background: '#0D1A12', color: '#4ADE80', border: 'none', cursor: 'pointer', fontFamily: 'Assistant,sans-serif', opacity: aiLoading ? 0.6 : 1 }}>
-            {aiLoading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
-            {aiLoading ? 'מנתח...' : 'סיכום מנטור'}
-          </button>
-        )}
+        <span style={{ display: 'flex', alignItems: 'center', gap: 4, fontSize: 11, color: '#94A39A' }}>
+          {aiLoading
+            ? <><Loader2 className="w-3 h-3 animate-spin" style={{ color: '#16A34A' }} /> מכין סיכום מנטור...</>
+            : <><RefreshCw className="w-3 h-3" /> מתעדכן אוטומטית</>}
+        </span>
       </div>
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>

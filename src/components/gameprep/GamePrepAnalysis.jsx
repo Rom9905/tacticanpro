@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { X, Loader2, Target, Shield, Dumbbell, ChevronRight, RefreshCw } from 'lucide-react';
+import { X, Loader2, Target, Shield, Dumbbell, ChevronRight } from 'lucide-react';
 
 export default function GamePrepAnalysis({ prep, players, onClose, onUpdated }) {
   const [analysis, setAnalysis] = useState(prep.ai_analysis || null);
@@ -129,18 +129,10 @@ ${prep.additional_notes ? `- הערות: ${prep.additional_notes}` : ''}
               </span>
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            {analysis && (
-              <button onClick={() => generateAnalysis()} className="w-8 h-8 flex items-center justify-center rounded-full transition-all hover:opacity-70"
-                style={{ backgroundColor: 'rgba(139,115,85,0.12)', color: '#7A6B57' }}>
-                <RefreshCw className="w-3.5 h-3.5" />
-              </button>
-            )}
-            <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-full"
-              style={{ backgroundColor: 'rgba(139,115,85,0.12)', color: '#7A6B57' }}>
-              <X className="w-4 h-4" />
-            </button>
-          </div>
+          <button onClick={onClose} className="w-7 h-7 flex items-center justify-center rounded-full"
+            style={{ backgroundColor: 'rgba(139,115,85,0.12)', color: '#7A6B57' }}>
+            <X className="w-4 h-4" />
+          </button>
         </div>
 
         <div className="px-5 py-5 space-y-5">
