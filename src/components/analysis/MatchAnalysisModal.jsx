@@ -116,6 +116,8 @@ export default function MatchAnalysisModal({ open, onClose, analysis, teamName, 
   const [deepOpen, setDeepOpen] = useState(false);
   const [generatingDeep, setGeneratingDeep] = useState(false);
   const [deepError, setDeepError] = useState(null);
+  const generateDeepRef = useRef(null);
+  const deepAttemptRef = useRef(null);
 
   // Identity of the coach-entered data. When it changes the analysis refreshes
   // itself; while it holds, the cached one is reused.
@@ -243,6 +245,7 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
       setDeepOpen(false);
       setDeepError(null);
       setShowAllTopics(false);
+      deepAttemptRef.current = null; // a fresh open may retry a failed refresh
     }
     prevOpenRef.current = open;
   }, [open]);
@@ -269,19 +272,35 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
     }
   }, [open, analysis?.id, tacticalProblems]);
 
+  // Refresh an existing deep analysis once its data has moved on. Deliberately
+  // never creates one from scratch — that stays an opt-in, and an expensive one.
+  useEffect(() => {
+    if (!open || !analysis) return;
+    const existing = analysis.deep_analysis;
+    if (!existing || existing.fingerprint === fingerprint) return;
+    if (deepAttemptRef.current === fingerprint) return; // don't retry a failure on every render
+    deepAttemptRef.current = fingerprint;
+    generateDeepRef.current?.({ keepClosed: true });
+  }, [open, analysis, fingerprint]);
+
   if (!analysis) return null;
 
   const deep = analysis.deep_analysis;
+  // A deep analysis built before this data existed no longer describes the match.
+  const deepStale = !!deep && deep.fingerprint !== fingerprint;
 
-  const generateDeep = async () => {
+  const generateDeep = async ({ keepClosed = false } = {}) => {
     setGeneratingDeep(true);
     setDeepError(null);
     try {
-      const res = await base44.functions.invoke('generateDeepAnalysis', { match_analysis_id: analysis.id });
+      const res = await base44.functions.invoke('generateDeepAnalysis', {
+        match_analysis_id: analysis.id,
+        fingerprint,
+      });
       if (res?.success === false) {
         setDeepError(res.error || 'שגיאה ביצירת הניתוח המעמיק. נסה שוב.');
       } else {
-        setDeepOpen(true);
+        if (!keepClosed) setDeepOpen(true);
         onRefresh && onRefresh();
       }
     } catch {
@@ -290,6 +309,7 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
       setGeneratingDeep(false);
     }
   };
+  generateDeepRef.current = generateDeep;
 
   // Pair each tactical problem with its deep-analysis explanation ("למה זו בעיה").
   const expansionFor = (problem, i) => {
@@ -669,7 +689,7 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
                       </p>
                     )}
 
-                    {/* Deep-analysis toggle (generates on first use) */}
+                    {/* Deep analysis: created on request, refreshed on its own */}
                     <button
                       onClick={() => (deep ? setDeepOpen(o => !o) : generateDeep())}
                       disabled={generatingDeep}
@@ -681,7 +701,8 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
                         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                       }}>
                       {generatingDeep ? (
-                        <><Loader2 className="w-3.5 h-3.5 animate-spin" /> מפיק ניתוח מעמיק...</>
+                        <><Loader2 className="w-3.5 h-3.5 animate-spin" />
+                          {deep ? 'מעדכן ניתוח מעמיק לפי הנתונים החדשים...' : 'מפיק ניתוח מעמיק...'}</>
                       ) : !deep ? (
                         <><Sparkles style={{ width: 14, height: 14 }} /> צור ניתוח מעמיק — הסבר מלא על כל בעיה</>
                       ) : deepOpen ? (
@@ -690,6 +711,13 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
                         <><BookOpen style={{ width: 14, height: 14 }} /> הצג ניתוח מעמיק — הסבר מלא על כל בעיה</>
                       )}
                     </button>
+
+                    {deepStale && !generatingDeep && (
+                      <p style={{ margin: 0, fontSize: 11, color: MA.warn, display: 'flex', alignItems: 'center', gap: 5 }}>
+                        <RefreshCw style={{ width: 11, height: 11 }} />
+                        הניתוח המעמיק נבנה לפני שהנתונים האלה נוספו — מתעדכן כעת
+                      </p>
+                    )}
                   </div>
                 </div>
               )}

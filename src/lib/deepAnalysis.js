@@ -31,7 +31,11 @@ function dataRichness(analysis) {
   return (hasStats || hasPhases || hasGamePlan) ? 'rich' : 'sparse';
 }
 
-export async function generateDeepAnalysis({ match_analysis_id }) {
+// `fingerprint` is supplied by the caller (it is computed from the client's
+// merged view of the match, including the linked ProfessionalSummary, which
+// isn't visible from the raw row read here). It is stored alongside the result
+// so the UI can tell a stale deep analysis from a current one.
+export async function generateDeepAnalysis({ match_analysis_id, fingerprint = null }) {
   const rows = await base44.entities.MatchAnalysis.filter({ id: match_analysis_id });
   const analysis = rows?.[0];
   if (!analysis) return { success: false, error: 'match analysis not found' };
@@ -112,6 +116,7 @@ ${issues.map((i, n) => `${n + 1}. ${i}`).join('\n') || 'לא זוהו בעיות
     clarifying_questions: richness === 'rich' ? [] : (result.clarifying_questions || []),
     training_topic_context: result.training_topic_context || [],
     data_richness: richness,
+    fingerprint,
   };
 
   await base44.entities.MatchAnalysis.update(match_analysis_id, { deep_analysis: deep });
