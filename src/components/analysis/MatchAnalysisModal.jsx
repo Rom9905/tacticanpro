@@ -11,6 +11,7 @@ import { buildGameStyleContext } from '@/hooks/useGameStyle';
 import { generateTacticalProblems } from '@/lib/tacticalProblemsEngine';
 import { syncTacticalProblemsToGoals } from '@/lib/tacticalGoalsSync';
 import { matchFingerprint } from '@/lib/analysisFingerprint';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { MA, resultTheme, ratingColor } from './matchAnalysisTheme';
 import {
   Loader2, BarChart3, Video, FileText, Clock, Target, BookOpen,
@@ -118,6 +119,7 @@ export default function MatchAnalysisModal({ open, onClose, analysis, teamName, 
   const [deepError, setDeepError] = useState(null);
   const generateDeepRef = useRef(null);
   const deepAttemptRef = useRef(null);
+  const isMobile = useIsMobile();
 
   // Identity of the coach-entered data. When it changes the analysis refreshes
   // itself; while it holds, the cached one is reused.
@@ -363,8 +365,18 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
         dir="rtl"
         className="ma-modal p-0 gap-0 border-0"
         style={{
-          width: '100%', maxWidth: 820, maxHeight: '92vh', overflowY: 'auto',
-          background: MA.bgContainer, borderRadius: 20, boxShadow: '0 24px 60px rgba(13,26,18,.3)',
+          // display:block overrides Radix's grid layout — grid items get
+          // min-width:auto, which let wide content blow the modal past the
+          // viewport on phones. Block boxes shrink to the modal width instead.
+          display: 'block',
+          width: '100%',
+          maxWidth: isMobile ? '100%' : 960,
+          height: isMobile ? '100dvh' : undefined,
+          maxHeight: isMobile ? '100dvh' : '94vh',
+          overflowY: 'auto', overflowX: 'hidden',
+          background: MA.bgContainer,
+          borderRadius: isMobile ? 0 : 20,
+          boxShadow: '0 24px 60px rgba(13,26,18,.3)',
           fontFamily: MA.body, color: MA.textPrimary,
         }}
       >

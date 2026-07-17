@@ -1,10 +1,12 @@
 // Dev-only preview of the game-prep screens so they can be reviewed (esp. on
 // mobile) without logging in. Renders the real components with mock data.
 // Public route registered in App.jsx before the auth gate.
-import React, { useState } from 'react';
-import { objectFingerprint } from '@/lib/analysisFingerprint';
+import React, { useState, useEffect } from 'react';
+import { objectFingerprint, matchFingerprint } from '@/lib/analysisFingerprint';
 import MatchdayHub from '@/components/gameprep/MatchdayHub';
 import GamePrepForm from '@/components/gameprep/GamePrepForm';
+import MatchAnalysisModal from '@/components/analysis/MatchAnalysisModal';
+import { matchAnalysisStyles } from '@/components/analysis/matchAnalysisTheme';
 
 const players = [
   { id: 'p1', name: 'רועי לוי', number: 1, position: 'שוער' },
@@ -95,8 +97,90 @@ analysis.fingerprint = objectFingerprint({
 
 const prep = { ...basePrep, ai_analysis: analysis };
 
+// ── Mock match analysis for the single-analysis modal (no team_id => no network) ──
+const matchData = {
+  id: 'ma-preview-1',
+  opponent: 'מכבי צפון',
+  date: '2026-05-10',
+  location: 'אצטדיון הבית',
+  result: { our_score: 2, opponent_score: 1 },
+  analysis_types: ['statistics', 'video', 'free'],
+  stats: {
+    possession: 58, pass_accuracy: 81, xg: 1.8, turnovers: 14, shots: 12,
+    shots_on_target: 5, passes: 420, tackles: 18, interceptions: 11, critical_errors: 2,
+  },
+  free_notes: 'הלחץ הגבוה עבד בחצי הראשון אבל התפרק בחצי השני כשהתעייפנו.',
+  video_moments: [
+    { timestamp: "23'", note: 'מעבר הגנה מהיר שהוביל לשער הראשון.', situation_tag: 'מעבר התקפי' },
+    { timestamp: "58'", note: 'איבוד כדור באזור הבנייה תחת לחץ.', situation_tag: 'בנייה מהגנה' },
+    { timestamp: "77'", note: 'ספיגה ממצב נייח — כדור רוחב שני.', situation_tag: 'מצבים נייחים' },
+  ],
+  player_ratings: [
+    { player_id: 'p1', player_name: 'רועי לוי', rating: 8, note: 'שוער' },
+    { player_id: 'p3', player_name: 'איתי בר', rating: 7, note: 'בלם' },
+    { player_id: 'p8', player_name: 'גיא רון', rating: 9, note: 'קשר התקפי' },
+    { player_id: 'p10', player_name: 'עידו פז', rating: 6, note: 'חלוץ' },
+    { player_id: 'p11', player_name: 'שגיא לב', rating: 7, note: 'כנף' },
+    { player_id: 'p12', player_name: 'אורי מור', did_not_play: true },
+  ],
+  tactical_problems: [
+    { text: 'הלחץ הגבוה התפרק בחצי השני ואיפשר ליריבה לבנות בנוחות.', severity: 'high', category: 'לחץ גבוה', root_cause: 'מרחקים גדלים בין הקווים עם העייפות' },
+    { text: 'איבודי כדור באזור הבנייה תחת לחץ יריב.', severity: 'medium', category: 'בנייה מהגנה', root_cause: 'מעט אופציות מסירה קצרה' },
+    { text: 'ספיגה ממצב נייח על כדור רוחב שני.', severity: 'medium', category: 'מצבים נייחים', root_cause: 'סימון רופף בקרן הרחוקה' },
+  ],
+  training_actions: [
+    { focus: 'דחיסת מרחקים בלחץ תחת עייפות' },
+    { focus: 'יציאה מלחץ עם אופציות קצרות' },
+    { focus: 'סימון בקרן הרחוקה במצבים נייחים' },
+    { focus: 'מעברים התקפיים מהירים' },
+  ],
+  _summary: {
+    what_worked: 'מעברים התקפיים מהירים, ניצול חלל הגב.',
+    issues_found: 'הלחץ התפרק בחצי השני, איבודי כדור בבנייה.',
+    tactical_insights: 'הקבוצה שלטה במשחק אך התקשתה לשמר את מבנה הלחץ לאורך 90 דקות. בחצי הראשון הלחץ הגבוה חנק את היריבה, אך עם העייפות המרחקים בין הקווים גדלו והיריבה מצאה מרחב לבנות. הניצחון הושג בזכות יעילות במעברים ולא בזכות שליטה מתמשכת.',
+    result_our: 2, result_opponent: 1,
+  },
+};
+
+const matchFp = matchFingerprint(matchData);
+matchData.ai_summary = {
+  fingerprint: matchFp,
+  summary: 'שלטתם במשחק עם 58% החזקה, אבל הסיפור האמיתי הוא היעילות במעברים — 2 שערים ממהלכי מעבר מהירים, לא ממשחק עמדתי. הלחץ הגבוה עבד מצוין בחצי הראשון וחנק את הבנייה של היריבה, אבל בחצי השני, עם העייפות, המרחקים בין הקווים גדלו והם מצאו מרחב. הניצחון מגיע, אבל השליטה לא הייתה מתמשכת.',
+  insights: {
+    critical_issue: 'הלחץ הגבוה לא שרד את החצי השני — המרחקים בין הקווים גדלו עם העייפות.',
+    improvement_area: 'איבודי כדור בשלב הבנייה תחת לחץ — חסרו אופציות מסירה קצרה.',
+    positive_point: 'מעברים התקפיים מהירים ייצרו את שני השערים מניצול חלל הגב.',
+  },
+};
+matchData.deep_analysis = {
+  fingerprint: matchFp,
+  data_richness: 'rich',
+  story: 'המשחק נפתח בשליטה שלכם: הלחץ הגבוה אילץ את היריבה לכדורים ארוכים, ומשם ניצלתם את חלל הגב פעמיים במעברים מהירים. עד ההפסקה התמונה הייתה ברורה — אתם מכתיבים. בחצי השני הקצב ירד, המרחקים בין קו הלחץ לקו האמצע גדלו, והיריבה הצליחה לבנות דרך המרכז. הספיגה הגיעה ממצב נייח, אבל האזהרה האמיתית היא מבנה הלחץ שהתרופף — זה מה שדורש עבודה.',
+  issue_expansions: [
+    { issue: 'הלחץ הגבוה התפרק בחצי השני ואיפשר ליריבה לבנות בנוחות.', explanation: 'קורה כשהשחקנים מתעייפים והמרחקים בין הקווים גדלים — קו הלחץ הראשון נעקף והיריב מוצא עדיפות מספרית במרכז.', supporting_data: 'דיוק המסירות שלכם ירד והיריבה החזיקה יותר כדור אחרי ההפסקה.' },
+    { issue: 'איבודי כדור באזור הבנייה תחת לחץ יריב.', explanation: 'כשאין מספיק אופציות מסירה קצרה, הבלמים נאלצים לכדור ארוך או לאיבוד באזור מסוכן.', supporting_data: '14 איבודי כדור — חלקם באזור הבנייה.' },
+  ],
+  clarifying_questions: [],
+  training_topic_context: [
+    { topic: 'דחיסת מרחקים בלחץ תחת עייפות', story_link: 'הלחץ שהתפרק בחצי השני מחייב עבודה על שמירת מרחקים גם כשעייפים.' },
+  ],
+};
+
+// Pre-seed the BottomLine cache so it renders without an LLM call.
+function seedBottomLine() {
+  try {
+    const key = `match-${matchData.id}-${matchFp}`;
+    localStorage.setItem(`bl_${key}`, JSON.stringify({
+      insight: 'הניצחון נבנה על יעילות במעברים ולא על שליטה — שני השערים הגיעו ממהלכי חלל גב, בעוד 58% החזקה הניבו רק 5 בעיטות למסגרת.',
+      action: 'לעבוד על שימור מבנה הלחץ בחצי השני כדי להפוך שליטה ליתרון מתמשך.',
+    }));
+  } catch (e) { /* ignore */ }
+}
+
 export default function GamePrepPreview() {
   const [tab, setTab] = useState('hub');
+
+  useEffect(() => { seedBottomLine(); }, []);
 
   const tabBtn = (id, label) => (
     <button
@@ -113,10 +197,12 @@ export default function GamePrepPreview() {
 
   return (
     <div style={{ minHeight: '100vh', background: '#F4EFE6' }} dir="rtl">
+      <style>{matchAnalysisStyles}</style>
       <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', padding: 12, borderBottom: '1px solid rgba(13,26,18,.1)', background: '#fff' }}>
         <span style={{ fontSize: 12, fontWeight: 700, color: '#94A39A' }}>תצוגה מקדימה:</span>
         {tabBtn('hub', 'הכנה למשחק')}
         {tabBtn('form', 'טופס יצירת הכנה')}
+        {tabBtn('match', 'מודל ניתוח משחק')}
       </div>
 
       <div style={{ padding: 16 }}>
@@ -138,6 +224,17 @@ export default function GamePrepPreview() {
           generalPreps={[]}
           onClose={() => setTab('hub')}
           onSaved={() => setTab('hub')}
+        />
+      )}
+
+      {tab === 'match' && (
+        <MatchAnalysisModal
+          open={true}
+          onClose={() => setTab('hub')}
+          analysis={matchData}
+          teamName="הפועל דוגמה"
+          onRefresh={() => {}}
+          seasonAverages={{ possession: 52, pass_accuracy: 78, xg: 1.4, shots: 10 }}
         />
       )}
     </div>

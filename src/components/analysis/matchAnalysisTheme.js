@@ -121,16 +121,9 @@ export const matchAnalysisStyles = `
     .ma-hero-stats { gap: 14px; overflow-x: auto; }
     .ma-pad { padding: 16px 16px 24px; }
 
-    .ma-modal {
-      position: fixed !important;
-      inset: 56px 0 0 0 !important;
-      transform: none !important;
-      width: 100% !important;
-      max-width: 100% !important;
-      max-height: none !important;
-      border-radius: 24px 24px 0 0 !important;
-      animation: maSlideUp .35s ease-out both;
-    }
+    /* Modal sizing/positioning is driven by inline styles + useIsMobile in
+       MatchAnalysisModal (deterministic across the Radix grid + utility
+       classes). Only the sheet handle stays a CSS concern here. */
     .ma-sheet-handle { display: block; }
   }
 
