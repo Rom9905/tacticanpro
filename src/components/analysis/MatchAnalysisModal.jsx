@@ -409,7 +409,10 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
                 background: 'linear-gradient(135deg,#2A7050,#1a4d35)', display: 'flex', alignItems: 'center',
                 justifyContent: 'center', fontFamily: MA.heading, fontWeight: 900, fontSize: isMobile ? 18 : 22, color: '#fff',
               }}>{initial(teamName)}</div>
-              <DialogTitle style={{ fontSize: isMobile ? 13 : 15, fontWeight: 800, color: MA.cream, fontFamily: MA.heading, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <DialogTitle style={{
+                fontSize: isMobile ? 13 : 15, fontWeight: 800, color: MA.cream, fontFamily: MA.heading, margin: 0,
+                lineHeight: 1.3, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflowWrap: 'break-word',
+              }}>
                 {teamName || 'הקבוצה'}
               </DialogTitle>
             </div>
@@ -436,7 +439,10 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
                 alignItems: 'center', justifyContent: 'center', fontFamily: MA.heading, fontWeight: 900,
                 fontSize: isMobile ? 18 : 22, color: 'rgba(244,239,230,.8)',
               }}>{initial(analysis.opponent)}</div>
-              <div style={{ fontSize: isMobile ? 13 : 15, fontWeight: 800, color: 'rgba(244,239,230,.8)', fontFamily: MA.heading, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              <div style={{
+                fontSize: isMobile ? 13 : 15, fontWeight: 800, color: 'rgba(244,239,230,.8)', fontFamily: MA.heading,
+                lineHeight: 1.3, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflowWrap: 'break-word',
+              }}>
                 {analysis.opponent}
               </div>
             </div>

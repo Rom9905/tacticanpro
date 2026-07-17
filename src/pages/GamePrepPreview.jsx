@@ -275,7 +275,7 @@ export default function GamePrepPreview() {
           open={true}
           onClose={() => setTab('hub')}
           analysis={matchData}
-          teamName="הפועל דוגמה"
+          teamName="הפועל אקדמיית הכדורגל העירונית"
           onRefresh={() => {}}
           seasonAverages={{ possession: 52, pass_accuracy: 78, xg: 1.4, shots: 10 }}
         />
