@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { ChevronLeft, Trash2, Loader2, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { MA, resultTheme } from './matchAnalysisTheme';
 
 function possessionTheme(p) {
@@ -17,6 +18,7 @@ const chipBase = {
 export default function MatchReportCard({ analysis, onClick, onDelete, index = 0 }) {
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
+  const isMobile = useIsMobile();
 
   const handleDeleteClick = (e) => { e.stopPropagation(); setConfirmDelete(true); };
   const handleConfirmDelete = async (e) => {
@@ -57,16 +59,19 @@ export default function MatchReportCard({ analysis, onClick, onDelete, index = 0
       className="ma-fade ma-card-hover"
       style={{
         position: 'relative', display: 'flex', alignItems: 'stretch', background: MA.card,
+        flexDirection: isMobile ? 'column' : 'row',
         borderRadius: 16, boxShadow: MA.cardShadow, overflow: 'hidden', cursor: 'pointer',
         animationDelay: `${Math.min(index, 8) * 80}ms`,
       }}
     >
-      {/* Result panel */}
+      {/* Result panel — side column on desktop, top strip on phones */}
       <div style={{
-        width: 110, minWidth: 110, background: theme.panelBg, display: 'flex', flexDirection: 'column',
-        alignItems: 'center', justifyContent: 'center', gap: 4, flexShrink: 0, padding: '14px 6px',
+        background: theme.panelBg, display: 'flex', flexShrink: 0,
+        ...(isMobile
+          ? { flexDirection: 'row', alignItems: 'center', gap: 10, padding: '10px 14px' }
+          : { width: 110, minWidth: 110, flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 4, padding: '14px 6px' }),
       }}>
-        <div style={{ fontSize: 26, fontWeight: 900, color: theme.accent, fontFamily: MA.heading, lineHeight: 1 }}>
+        <div style={{ fontSize: isMobile ? 20 : 26, fontWeight: 900, color: theme.accent, fontFamily: MA.heading, lineHeight: 1 }}>
           {hasScore ? `${ourScore}–${oppScore}` : '—'}
         </div>
         {hasScore && (
@@ -80,7 +85,7 @@ export default function MatchReportCard({ analysis, onClick, onDelete, index = 0
       </div>
 
       {/* Details */}
-      <div style={{ flex: 1, padding: '16px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 8, minWidth: 0 }}>
+      <div style={{ flex: 1, padding: isMobile ? '12px 14px 14px' : '16px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 8, minWidth: 0 }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
           <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, fontFamily: MA.heading, color: MA.textPrimary }}>
             מול {analysis.opponent}
@@ -121,10 +126,12 @@ export default function MatchReportCard({ analysis, onClick, onDelete, index = 0
         </div>
       </div>
 
-      {/* Chevron */}
-      <div style={{ display: 'flex', alignItems: 'center', paddingLeft: 18, color: MA.textMuted }}>
-        <ChevronLeft className="w-5 h-5" />
-      </div>
+      {/* Chevron — the full card is tappable, so the hint is desktop-only */}
+      {!isMobile && (
+        <div style={{ display: 'flex', alignItems: 'center', paddingLeft: 18, color: MA.textMuted }}>
+          <ChevronLeft className="w-5 h-5" />
+        </div>
+      )}
 
       {/* Delete — revealed on hover of the row wrapper */}
       {onDelete && (

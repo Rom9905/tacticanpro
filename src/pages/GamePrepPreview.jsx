@@ -6,7 +6,9 @@ import { objectFingerprint, matchFingerprint } from '@/lib/analysisFingerprint';
 import MatchdayHub from '@/components/gameprep/MatchdayHub';
 import GamePrepForm from '@/components/gameprep/GamePrepForm';
 import MatchAnalysisModal from '@/components/analysis/MatchAnalysisModal';
-import { matchAnalysisStyles } from '@/components/analysis/matchAnalysisTheme';
+import MatchAnalysisHero from '@/components/analysis/MatchAnalysisHero';
+import MatchReportCard from '@/components/analysis/MatchReportCard';
+import { MA, matchAnalysisStyles } from '@/components/analysis/matchAnalysisTheme';
 
 const players = [
   { id: 'p1', name: 'רועי לוי', number: 1, position: 'שוער' },
@@ -166,6 +168,25 @@ matchData.deep_analysis = {
   ],
 };
 
+// ── Mock data for the match-analysis page (hero + report cards) ──
+const pageStats = { matches: 8, wins: 4, draws: 2, losses: 2, goalsFor: 15, goalsAgainst: 9 };
+const pageForm = ['win', 'draw', 'win', 'loss', 'win'];
+const pageAnalyses = [
+  { ...matchData },
+  {
+    id: 'ma-preview-2', opponent: 'הפועל דרום', date: '2026-05-03', location: 'חוץ',
+    result: { our_score: 1, opponent_score: 1 },
+    stats: { possession: 46 },
+    _summary: { result_our: 1, result_opponent: 1, tactical_topics: ['בנייה מהגנה'], issues_found: 'קושי ביציאה מלחץ גבוה של היריבה לאורך כל המשחק.' },
+  },
+  {
+    id: 'ma-preview-3', opponent: 'בני מזרח על שם משפחת ארוכי-שם מאוד', date: '2026-04-26', location: 'בית',
+    result: { our_score: 0, opponent_score: 2 },
+    stats: { possession: 61 },
+    _summary: { result_our: 0, result_opponent: 2, tactical_topics: ['מעברים הגנתיים'], issues_found: 'שתי ספיגות ממעברים מהירים אחרי איבוד כדור בשליש הקדמי — הקבוצה נשארה חשופה מאחור.' },
+  },
+];
+
 // Pre-seed the BottomLine cache so it renders without an LLM call.
 function seedBottomLine() {
   try {
@@ -203,6 +224,7 @@ export default function GamePrepPreview() {
         {tabBtn('hub', 'הכנה למשחק')}
         {tabBtn('form', 'טופס יצירת הכנה')}
         {tabBtn('match', 'מודל ניתוח משחק')}
+        {tabBtn('matchpage', 'עמוד ניתוח משחקים')}
       </div>
 
       <div style={{ padding: 16 }}>
@@ -225,6 +247,27 @@ export default function GamePrepPreview() {
           onClose={() => setTab('hub')}
           onSaved={() => setTab('hub')}
         />
+      )}
+
+      {tab === 'matchpage' && (
+        <div style={{ backgroundColor: MA.bgPage, padding: '28px 16px', fontFamily: MA.body, color: MA.textPrimary }} dir="rtl">
+          <div style={{ maxWidth: 1080, margin: '0 auto' }}>
+            <div style={{ background: MA.bgContainer, borderRadius: 20, overflow: 'hidden', boxShadow: MA.containerShadow }}>
+              <MatchAnalysisHero
+                stats={pageStats} form={pageForm} view="list"
+                onViewChange={() => {}} onNewAnalysis={() => {}}
+                teamSelector={null} titleExtra={null} isHe={true}
+              />
+              <div className="ma-pad">
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  {pageAnalyses.map((a, i) => (
+                    <MatchReportCard key={a.id} analysis={a} index={i} onClick={() => {}} onDelete={() => {}} />
+                  ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {tab === 'match' && (

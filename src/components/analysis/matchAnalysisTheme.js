@@ -118,8 +118,11 @@ export const matchAnalysisStyles = `
     .ma-hero { padding: 20px 16px 0; }
     .ma-hero-title { font-size: 22px; }
     .ma-hero-num { font-size: 22px; }
-    .ma-hero-stats { gap: 14px; overflow-x: auto; }
+    .ma-hero-stats { flex-wrap: wrap; gap: 12px 20px; }
     .ma-pad { padding: 16px 16px 24px; }
+
+    /* No hover on touch — row actions must be visible, not hover-revealed */
+    .ma-delete-btn, .ma-row-action { opacity: 1; }
 
     /* Modal sizing/positioning is driven by inline styles + useIsMobile in
        MatchAnalysisModal (deterministic across the Radix grid + utility

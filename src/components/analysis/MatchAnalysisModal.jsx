@@ -381,7 +381,7 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
         }}
       >
         {/* ── Scoreboard header ── */}
-        <div style={{ position: 'relative', background: MA.darkHeroModal, padding: '28px 32px 24px', overflow: 'hidden' }}>
+        <div style={{ position: 'relative', background: MA.darkHeroModal, padding: isMobile ? '18px 16px 18px' : '28px 32px 24px', overflow: 'hidden' }}>
           <svg viewBox="0 0 400 260" aria-hidden="true"
             style={{ position: 'absolute', right: -60, bottom: -90, width: 340, opacity: 0.1, transform: 'rotate(12deg)', pointerEvents: 'none' }}
             fill="none" stroke={MA.greenAccent} strokeWidth="1.5">
@@ -402,21 +402,21 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
             </button>
           </div>
 
-          <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 20, marginTop: 14 }}>
-            <div style={{ textAlign: 'center' }}>
+          <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: isMobile ? 10 : 20, marginTop: 14 }}>
+            <div style={{ textAlign: 'center', minWidth: 0 }}>
               <div style={{
-                width: 56, height: 56, margin: '0 auto 8px', borderRadius: 16,
+                width: isMobile ? 44 : 56, height: isMobile ? 44 : 56, margin: '0 auto 8px', borderRadius: isMobile ? 12 : 16,
                 background: 'linear-gradient(135deg,#2A7050,#1a4d35)', display: 'flex', alignItems: 'center',
-                justifyContent: 'center', fontFamily: MA.heading, fontWeight: 900, fontSize: 22, color: '#fff',
+                justifyContent: 'center', fontFamily: MA.heading, fontWeight: 900, fontSize: isMobile ? 18 : 22, color: '#fff',
               }}>{initial(teamName)}</div>
-              <DialogTitle style={{ fontSize: 15, fontWeight: 800, color: MA.cream, fontFamily: MA.heading, margin: 0 }}>
+              <DialogTitle style={{ fontSize: isMobile ? 13 : 15, fontWeight: 800, color: MA.cream, fontFamily: MA.heading, margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {teamName || 'הקבוצה'}
               </DialogTitle>
             </div>
 
             <div style={{ textAlign: 'center' }}>
               <div style={{
-                fontSize: 56, fontWeight: 900, color: theme.accent, fontFamily: MA.heading, lineHeight: 1,
+                fontSize: isMobile ? 38 : 56, fontWeight: 900, color: theme.accent, fontFamily: MA.heading, lineHeight: 1,
                 textShadow: `0 0 32px ${theme.accent}73`,
               }}>
                 {hasScore ? `${ourScore}–${oppScore}` : '—'}
@@ -429,14 +429,14 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
               )}
             </div>
 
-            <div style={{ textAlign: 'center' }}>
+            <div style={{ textAlign: 'center', minWidth: 0 }}>
               <div style={{
-                width: 56, height: 56, margin: '0 auto 8px', borderRadius: 16,
+                width: isMobile ? 44 : 56, height: isMobile ? 44 : 56, margin: '0 auto 8px', borderRadius: isMobile ? 12 : 16,
                 background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.14)', display: 'flex',
                 alignItems: 'center', justifyContent: 'center', fontFamily: MA.heading, fontWeight: 900,
-                fontSize: 22, color: 'rgba(244,239,230,.8)',
+                fontSize: isMobile ? 18 : 22, color: 'rgba(244,239,230,.8)',
               }}>{initial(analysis.opponent)}</div>
-              <div style={{ fontSize: 15, fontWeight: 800, color: 'rgba(244,239,230,.8)', fontFamily: MA.heading }}>
+              <div style={{ fontSize: isMobile ? 13 : 15, fontWeight: 800, color: 'rgba(244,239,230,.8)', fontFamily: MA.heading, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
                 {analysis.opponent}
               </div>
             </div>
