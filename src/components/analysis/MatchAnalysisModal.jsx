@@ -10,10 +10,11 @@ import BottomLine from '@/components/ui/BottomLine';
 import { buildGameStyleContext } from '@/hooks/useGameStyle';
 import { generateTacticalProblems } from '@/lib/tacticalProblemsEngine';
 import { syncTacticalProblemsToGoals } from '@/lib/tacticalGoalsSync';
+import { matchFingerprint } from '@/lib/analysisFingerprint';
 import { MA, resultTheme, ratingColor } from './matchAnalysisTheme';
 import {
   Loader2, BarChart3, Video, FileText, Clock, Target, BookOpen,
-  TrendingUp, AlertTriangle, Lightbulb, ChevronDown, ChevronUp, Edit2, X, Sparkles,
+  TrendingUp, AlertTriangle, Lightbulb, ChevronDown, ChevronUp, Edit2, X, Sparkles, RefreshCw,
 } from 'lucide-react';
 
 // Bars in "מספרי המשחק". Only metrics the coach actually entered are rendered —
@@ -116,6 +117,10 @@ export default function MatchAnalysisModal({ open, onClose, analysis, teamName, 
   const [generatingDeep, setGeneratingDeep] = useState(false);
   const [deepError, setDeepError] = useState(null);
 
+  // Identity of the coach-entered data. When it changes the analysis refreshes
+  // itself; while it holds, the cached one is reused.
+  const fingerprint = React.useMemo(() => matchFingerprint(analysis), [analysis]);
+
   useEffect(() => {
     if (open && analysis) {
       if (!analysis._summaryOnly) loadOrGenerateAISummary();
@@ -136,10 +141,13 @@ export default function MatchAnalysisModal({ open, onClose, analysis, teamName, 
     }
   }, [open, analysis]);
 
-  const loadOrGenerateAISummary = async (forceRegenerate = false) => {
-    const cachedTooLong = (analysis.ai_summary?.summary?.length || 0) > 700;
-    if (!forceRegenerate && analysis.ai_summary && !cachedTooLong) {
-      setAiSummary(analysis.ai_summary);
+  const loadOrGenerateAISummary = async () => {
+    const cached = analysis.ai_summary;
+    const tooLong = (cached?.summary?.length || 0) > 700; // pre-limit format
+    // No fingerprint means it predates self-updating caches — treat as stale.
+    const stale = !cached || tooLong || cached.fingerprint !== fingerprint;
+    if (!stale) {
+      setAiSummary(cached);
       return;
     }
     await generateAISummary();
@@ -215,7 +223,7 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
         setAiSummary({ error: aiError });
       } else {
         const summaryText = typeof summary === 'string' ? summary : summary?.response || '';
-        const cached = { summary: summaryText, insights };
+        const cached = { summary: summaryText, insights, fingerprint };
         setAiSummary(cached);
         try {
           await base44.entities.MatchAnalysis.update(analysis.id, { ai_summary: cached });
@@ -472,7 +480,7 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
               training_actions: analysis.training_actions,
             }}
             context="ניתוח משחק"
-            cacheKey={`match-${analysis.id}`}
+            cacheKey={`match-${analysis.id}-${fingerprint}`}
           />
 
           {/* מספרי המשחק */}
@@ -558,12 +566,10 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
                 </div>
               )}
 
-              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: -12 }}>
-                <button onClick={() => loadOrGenerateAISummary(true)} disabled={loading}
-                  style={{ fontSize: 11, padding: '6px 12px', borderRadius: 8, background: 'transparent', border: `1px solid rgba(13,26,18,.12)`, color: MA.textMuted, cursor: 'pointer', fontFamily: MA.body }}>
-                  {loading ? 'מייצר...' : 'ייצר מחדש'}
-                </button>
-              </div>
+              <p style={{ margin: '-12px 0 0', fontSize: 11, color: MA.textMuted, display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: 5 }}>
+                <RefreshCw style={{ width: 11, height: 11 }} />
+                הניתוח מתעדכן אוטומטית כשמתווספים נתונים למשחק
+              </p>
             </>
           ) : null}
 

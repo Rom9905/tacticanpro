@@ -1,41 +1,47 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Loader2, TrendingUp, Sparkles, Pause, Repeat, Dumbbell } from 'lucide-react';
+import { Loader2, TrendingUp, Pause, Repeat, Dumbbell, RefreshCw } from 'lucide-react';
 import { subDays, isWithinInterval } from 'date-fns';
 import { useLang } from '@/lib/LanguageContext';
 import { MA } from './matchAnalysisTheme';
+import { periodFingerprint } from '@/lib/analysisFingerprint';
+
+const RANGES = [7, 14, 30];
+
+// Matches inside a window. Invalid dates are skipped rather than thrown on.
+function matchesInRange(analyses, days) {
+  const now = new Date();
+  const start = subDays(now, days);
+  return analyses.filter(a => {
+    const d = new Date(a.date);
+    if (Number.isNaN(d.getTime())) return false;
+    return isWithinInterval(d, { start, end: now });
+  });
+}
 
 export default function WeeklySummary({ analyses, teamId }) {
   const { t: langT } = useLang();
   const isHe = langT.lang === 'he';
   const [summary, setSummary] = useState(null);
   const [generating, setGenerating] = useState(false);
-  const [timeRange, setTimeRange] = useState(7);
+  const [timeRange, setTimeRange] = useState(30);
+  const [updatedAt, setUpdatedAt] = useState(null);
 
-  const getRecentAnalyses = () => {
-    const now = new Date();
-    const start = subDays(now, timeRange);
-    return analyses.filter(a => {
-      const matchDate = new Date(a.date);
-      return isWithinInterval(matchDate, { start, end: now });
-    });
-  };
+  const recentGames = useMemo(() => matchesInRange(analyses, timeRange), [analyses, timeRange]);
+  const counts = useMemo(
+    () => Object.fromEntries(RANGES.map(d => [d, matchesInRange(analyses, d).length])),
+    [analyses],
+  );
+
+  // Identity of the data this summary is built from — when it changes, the
+  // summary regenerates itself; when it doesn't, the cache is reused.
+  const fingerprint = useMemo(
+    () => `${timeRange}:${periodFingerprint(recentGames)}`,
+    [timeRange, recentGames],
+  );
 
   const generateSummary = async () => {
     setGenerating(true);
-    const recentGames = getRecentAnalyses();
-
-    if (recentGames.length === 0) {
-      setSummary({
-        message: isHe
-          ? `לא נמצאו משחקים ב-${timeRange} הימים האחרונים`
-          : `No matches found in the last ${timeRange} days`,
-        improvements: [], stuck_areas: [], recommendations: []
-      });
-      setGenerating(false);
-      return;
-    }
-
     const gamesText = recentGames.map((a, i) => {
       const issues = a.report?.issues || [];
       const positives = a.report?.positives || [];
@@ -70,11 +76,13 @@ Be concise and specific. Focus on patterns, not individual games. Reply in ${isH
     if (response?.__ai_error) {
       setSummary({ error: response.__ai_error });
     } else {
+      const stamp = new Date().toISOString();
       setSummary(response);
+      setUpdatedAt(stamp);
       if (teamId) {
         try {
           await base44.entities.Team.update(teamId, {
-            weekly_summary_cache: { data: response, timeRange, analysis_count: recentGames.length, updated_at: new Date().toISOString() }
+            weekly_summary_cache: { data: response, timeRange, fingerprint, updated_at: stamp },
           });
         } catch (e) { console.warn('Failed to cache weekly summary:', e); }
       }
@@ -82,20 +90,40 @@ Be concise and specific. Focus on patterns, not individual games. Reply in ${isH
     setGenerating(false);
   };
 
-  useEffect(() => {
-    setSummary(null);
-    if (teamId) {
-      base44.entities.Team.filter({ id: teamId }).then(teams => {
-        const cache = teams[0]?.weekly_summary_cache;
-        const recentCount = getRecentAnalyses().length;
-        if (cache?.data && cache.timeRange === timeRange && cache.analysis_count === recentCount) {
-          setSummary(cache.data);
-        }
-      }).catch(() => {});
-    }
-  }, [timeRange, analyses]);
+  // Keep generateSummary out of the effect's deps — it closes over state that
+  // changes every render, and the fingerprint already says when to re-run.
+  const generateRef = useRef(generateSummary);
+  generateRef.current = generateSummary;
 
-  const recentGames = getRecentAnalyses();
+  // Self-updating: reuse the cache while the underlying matches are unchanged,
+  // and regenerate on its own as soon as they aren't.
+  useEffect(() => {
+    let cancelled = false;
+    setSummary(null);
+    setUpdatedAt(null);
+
+    if (recentGames.length === 0) return undefined;
+
+    (async () => {
+      let cache = null;
+      if (teamId) {
+        try {
+          const teams = await base44.entities.Team.filter({ id: teamId });
+          cache = teams[0]?.weekly_summary_cache || null;
+        } catch { /* fall through to regenerate */ }
+      }
+      if (cancelled) return;
+
+      if (cache?.data && cache.fingerprint === fingerprint) {
+        setSummary(cache.data);
+        setUpdatedAt(cache.updated_at || null);
+        return;
+      }
+      generateRef.current();
+    })();
+
+    return () => { cancelled = true; };
+  }, [fingerprint, teamId, recentGames.length]);
 
   const listCard = ({ title, icon: Icon, color, items, delay }) => (
     <div className="ma-fade" style={{
@@ -113,44 +141,45 @@ Be concise and specific. Focus on patterns, not individual games. Reply in ${isH
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-      {/* Period selector */}
+      {/* Period selector — the match count is on the pill, so an empty window
+          explains itself instead of looking broken. */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', gap: 2, padding: 3, borderRadius: 9999, background: 'rgba(13,26,18,.05)' }}>
-          {[7, 14, 30].map(days => {
+          {RANGES.map(days => {
             const active = timeRange === days;
+            const count = counts[days] ?? 0;
             return (
               <button key={days} onClick={() => setTimeRange(days)}
+                title={isHe ? `${count} משחקים ב-${days} הימים האחרונים` : `${count} matches in the last ${days} days`}
                 style={{
-                  padding: '6px 16px', borderRadius: 9999, border: 'none', cursor: 'pointer',
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                  padding: '6px 14px', borderRadius: 9999, border: 'none', cursor: 'pointer',
                   fontSize: 12, fontWeight: active ? 700 : 600, fontFamily: MA.body,
                   background: active ? '#0D1A12' : 'transparent',
-                  color: active ? MA.greenAccent : MA.textSecondary,
+                  color: active ? MA.greenAccent : count === 0 ? MA.textMuted : MA.textSecondary,
                 }}>
                 {days} {isHe ? 'ימים' : 'days'}
+                <span style={{
+                  minWidth: 18, padding: '0 5px', borderRadius: 9999, fontSize: 10, fontWeight: 800,
+                  fontFamily: MA.heading, lineHeight: '16px',
+                  background: active ? 'rgba(74,222,128,.2)' : count === 0 ? 'rgba(13,26,18,.06)' : MA.successBg,
+                  color: active ? MA.greenAccent : count === 0 ? MA.textMuted : MA.greenMain,
+                }}>{count}</span>
               </button>
             );
           })}
         </div>
 
-        <span style={{ fontSize: 12, color: MA.textMuted }}>
-          {isHe
-            ? `${recentGames.length} משחקים בתקופה`
-            : `${recentGames.length} matches in period`}
+        <span style={{ marginInlineStart: 'auto', display: 'inline-flex', alignItems: 'center', gap: 6, fontSize: 11, color: MA.textMuted }}>
+          {generating ? (
+            <><Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: MA.greenMain }} />
+              {isHe ? 'מעדכן סיכום...' : 'Updating summary...'}</>
+          ) : (
+            <><RefreshCw style={{ width: 12, height: 12 }} />
+              {isHe ? 'מתעדכן אוטומטית כשמתווספים נתונים' : 'Updates automatically when data changes'}
+              {updatedAt && ` · ${new Date(updatedAt).toLocaleDateString('he-IL')}`}</>
+          )}
         </span>
-
-        <button onClick={generateSummary} disabled={generating || recentGames.length === 0}
-          style={{
-            marginInlineStart: 'auto', display: 'inline-flex', alignItems: 'center', gap: 6,
-            padding: '8px 16px', borderRadius: 9999, border: 'none', fontFamily: MA.body,
-            fontSize: 12, fontWeight: 700,
-            background: recentGames.length === 0 ? 'rgba(13,26,18,.06)' : MA.greenAccent,
-            color: recentGames.length === 0 ? MA.textMuted : '#0D1A12',
-            cursor: generating ? 'wait' : recentGames.length === 0 ? 'not-allowed' : 'pointer',
-          }}>
-          {generating
-            ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />{isHe ? 'מייצר סיכום...' : 'Generating...'}</>
-            : <><Sparkles style={{ width: 14, height: 14 }} />{isHe ? 'צור סיכום' : 'Generate Summary'}</>}
-        </button>
       </div>
 
       {summary?.error && (
@@ -211,24 +240,30 @@ Be concise and specific. Focus on patterns, not individual games. Reply in ${isH
             </div>
           )}
 
-          {summary.message && (
-            <div style={{ background: MA.card, borderRadius: 16, padding: '48px 24px', textAlign: 'center', boxShadow: MA.cardShadow }}>
-              <p style={{ margin: 0, fontSize: 13, color: MA.textMuted }}>{summary.message}</p>
-            </div>
-          )}
         </>
       )}
 
-      {!summary && !generating && (
-        <div style={{ background: MA.card, borderRadius: 16, padding: '48px 24px', textAlign: 'center', boxShadow: MA.cardShadow }}>
-          <TrendingUp style={{ width: 44, height: 44, color: MA.textFaint, margin: '0 auto 14px' }} />
-          <p style={{ margin: 0, fontSize: 13, color: MA.textMuted }}>
-            {recentGames.length === 0
-              ? (isHe ? `אין משחקים ב-${timeRange} הימים האחרונים` : `No matches in the last ${timeRange} days`)
-              : (isHe ? 'לחץ על "צור סיכום" כדי לקבל תובנות על התקופה' : 'Click "Generate Summary" for period insights')}
-          </p>
-        </div>
-      )}
+      {!summary && !generating && (() => {
+        // Point at a window that actually has matches instead of dead-ending.
+        const withData = RANGES.find(d => (counts[d] ?? 0) > 0);
+        return (
+          <div style={{ background: MA.card, borderRadius: 16, padding: '48px 24px', textAlign: 'center', boxShadow: MA.cardShadow }}>
+            <TrendingUp style={{ width: 44, height: 44, color: MA.textFaint, margin: '0 auto 14px' }} />
+            <p style={{ margin: 0, fontSize: 14, fontWeight: 600, color: MA.textPrimary }}>
+              {isHe ? `אין משחקים ב-${timeRange} הימים האחרונים` : `No matches in the last ${timeRange} days`}
+            </p>
+            <p style={{ margin: '6px 0 0', fontSize: 12, color: MA.textMuted }}>
+              {withData
+                ? (isHe
+                  ? `יש ${counts[withData]} משחקים ב-${withData} הימים האחרונים — בחר את התקופה הזו כדי לראות סיכום.`
+                  : `There are ${counts[withData]} matches in the last ${withData} days — pick that period to see a summary.`)
+                : (isHe
+                  ? 'הוסף ניתוח משחק והסיכום ייווצר כאן מעצמו.'
+                  : 'Add a match analysis and the summary will build itself here.')}
+            </p>
+          </div>
+        );
+      })()}
     </div>
   );
 }
