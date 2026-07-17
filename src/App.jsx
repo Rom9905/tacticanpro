@@ -20,6 +20,7 @@ import SubscriptionBlocked from '@/pages/SubscriptionBlocked';
 import Login from '@/pages/Login';
 import Payment from '@/pages/Payment';
 import PaymentSuccess from '@/pages/PaymentSuccess';
+import GamePrepPreview from '@/pages/GamePrepPreview';
 
 const { Pages, Layout, mainPage } = pagesConfig;
 const mainPageKey = mainPage ?? Object.keys(Pages)[0];
@@ -31,6 +32,11 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, isAuthenticated, authError, navigateToLogin, subscriptionStatus, user } = useAuth();
+
+  // Dev-only, no-auth preview of the game-prep screens (mobile review).
+  if (typeof window !== 'undefined' && window.location.pathname === '/preview-gameprep') {
+    return <GamePrepPreview />;
+  }
 
   // Show loading spinner while checking auth
   if (isLoadingPublicSettings || isLoadingAuth) {

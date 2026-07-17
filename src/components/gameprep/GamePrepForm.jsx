@@ -86,9 +86,9 @@ export default function GamePrepForm({ teamId, players, generalPreps, onClose, o
   const inputStyle = { backgroundColor: '#F0EBE2', border: '1px solid rgba(139,115,85,0.25)', color: '#2C2416' };
 
   return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} dir="rtl">
+    <div className="fixed inset-0 z-[100] flex items-end sm:items-center justify-center" style={{ backgroundColor: 'rgba(0,0,0,0.5)' }} dir="rtl">
       <div className="absolute inset-0" onClick={onClose} />
-      <div className="relative z-10 w-full max-w-lg mx-4 rounded-2xl shadow-2xl max-h-[90vh] overflow-y-auto"
+      <div className="relative z-10 w-full max-w-lg sm:mx-4 rounded-t-2xl sm:rounded-2xl shadow-2xl max-h-[92vh] sm:max-h-[90vh] overflow-y-auto"
         style={{ backgroundColor: '#FAF7F2', border: '1px solid rgba(139,115,85,0.25)' }}
         onClick={e => e.stopPropagation()}>
 

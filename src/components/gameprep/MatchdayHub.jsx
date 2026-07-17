@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { objectFingerprint } from '@/lib/analysisFingerprint';
+import { useIsMobile } from '@/hooks/use-mobile';
 import {
   ShieldCheck, Crosshair, Sparkles, Scale, Printer, Lightbulb, ArrowRight, Loader2
 } from 'lucide-react';
@@ -74,8 +75,8 @@ function resultType(ma) {
 }
 
 // ─── Pitch Component ───
-function PitchView({ players, lineupIds, formation, dark, large }) {
-  const h = large ? 600 : 400;
+function PitchView({ players, lineupIds, formation, dark, large, isMobile }) {
+  const h = large ? (isMobile ? 440 : 600) : (isMobile ? 340 : 400);
   const tokenSize = large ? 38 : 30;
   const fontSize = large ? 13 : 11;
   const nameSize = large ? 10 : 9;
@@ -131,13 +132,14 @@ function PitchView({ players, lineupIds, formation, dark, large }) {
 
 // ─── Report Modal ───
 function ReportModal({ prep, analysis, onClose }) {
+  const isMobile = useIsMobile();
   if (!prep) return null;
   const formation = prep.opponent_formation || '?';
   const dateStr = prep.date ? new Date(prep.date).toLocaleDateString('he-IL') : '';
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(13,26,18,.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }} dir="rtl">
+    <div style={{ position: 'fixed', inset: 0, zIndex: 100, background: 'rgba(13,26,18,.6)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: isMobile ? 12 : 24 }} dir="rtl">
       <div onClick={onClose} style={{ position: 'absolute', inset: 0 }} />
-      <div onClick={e => e.stopPropagation()} style={{ position: 'relative', zIndex: 10, width: '100%', maxWidth: 660, maxHeight: '90vh', overflowY: 'auto', background: '#fff', borderRadius: 10, boxShadow: '0 24px 60px rgba(13,26,18,.35)', padding: '36px 40px', display: 'flex', flexDirection: 'column', gap: 22 }}>
+      <div onClick={e => e.stopPropagation()} style={{ position: 'relative', zIndex: 10, width: '100%', maxWidth: 660, maxHeight: '90vh', overflowY: 'auto', background: '#fff', borderRadius: 10, boxShadow: '0 24px 60px rgba(13,26,18,.35)', padding: isMobile ? '22px 18px' : '36px 40px', display: 'flex', flexDirection: 'column', gap: 22 }}>
         <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', borderBottom: '2px solid #0D1A12', paddingBottom: 16 }}>
           <div>
             <p style={{ margin: 0, fontSize: 10, fontWeight: 700, letterSpacing: '.14em', color: '#16A34A' }}>דו"ח הכנה למשחק</p>
@@ -159,7 +161,7 @@ function ReportModal({ prep, analysis, onClose }) {
           {prep.opponent_dangerous_players && <><span style={{ color: '#94A39A' }}>איומים</span><span style={{ fontWeight: 600, color: '#0D1A12' }}>{prep.opponent_dangerous_players}</span></>}
         </div>
         {analysis && (
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+          <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 14 }}>
             <div>
               <p style={{ margin: '0 0 8px', fontSize: 11, fontWeight: 800, letterSpacing: '.06em', color: '#DC2626', borderBottom: '1px solid rgba(220,38,38,.2)', paddingBottom: 5 }}>בהתקפה</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: 7 }}>
@@ -229,12 +231,12 @@ function EditModal({ prep, onClose, onSave }) {
 }
 
 // ─── Work Mode ───
-function WorkMode({ prep, analysis, players, matchAnalyses, onShowBalance, onShowReport, onShowEdit, generating }) {
+function WorkMode({ prep, analysis, players, matchAnalyses, onShowBalance, onShowReport, onShowEdit, generating, isMobile }) {
   const balance = getBalanceData(matchAnalyses, prep.opponent_formation);
   const formation = prep.opponent_formation || '4-3-3';
 
   return (
-    <div style={{ display: 'grid', gridTemplateColumns: '1fr 340px', gap: 16, alignItems: 'start' }}>
+    <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 340px', gap: 16, alignItems: 'start' }}>
       {/* Main column */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
         {generating ? (
@@ -257,7 +259,7 @@ function WorkMode({ prep, analysis, players, matchAnalyses, onShowBalance, onSho
             </div>
 
             {/* Offensive + Defensive */}
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr', gap: 16 }}>
               <div style={{ borderRadius: 14, padding: 18, background: '#fff', boxShadow: SHADOW_CARD }}>
                 <p style={{ margin: '0 0 12px', fontSize: 12, fontWeight: 700, color: '#DC2626' }}>מה לעשות התקפית</p>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -286,7 +288,7 @@ function WorkMode({ prep, analysis, players, matchAnalyses, onShowBalance, onSho
             {analysis.training_topics?.length > 0 && (
               <div style={{ borderRadius: 14, padding: 18, background: '#fff', boxShadow: SHADOW_CARD }}>
                 <p style={{ margin: '0 0 12px', fontSize: 12, fontWeight: 700, color: '#D97706' }}>נושאי עבודה לאימון הסופי</p>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+                <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '1fr 1fr 1fr', gap: 10 }}>
                   {analysis.training_topics.map((tp, i) => (
                     <div key={i} style={{ borderRadius: 10, padding: 12, background: '#FDF3E3' }}>
                       <p style={{ margin: 0, fontSize: 12, fontWeight: 600, lineHeight: 1.5, color: '#14231A' }}>{tp}</p>
@@ -368,7 +370,7 @@ function WorkMode({ prep, analysis, players, matchAnalyses, onShowBalance, onSho
         {/* Pitch */}
         <div style={{ borderRadius: 14, padding: 18, background: '#fff', boxShadow: SHADOW_CARD }}>
           <p style={{ margin: '0 0 12px', fontSize: 12, fontWeight: 700, color: '#14231A' }}>הרכב מומלץ · {formation}</p>
-          <PitchView players={players} lineupIds={prep.recommended_lineup} formation={formation} dark={false} large={false} />
+          <PitchView players={players} lineupIds={prep.recommended_lineup} formation={formation} dark={false} large={false} isMobile={isMobile} />
         </div>
       </div>
     </div>
@@ -376,7 +378,7 @@ function WorkMode({ prep, analysis, players, matchAnalyses, onShowBalance, onSho
 }
 
 // ─── Matchday Night Mode ───
-function MatchdayMode({ prep, analysis, players, matchAnalyses, onShowReport, onShowEdit }) {
+function MatchdayMode({ prep, analysis, players, matchAnalyses, onShowReport, onShowEdit, isMobile }) {
   const formation = prep.opponent_formation || '4-3-3';
   const balance = getBalanceData(matchAnalyses, formation);
 
@@ -392,9 +394,9 @@ function MatchdayMode({ prep, analysis, players, matchAnalyses, onShowReport, on
         </div>
       )}
 
-      <div style={{ display: 'grid', gridTemplateColumns: '300px 1fr 300px', gap: 18, alignItems: 'start' }}>
+      <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : '300px 1fr 300px', gap: isMobile ? 14 : 18, alignItems: 'start' }}>
         {/* Right rail */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, order: isMobile ? 2 : 0 }}>
           {/* Attack */}
           <div style={darkCard}>
             <p style={{ margin: '0 0 12px', fontSize: 12, fontWeight: 700, color: '#EF8B8B' }}>התקפה</p>
@@ -419,10 +421,12 @@ function MatchdayMode({ prep, analysis, players, matchAnalyses, onShowReport, on
         </div>
 
         {/* Center pitch */}
-        <PitchView players={players} lineupIds={prep.recommended_lineup} formation={formation} dark={true} large={true} />
+        <div style={{ order: isMobile ? 1 : 0 }}>
+          <PitchView players={players} lineupIds={prep.recommended_lineup} formation={formation} dark={true} large={true} isMobile={isMobile} />
+        </div>
 
         {/* Left rail */}
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 14, order: isMobile ? 3 : 0 }}>
           {/* Coach data */}
           <div style={darkCard}>
             <p style={{ margin: '0 0 10px', fontSize: 12, fontWeight: 700, color: 'rgba(244,239,230,.7)' }}>הנתונים שלך</p>
@@ -468,7 +472,7 @@ function MatchdayMode({ prep, analysis, players, matchAnalyses, onShowReport, on
 }
 
 // ─── Balance View ───
-function BalanceView({ matchAnalyses }) {
+function BalanceView({ matchAnalyses, isMobile }) {
   const { rows, total, wins, draws, losses } = getFullBalanceRows(matchAnalyses);
 
   const best = rows.length > 0 ? rows.reduce((a, b) => {
@@ -485,12 +489,12 @@ function BalanceView({ matchAnalyses }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
       {/* Summary strip */}
-      <div style={{ borderRadius: 14, padding: '16px 20px', background: '#fff', boxShadow: SHADOW_CARD, display: 'flex', alignItems: 'center', gap: 16 }}>
+      <div style={{ borderRadius: 14, padding: '16px 20px', background: '#fff', boxShadow: SHADOW_CARD, display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
         <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
           <span style={{ fontSize: 30, fontWeight: 900, color: '#14231A', fontFamily: 'Heebo,sans-serif' }}>{total}</span>
           <span style={{ fontSize: 12, color: '#94A39A' }}>משחקים</span>
         </div>
-        <div style={{ flex: 1, display: 'flex', height: 10, borderRadius: 9999, overflow: 'hidden', gap: 2 }}>
+        <div style={{ flex: 1, minWidth: 120, display: 'flex', height: 10, borderRadius: 9999, overflow: 'hidden', gap: 2 }}>
           {wins > 0 && <div style={{ flex: wins, background: '#16A34A' }} />}
           {draws > 0 && <div style={{ flex: draws, background: '#D97706' }} />}
           {losses > 0 && <div style={{ flex: losses, background: '#DC2626' }} />}
@@ -504,7 +508,7 @@ function BalanceView({ matchAnalyses }) {
 
       {/* Formation cards */}
       {rows.length > 0 && (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: isMobile ? '1fr' : 'repeat(3, 1fr)', gap: 16 }}>
           {rows.map((row, i) => {
             const w = row.matches.filter(m => (m.result?.our_score ?? 0) > (m.result?.opponent_score ?? 0)).length;
             const d = row.matches.filter(m => m.result && m.result.our_score === m.result.opponent_score).length;
@@ -574,6 +578,7 @@ export default function MatchdayHub({ prep: initialPrep, players, matchAnalyses,
   const [analysis, setAnalysis] = useState(initialPrep.ai_analysis || null);
   const [generating, setGenerating] = useState(false);
   const [team, setTeam] = useState(null);
+  const isMobile = useIsMobile();
 
   const countdown = useCountdown(prep.date + 'T' + (prep.match_time || '20:00'));
   const effectiveMode = mode ?? (countdown.isWithin48h ? 'matchday' : 'work');
@@ -668,7 +673,7 @@ ${prep.opponent_patterns ? `דפוסים: ${prep.opponent_patterns}` : ''}
 
   return (
     <div style={{ minHeight: isMatchday ? 'calc(100vh - 56px)' : undefined, background: isMatchday ? '#0D1A12' : undefined }} dir="rtl">
-      <div style={{ maxWidth: 1064, margin: '0 auto', padding: isMatchday ? '24px 24px 48px' : '0' }}>
+      <div style={{ maxWidth: 1064, margin: '0 auto', padding: isMatchday ? (isMobile ? '14px 14px 40px' : '24px 24px 48px') : '0' }}>
 
         {/* Back button */}
         <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600, border: '1px solid rgba(74,222,128,.35)', color: isMatchday ? '#4ADE80' : '#16A34A', background: isMatchday ? 'rgba(74,222,128,.06)' : 'rgba(22,163,74,.06)', cursor: 'pointer', fontFamily: 'Assistant,sans-serif', marginBottom: 14 }}>
@@ -678,14 +683,14 @@ ${prep.opponent_patterns ? `דפוסים: ${prep.opponent_patterns}` : ''}
         {/* ─── WORK MODE HERO ─── */}
         {!isMatchday && (
           <div style={{ borderRadius: 16, overflow: 'hidden', background: 'linear-gradient(135deg,#0D1A12 0%,#12251A 100%)', border: '1px solid rgba(74,222,128,.15)', marginBottom: 20 }}>
-            <div style={{ padding: '22px 26px', display: 'flex', alignItems: 'center', gap: 24, flexWrap: 'wrap' }}>
+            <div style={{ padding: isMobile ? '16px 16px' : '22px 26px', display: 'flex', alignItems: 'center', gap: isMobile ? 14 : 24, flexWrap: 'wrap' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 14, flex: 1, minWidth: 280 }}>
                 <div style={{ width: 52, height: 52, borderRadius: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(74,222,128,.14)', border: '1px solid rgba(74,222,128,.25)', flexShrink: 0 }}>
                   <ShieldCheck className="w-[26px] h-[26px]" style={{ color: '#4ADE80' }} />
                 </div>
                 <div style={{ minWidth: 0 }}>
                   <p style={{ margin: 0, fontSize: 11, fontWeight: 700, letterSpacing: '.08em', color: '#4ADE80' }}>ההכנה הבאה · {dateStr}</p>
-                  <h2 style={{ margin: '2px 0 0', fontSize: 24, fontWeight: 800, color: '#F4EFE6', fontFamily: 'Heebo,sans-serif' }}>מול {prep.opponent_name || prep.name}</h2>
+                  <h2 style={{ margin: '2px 0 0', fontSize: isMobile ? 20 : 24, fontWeight: 800, color: '#F4EFE6', fontFamily: 'Heebo,sans-serif' }}>מול {prep.opponent_name || prep.name}</h2>
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 6 }}>
                     <span style={{ fontSize: 13, fontWeight: 800, color: '#F4EFE6', fontFamily: 'Heebo,sans-serif' }}>מערכת יריב: {prep.opponent_formation || '?'}</span>
                     {prep.opponent_strength_level && (
@@ -701,7 +706,7 @@ ${prep.opponent_patterns ? `דפוסים: ${prep.opponent_patterns}` : ''}
               </div>
             </div>
             {/* Mode toggle strip */}
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 26px', background: 'rgba(74,222,128,.06)', borderTop: '1px solid rgba(74,222,128,.12)' }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', padding: isMobile ? '10px 16px' : '10px 26px', background: 'rgba(74,222,128,.06)', borderTop: '1px solid rgba(74,222,128,.12)' }}>
               <div style={{ display: 'flex', gap: 4, padding: 3, borderRadius: 9999, background: 'rgba(13,26,18,.6)', border: '1px solid rgba(74,222,128,.2)' }}>
                 <button onClick={() => setMode('work')} style={{ padding: '5px 16px', borderRadius: 9999, fontSize: 12, fontWeight: effectiveMode === 'work' ? 700 : 600, background: effectiveMode === 'work' ? '#4ADE80' : 'transparent', color: effectiveMode === 'work' ? '#0D1A12' : 'rgba(244,239,230,.6)', border: 'none', cursor: 'pointer', fontFamily: 'Assistant,sans-serif' }}>מצב עבודה</button>
                 <button onClick={() => setMode('matchday')} style={{ padding: '5px 16px', borderRadius: 9999, fontSize: 12, fontWeight: effectiveMode === 'matchday' ? 700 : 600, background: effectiveMode === 'matchday' ? '#4ADE80' : 'transparent', color: effectiveMode === 'matchday' ? '#0D1A12' : 'rgba(244,239,230,.6)', border: 'none', cursor: 'pointer', fontFamily: 'Assistant,sans-serif' }}>ליל משחק</button>
@@ -714,7 +719,7 @@ ${prep.opponent_patterns ? `דפוסים: ${prep.opponent_patterns}` : ''}
         {/* ─── MATCHDAY MODE HEADER ─── */}
         {isMatchday && (
           <>
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 22 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, flexWrap: 'wrap', marginBottom: 22 }}>
               <div style={{ display: 'flex', gap: 4, padding: 3, borderRadius: 9999, background: '#13241A', border: '1px solid rgba(74,222,128,.2)' }}>
                 <button onClick={() => setMode('work')} style={{ padding: '5px 16px', borderRadius: 9999, fontSize: 12, fontWeight: 600, color: 'rgba(244,239,230,.6)', background: 'transparent', border: 'none', cursor: 'pointer', fontFamily: 'Assistant,sans-serif' }}>מצב עבודה</button>
                 <button onClick={() => setMode('matchday')} style={{ padding: '5px 16px', borderRadius: 9999, fontSize: 12, fontWeight: 700, background: '#4ADE80', color: '#0D1A12', border: 'none', cursor: 'pointer', fontFamily: 'Assistant,sans-serif' }}>ליל משחק</button>
@@ -725,7 +730,7 @@ ${prep.opponent_patterns ? `דפוסים: ${prep.opponent_patterns}` : ''}
             </div>
             <div style={{ marginBottom: 22 }}>
               <p style={{ margin: 0, fontSize: 11, fontWeight: 700, letterSpacing: '.14em', color: '#4ADE80' }}>ליל משחק</p>
-              <h2 style={{ margin: '4px 0 0', fontSize: 32, fontWeight: 900, color: '#F4EFE6', fontFamily: 'Heebo,sans-serif' }}>{teamName} <span style={{ color: 'rgba(244,239,230,.35)', fontWeight: 400 }}>מול</span> {prep.opponent_name || prep.name}</h2>
+              <h2 style={{ margin: '4px 0 0', fontSize: isMobile ? 22 : 32, fontWeight: 900, color: '#F4EFE6', fontFamily: 'Heebo,sans-serif' }}>{teamName} <span style={{ color: 'rgba(244,239,230,.35)', fontWeight: 400 }}>מול</span> {prep.opponent_name || prep.name}</h2>
             </div>
           </>
         )}
@@ -746,16 +751,18 @@ ${prep.opponent_patterns ? `דפוסים: ${prep.opponent_patterns}` : ''}
             onShowReport={() => setShowReport(true)}
             onShowEdit={() => setShowEdit(true)}
             generating={generating}
+            isMobile={isMobile}
           />
         )}
         {!isMatchday && view === 'balance' && (
-          <BalanceView matchAnalyses={matchAnalyses} />
+          <BalanceView matchAnalyses={matchAnalyses} isMobile={isMobile} />
         )}
         {isMatchday && (
           <MatchdayMode
             prep={prep} analysis={analysis} players={players} matchAnalyses={matchAnalyses}
             onShowReport={() => setShowReport(true)}
             onShowEdit={() => setShowEdit(true)}
+            isMobile={isMobile}
           />
         )}
       </div>
