@@ -17,12 +17,24 @@ import {
 } from 'lucide-react';
 
 // Bars in "מספרי המשחק". Only metrics the coach actually entered are rendered —
-// possession / xG / pass accuracy are all optional.
+// every stat is optional. Ordered as in the design (שליטה / דיוק / xG / איבודים
+// first), then the remaining fields StatisticsAnalysis can capture, so nothing
+// the coach entered goes unshown. `max` only scales the bar; the printed value
+// is always the real number.
+const GOOD = { from: MA.greenMain, to: MA.greenAccent, color: MA.greenMain };
+const BAD = { from: MA.warn, to: MA.drawYellow, color: MA.warn };
+
 const BAR_METRICS = [
-  { key: 'possession', label: 'שליטה', max: 100, suffix: '%', from: MA.greenMain, to: MA.greenAccent, color: MA.greenMain },
-  { key: 'pass_accuracy', label: 'דיוק מסירות', max: 100, suffix: '%', from: MA.greenMain, to: MA.greenAccent, color: MA.greenMain },
+  { key: 'possession', label: 'שליטה', max: 100, suffix: '%', ...GOOD },
+  { key: 'pass_accuracy', label: 'דיוק מסירות', max: 100, suffix: '%', ...GOOD },
   { key: 'xg', label: 'xG', max: 3, suffix: '', from: '#2563EB', to: '#60A5FA', color: MA.info },
-  { key: 'turnovers', label: 'איבודים', max: 30, suffix: '', from: MA.warn, to: MA.drawYellow, color: MA.warn },
+  { key: 'turnovers', label: 'איבודים', max: 30, suffix: '', ...BAD },
+  { key: 'shots', label: 'בעיטות לשער', max: 25, suffix: '', ...GOOD },
+  { key: 'shots_on_target', label: 'בעיטות למסגרת', max: 12, suffix: '', ...GOOD },
+  { key: 'passes', label: 'מסירות', max: 700, suffix: '', ...GOOD },
+  { key: 'tackles', label: 'תיקולים', max: 30, suffix: '', ...GOOD },
+  { key: 'interceptions', label: 'יירוטים', max: 30, suffix: '', ...GOOD },
+  { key: 'critical_errors', label: 'טעויות קריטיות', max: 8, suffix: '', from: MA.danger, to: MA.lossRed, color: MA.danger },
 ];
 
 const SEVERITY = {
