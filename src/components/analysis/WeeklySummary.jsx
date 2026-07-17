@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Loader2, TrendingUp, TrendingDown, Minus, Sparkles } from 'lucide-react';
+import { Loader2, TrendingUp, Sparkles, Pause, Repeat, Dumbbell } from 'lucide-react';
 import { subDays, isWithinInterval } from 'date-fns';
 import { useLang } from '@/lib/LanguageContext';
+import { MA } from './matchAnalysisTheme';
 
 export default function WeeklySummary({ analyses, teamId }) {
   const { t: langT } = useLang();
@@ -40,7 +39,7 @@ export default function WeeklySummary({ analyses, teamId }) {
     const gamesText = recentGames.map((a, i) => {
       const issues = a.report?.issues || [];
       const positives = a.report?.positives || [];
-      return `Match ${i+1}: vs ${a.opponent} (${a.result.our_score}-${a.result.opponent_score})\nPositives: ${positives.join(', ')}\nIssues: ${issues.join(', ')}`;
+      return `Match ${i + 1}: vs ${a.opponent} (${a.result?.our_score}-${a.result?.opponent_score})\nPositives: ${positives.join(', ')}\nIssues: ${issues.join(', ')}`;
     }).join('\n\n');
 
     const prompt = `You are a professional football analyst. Summarize the team's last ${timeRange} days:
@@ -69,8 +68,7 @@ Be concise and specific. Focus on patterns, not individual games. Reply in ${isH
     });
 
     if (response?.__ai_error) {
-      alert(response.__ai_error);
-      setSummary(null);
+      setSummary({ error: response.__ai_error });
     } else {
       setSummary(response);
       if (teamId) {
@@ -86,7 +84,6 @@ Be concise and specific. Focus on patterns, not individual games. Reply in ${isH
 
   useEffect(() => {
     setSummary(null);
-    // Load cached summary
     if (teamId) {
       base44.entities.Team.filter({ id: teamId }).then(teams => {
         const cache = teams[0]?.weekly_summary_cache;
@@ -100,117 +97,137 @@ Be concise and specific. Focus on patterns, not individual games. Reply in ${isH
 
   const recentGames = getRecentAnalyses();
 
+  const listCard = ({ title, icon: Icon, color, items, delay }) => (
+    <div className="ma-fade" style={{
+      background: MA.card, borderRadius: 16, padding: '20px 22px',
+      boxShadow: MA.cardShadow, borderTop: `4px solid ${color}`, animationDelay: `${delay}ms`,
+    }}>
+      <h3 style={{ margin: '0 0 10px', fontSize: 14, fontWeight: 800, color, fontFamily: MA.heading, display: 'flex', alignItems: 'center', gap: 8 }}>
+        <Icon style={{ width: 15, height: 15 }} /> {title}
+      </h3>
+      <ul style={{ margin: 0, padding: 0, listStyle: 'none', fontSize: 13, lineHeight: 2, color: MA.textSecondary }}>
+        {items.map((item, i) => <li key={i}>• {item}</li>)}
+      </ul>
+    </div>
+  );
+
   return (
-    <div className="space-y-6">
-      {/* Time Range Selector */}
-      <div className="flex items-center gap-3">
-        {[7, 14, 30].map(days => (
-          <Button key={days}
-            variant={timeRange === days ? 'default' : 'outline'}
-            onClick={() => setTimeRange(days)}
-            className={timeRange === days ? 'bg-emerald-600' : ''}>
-            {days} {isHe ? 'ימים' : 'days'}
-          </Button>
-        ))}
-        <div className="mr-auto">
-          <Button
-            onClick={generateSummary}
-            disabled={generating || recentGames.length === 0}
-            className="bg-emerald-600 hover:bg-emerald-700">
-            {generating ? (
-              <><Loader2 className="w-4 h-4 ml-2 animate-spin" />{isHe ? 'מייצר סיכום...' : 'Generating...'}</>
-            ) : (
-              <><Sparkles className="w-4 h-4 ml-2" />{isHe ? 'צור סיכום אוטומטי' : 'Generate Auto Summary'}</>
-            )}
-          </Button>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      {/* Period selector */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: 2, padding: 3, borderRadius: 9999, background: 'rgba(13,26,18,.05)' }}>
+          {[7, 14, 30].map(days => {
+            const active = timeRange === days;
+            return (
+              <button key={days} onClick={() => setTimeRange(days)}
+                style={{
+                  padding: '6px 16px', borderRadius: 9999, border: 'none', cursor: 'pointer',
+                  fontSize: 12, fontWeight: active ? 700 : 600, fontFamily: MA.body,
+                  background: active ? '#0D1A12' : 'transparent',
+                  color: active ? MA.greenAccent : MA.textSecondary,
+                }}>
+                {days} {isHe ? 'ימים' : 'days'}
+              </button>
+            );
+          })}
         </div>
+
+        <span style={{ fontSize: 12, color: MA.textMuted }}>
+          {isHe
+            ? `${recentGames.length} משחקים בתקופה`
+            : `${recentGames.length} matches in period`}
+        </span>
+
+        <button onClick={generateSummary} disabled={generating || recentGames.length === 0}
+          style={{
+            marginInlineStart: 'auto', display: 'inline-flex', alignItems: 'center', gap: 6,
+            padding: '8px 16px', borderRadius: 9999, border: 'none', fontFamily: MA.body,
+            fontSize: 12, fontWeight: 700,
+            background: recentGames.length === 0 ? 'rgba(13,26,18,.06)' : MA.greenAccent,
+            color: recentGames.length === 0 ? MA.textMuted : '#0D1A12',
+            cursor: generating ? 'wait' : recentGames.length === 0 ? 'not-allowed' : 'pointer',
+          }}>
+          {generating
+            ? <><Loader2 className="w-3.5 h-3.5 animate-spin" />{isHe ? 'מייצר סיכום...' : 'Generating...'}</>
+            : <><Sparkles style={{ width: 14, height: 14 }} />{isHe ? 'צור סיכום' : 'Generate Summary'}</>}
+        </button>
       </div>
 
-      {/* Games in Range */}
-      <Card className="bg-slate-900/50 border-slate-800">
-        <CardContent className="p-6">
-          <div className="text-center">
-            <div className="text-3xl font-bold text-white mb-2">{recentGames.length}</div>
-            <div className="text-sm text-slate-400">
-              {isHe ? `משחקים ב-${timeRange} הימים האחרונים` : `matches in the last ${timeRange} days`}
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Summary */}
-      {summary && (
-        <div className="space-y-4">
-          {summary.improvements?.length > 0 && (
-            <Card className="bg-emerald-500/10 border-emerald-500/30">
-              <CardHeader>
-                <CardTitle className="text-emerald-400 flex items-center gap-2">
-                  <TrendingUp className="w-5 h-5" />
-                  {isHe ? 'מה השתפר' : 'What Improved'}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2">{summary.improvements.map((item, i) => <li key={i} className="text-slate-300">• {item}</li>)}</ul>
-              </CardContent>
-            </Card>
-          )}
-
-          {summary.stuck_areas?.length > 0 && (
-            <Card className="bg-amber-500/10 border-amber-500/30">
-              <CardHeader>
-                <CardTitle className="text-amber-400 flex items-center gap-2">
-                  <Minus className="w-5 h-5" />
-                  {isHe ? 'מה נתקע' : 'What Is Stuck'}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2">{summary.stuck_areas.map((item, i) => <li key={i} className="text-slate-300">• {item}</li>)}</ul>
-              </CardContent>
-            </Card>
-          )}
-
-          {summary.recurring_issue && (
-            <Card className="bg-red-500/10 border-red-500/30">
-              <CardHeader>
-                <CardTitle className="text-red-400 flex items-center gap-2">
-                  <TrendingDown className="w-5 h-5" />
-                  {isHe ? 'אזהרה: בעיה חוזרת' : 'Warning: Recurring Issue'}
-                </CardTitle>
-              </CardHeader>
-              <CardContent><p className="text-slate-300">{summary.recurring_issue}</p></CardContent>
-            </Card>
-          )}
-
-          {summary.recommendations?.length > 0 && (
-            <Card className="bg-blue-500/10 border-blue-500/30">
-              <CardHeader>
-                <CardTitle className="text-blue-400">
-                  {isHe ? 'המלצות לשבוע הבא' : 'Recommendations for Next Week'}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-2">{summary.recommendations.map((item, i) => <li key={i} className="text-slate-300">• {item}</li>)}</ul>
-              </CardContent>
-            </Card>
-          )}
-
-          {summary.message && (
-            <Card className="bg-slate-900/50 border-slate-800">
-              <CardContent className="p-12 text-center"><p className="text-slate-400">{summary.message}</p></CardContent>
-            </Card>
-          )}
+      {summary?.error && (
+        <div style={{ borderRadius: 16, padding: '14px 18px', background: MA.warnBg }}>
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: MA.warn }}>שירות ה-AI אינו זמין</p>
+          <p style={{ margin: '2px 0 0', fontSize: 12, color: MA.textSecondary }}>{summary.error}</p>
         </div>
       )}
 
-      {!summary && !generating && recentGames.length > 0 && (
-        <Card className="bg-slate-900/50 border-slate-800">
-          <CardContent className="p-12 text-center">
-            <TrendingUp className="w-12 h-12 text-slate-600 mx-auto mb-4" />
-            <p className="text-slate-400 mb-4">
-              {isHe ? 'לחץ על "צור סיכום אוטומטי" לקבלת תובנות' : 'Click "Generate Auto Summary" to get insights'}
-            </p>
-          </CardContent>
-        </Card>
+      {summary && !summary.error && (
+        <>
+          {(summary.improvements?.length > 0 || summary.stuck_areas?.length > 0) && (
+            <div className="ma-grid-2">
+              {summary.improvements?.length > 0 && listCard({
+                title: isHe ? 'מה השתפר' : 'What Improved',
+                icon: TrendingUp, color: MA.greenMain, items: summary.improvements, delay: 0,
+              })}
+              {summary.stuck_areas?.length > 0 && listCard({
+                title: isHe ? 'מה נתקע' : 'What Is Stuck',
+                icon: Pause, color: MA.warn, items: summary.stuck_areas, delay: 60,
+              })}
+            </div>
+          )}
+
+          {summary.recurring_issue && (
+            <div className="ma-fade" style={{
+              borderRadius: 16, padding: '18px 22px', background: 'linear-gradient(135deg,#2A0D0D,#4A1414)',
+              border: '1px solid rgba(248,113,113,.3)', display: 'flex', alignItems: 'center', gap: 10,
+              animationDelay: '80ms',
+            }}>
+              <Repeat style={{ width: 20, height: 20, color: MA.lossRed, flexShrink: 0 }} />
+              <div>
+                <div style={{ fontSize: 13, fontWeight: 800, color: MA.lossRed, fontFamily: MA.heading }}>
+                  {isHe ? 'אזהרה: בעיה חוזרת' : 'Warning: Recurring Issue'}
+                </div>
+                <p style={{ margin: '2px 0 0', fontSize: 13, color: 'rgba(244,239,230,.8)' }}>{summary.recurring_issue}</p>
+              </div>
+            </div>
+          )}
+
+          {summary.recommendations?.length > 0 && (
+            <div className="ma-fade" style={{
+              background: MA.card, borderRadius: 16, padding: '20px 22px', boxShadow: MA.cardShadow,
+              animationDelay: '160ms',
+            }}>
+              <h3 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 800, color: MA.textPrimary, fontFamily: MA.heading, display: 'flex', alignItems: 'center', gap: 8 }}>
+                <Dumbbell style={{ width: 15, height: 15 }} />
+                {isHe ? 'נושאים מומלצים לשבוע הקרוב' : 'Recommended topics for next week'}
+              </h3>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                {summary.recommendations.map((item, i) => (
+                  <span key={i} style={{
+                    fontSize: 12, fontWeight: 600, padding: '6px 14px', borderRadius: 9999,
+                    background: MA.successBg, color: MA.greenMain,
+                  }}>{item}</span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {summary.message && (
+            <div style={{ background: MA.card, borderRadius: 16, padding: '48px 24px', textAlign: 'center', boxShadow: MA.cardShadow }}>
+              <p style={{ margin: 0, fontSize: 13, color: MA.textMuted }}>{summary.message}</p>
+            </div>
+          )}
+        </>
+      )}
+
+      {!summary && !generating && (
+        <div style={{ background: MA.card, borderRadius: 16, padding: '48px 24px', textAlign: 'center', boxShadow: MA.cardShadow }}>
+          <TrendingUp style={{ width: 44, height: 44, color: MA.textFaint, margin: '0 auto 14px' }} />
+          <p style={{ margin: 0, fontSize: 13, color: MA.textMuted }}>
+            {recentGames.length === 0
+              ? (isHe ? `אין משחקים ב-${timeRange} הימים האחרונים` : `No matches in the last ${timeRange} days`)
+              : (isHe ? 'לחץ על "צור סיכום" כדי לקבל תובנות על התקופה' : 'Click "Generate Summary" for period insights')}
+          </p>
+        </div>
       )}
     </div>
   );

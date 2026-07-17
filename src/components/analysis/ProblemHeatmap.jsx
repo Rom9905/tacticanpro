@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { AlertCircle } from 'lucide-react';
 import { useLang } from '@/lib/LanguageContext';
+import { MA, severityCell } from './matchAnalysisTheme';
 
 const SITUATION_CATEGORIES_HE = [
   'בנייה מאחור', 'מעבר הגנתי', 'מעבר התקפי', 'לחץ',
@@ -27,22 +26,21 @@ function mapToCategoryHe(engineCategory, text) {
   return null;
 }
 
+const LEGEND = [
+  { he: 'אין בעיות', en: 'No issues', swatch: { background: MA.surfaceSoft, border: '1px solid rgba(13,26,18,.1)' } },
+  { he: 'מעט', en: 'Few', swatch: { background: 'rgba(217,119,6,.18)' } },
+  { he: 'משמעותי', en: 'Significant', swatch: { background: 'rgba(249,115,22,.2)' } },
+  { he: 'קריטי', en: 'Critical', swatch: { background: 'rgba(220,38,38,.2)' } },
+];
+
 export default function ProblemHeatmap({ analyses }) {
   const { t: langT } = useLang();
   const isHe = langT.lang === 'he';
   const [heatmap, setHeatmap] = useState({});
 
-  const situationCategories = SITUATION_CATEGORIES_HE; // always use HE keys internally
-
   useEffect(() => {
-    generateHeatmap();
-  }, [analyses]);
-
-  const generateHeatmap = () => {
     const problemCount = {};
-    situationCategories.forEach(cat => {
-      problemCount[cat] = { count: 0, issues: [] };
-    });
+    SITUATION_CATEGORIES_HE.forEach(cat => { problemCount[cat] = { count: 0, issues: [] }; });
 
     analyses.forEach(analysis => {
       if (analysis.video_moments) {
@@ -68,7 +66,7 @@ export default function ProblemHeatmap({ analyses }) {
         });
       } else if (analysis.report?.issues) {
         analysis.report.issues.forEach(issue => {
-          situationCategories.forEach(cat => {
+          SITUATION_CATEGORIES_HE.forEach(cat => {
             if (issue.includes(cat.split(' ')[0])) {
               problemCount[cat].count++;
               problemCount[cat].issues.push({ game: analysis.opponent, note: issue });
@@ -79,100 +77,55 @@ export default function ProblemHeatmap({ analyses }) {
     });
 
     setHeatmap(problemCount);
-  };
+  }, [analyses]);
 
   const maxCount = Math.max(...Object.values(heatmap).map(v => v.count), 1);
 
-  const getColor = (count) => {
-    const intensity = count / maxCount;
-    if (intensity === 0) return 'bg-slate-800';
-    if (intensity < 0.3) return 'bg-amber-500/20 border-amber-500/30';
-    if (intensity < 0.7) return 'bg-orange-500/20 border-orange-500/30';
-    return 'bg-red-500/20 border-red-500/40';
-  };
-
-  const getTextColor = (count) => {
-    const intensity = count / maxCount;
-    if (intensity === 0) return 'text-slate-600';
-    if (intensity < 0.3) return 'text-amber-400';
-    if (intensity < 0.7) return 'text-orange-400';
-    return 'text-red-400';
-  };
-
   return (
-    <div className="space-y-6">
-      <div className="p-4 rounded-lg bg-slate-900/50 border border-slate-800">
-        <p className="text-sm text-slate-400">
-          {isHe
-            ? 'מפת חום של בעיות לפי מצבי משחק. ככל שהצבע אדום יותר - הבעיה מופיעה יותר פעמים.'
-            : 'Problem heatmap by game situation. The redder the color, the more frequently the issue appears.'}
-        </p>
-      </div>
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+      <p style={{ margin: 0, fontSize: 13, color: MA.textSecondary }}>
+        {isHe
+          ? 'בעיות לפי מצבי משחק, מצטבר על פני העונה. אדום = מופיע יותר.'
+          : 'Problems by game situation, accumulated across the season. Red = appears more often.'}
+      </p>
 
-      <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+      <div className="ma-grid-3">
         {SITUATION_CATEGORIES_HE.map((category, idx) => {
           const data = heatmap[category] || { count: 0, issues: [] };
-          const displayLabel = isHe ? category : SITUATION_CATEGORIES_EN[idx];
+          const cell = severityCell(data.count / maxCount);
+          const games = new Set(data.issues.map(i => i.game)).size;
+          const sub = data.count === 0
+            ? ''
+            : isHe
+              ? (games > 1 ? `ב-${games} משחקים` : 'במשחק אחד')
+              : (games > 1 ? `in ${games} matches` : 'in 1 match');
+
           return (
-            <Card key={category} className={`${getColor(data.count)} border transition-all hover:scale-105 cursor-pointer`}>
-              <CardContent className="p-6">
-                <div className="text-center mb-3">
-                  <div className={`text-3xl font-bold ${getTextColor(data.count)}`}>{data.count}</div>
-                  <div className="text-sm text-slate-400 mt-1">{displayLabel}</div>
-                </div>
-                {data.count > 0 && (
-                  <div className="space-y-2 mt-4 pt-4 border-t border-slate-700">
-                    <div className="text-xs text-slate-500 mb-2">{isHe ? 'דוגמאות:' : 'Examples:'}</div>
-                    {data.issues.slice(0, 2).map((issue, i) => (
-                      <div key={i} className="text-xs text-slate-400 bg-slate-900/50 p-2 rounded">
-                        <div className="font-medium text-slate-300 mb-1">
-                          {isHe ? `מול ${issue.game}` : `vs ${issue.game}`}
-                        </div>
-                        <div className="line-clamp-2">{issue.note}</div>
-                      </div>
-                    ))}
-                    {data.issues.length > 2 && (
-                      <div className="text-xs text-slate-500 text-center">
-                        +{data.issues.length - 2} {isHe ? 'עוד...' : 'more...'}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-            </Card>
+            <div key={category} className="ma-fade ma-card-hover" title={data.issues.slice(0, 3).map(i => `מול ${i.game}: ${i.note}`).join('\n')}
+              style={{
+                borderRadius: 16, padding: 22, background: cell.bg, border: `1px solid ${cell.border}`,
+                textAlign: 'center', animationDelay: `${idx * 40}ms`,
+              }}>
+              <div style={{ fontSize: 32, fontWeight: 900, color: cell.color, fontFamily: MA.heading, lineHeight: 1 }}>
+                {data.count}
+              </div>
+              <div style={{ fontSize: 13, fontWeight: 600, color: MA.textSecondary, marginTop: 4 }}>
+                {isHe ? category : SITUATION_CATEGORIES_EN[idx]}
+              </div>
+              {sub && <div style={{ fontSize: 11, color: MA.textMuted, marginTop: 2 }}>{sub}</div>}
+            </div>
           );
         })}
       </div>
 
-      {/* Legend */}
-      <Card className="bg-slate-900/50 border-slate-800">
-        <CardHeader>
-          <CardTitle className="text-sm flex items-center gap-2">
-            <AlertCircle className="w-4 h-4" />
-            {isHe ? 'מקרא' : 'Legend'}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-6 text-sm flex-wrap">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-slate-800"></div>
-              <span className="text-slate-400">{isHe ? 'אין בעיות' : 'No issues'}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-amber-500/20"></div>
-              <span className="text-slate-400">{isHe ? 'מעט בעיות' : 'Few issues'}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-orange-500/20"></div>
-              <span className="text-slate-400">{isHe ? 'בעיות משמעותיות' : 'Significant issues'}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-red-500/20"></div>
-              <span className="text-slate-400">{isHe ? 'בעיות קריטיות' : 'Critical issues'}</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 20, fontSize: 12, color: MA.textSecondary, flexWrap: 'wrap' }}>
+        {LEGEND.map((l, i) => (
+          <span key={i} style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            <span style={{ width: 14, height: 14, borderRadius: 4, display: 'inline-block', ...l.swatch }} />
+            {isHe ? l.he : l.en}
+          </span>
+        ))}
+      </div>
     </div>
   );
 }

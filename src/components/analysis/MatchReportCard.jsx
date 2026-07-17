@@ -1,19 +1,24 @@
 import React, { useState } from 'react';
-import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Calendar, ChevronLeft, Target, Shield, Trash2, Loader2 } from 'lucide-react';
+import { ChevronLeft, Trash2, Loader2, AlertTriangle } from 'lucide-react';
 import { format } from 'date-fns';
 import { he } from 'date-fns/locale';
+import { MA, resultTheme } from './matchAnalysisTheme';
 
-export default function MatchReportCard({ analysis, onClick, onDelete }) {
+function possessionTheme(p) {
+  if (p >= 55) return { bg: `linear-gradient(90deg,${MA.greenMain},${MA.greenAccent})`, color: MA.greenMain };
+  if (p >= 45) return { bg: `linear-gradient(90deg,${MA.warn},${MA.drawYellow})`, color: MA.warn };
+  return { bg: `linear-gradient(90deg,${MA.danger},${MA.lossRed})`, color: MA.danger };
+}
+
+const chipBase = {
+  fontSize: 11, padding: '2px 8px', borderRadius: 6, whiteSpace: 'nowrap',
+};
+
+export default function MatchReportCard({ analysis, onClick, onDelete, index = 0 }) {
   const [deleting, setDeleting] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
-  const handleDeleteClick = (e) => {
-    e.stopPropagation();
-    setConfirmDelete(true);
-  };
-
+  const handleDeleteClick = (e) => { e.stopPropagation(); setConfirmDelete(true); };
   const handleConfirmDelete = async (e) => {
     e.stopPropagation();
     if (!onDelete || deleting) return;
@@ -22,146 +27,130 @@ export default function MatchReportCard({ analysis, onClick, onDelete }) {
     setDeleting(false);
     setConfirmDelete(false);
   };
+  const handleCancelDelete = (e) => { e.stopPropagation(); setConfirmDelete(false); };
 
-  const handleCancelDelete = (e) => {
-    e.stopPropagation();
-    setConfirmDelete(false);
-  };
-  const ourScore = analysis.result?.our_score || 0;
-  const oppScore = analysis.result?.opponent_score || 0;
-  
-  const result = ourScore > oppScore ? 'win' : ourScore < oppScore ? 'loss' : 'draw';
-  const resultColors = {
-    win: 'bg-emerald-500/15 text-emerald-600 border-emerald-500/30',
-    loss: 'bg-red-500/10 text-red-600 border-red-500/30',
-    draw: 'bg-amber-500/15 text-amber-600 border-amber-500/30',
-  };
-  const resultText = {
-    win: 'ניצחון',
-    loss: 'הפסד',
-    draw: 'תיקו',
-  };
+  const ourScore = analysis._summary?.result_our ?? analysis.result?.our_score ?? null;
+  const oppScore = analysis._summary?.result_opponent ?? analysis.result?.opponent_score ?? null;
+  const hasScore = ourScore != null && oppScore != null;
+
+  const result = !hasScore ? null : ourScore > oppScore ? 'win' : ourScore < oppScore ? 'loss' : 'draw';
+  const theme = resultTheme(result);
+
+  // Possession is optional — the card must degrade gracefully without it.
+  const possession = analysis.stats?.possession;
+  const hasPossession = possession != null && !Number.isNaN(Number(possession));
+  const possTheme = hasPossession ? possessionTheme(Number(possession)) : null;
+
+  const tag = analysis._summary?.tactical_topics?.[0] || null;
+  const issue = analysis._summary?.issues_found
+    || analysis.report?.issues?.[0]
+    || analysis.tactical_problems?.[0]?.text
+    || null;
+
+  const metaParts = [];
+  if (analysis.date) metaParts.push(format(new Date(analysis.date), 'd בMMM', { locale: he }));
+  if (analysis.location) metaParts.push(analysis.location);
 
   return (
-    <Card 
-      className="premium-card premium-card-clickable border-slate-800 hover:border-slate-700 cursor-pointer transition-all group"
+    <div
       onClick={onClick}
+      className="ma-fade ma-card-hover"
+      style={{
+        position: 'relative', display: 'flex', alignItems: 'stretch', background: MA.card,
+        borderRadius: 16, boxShadow: MA.cardShadow, overflow: 'hidden', cursor: 'pointer',
+        animationDelay: `${Math.min(index, 8) * 80}ms`,
+      }}
     >
-      <CardContent className="p-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            {/* Score */}
-            <div className="flex items-center gap-3">
-              <div className="text-center">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'var(--success-bg)' }}>
-                  <Shield className="w-5 h-5" style={{ color: 'var(--brand-green-dark)' }} />
-                </div>
-              </div>
-              <div className="text-3xl font-bold" style={{ color: 'var(--text-primary)', fontFamily: 'Heebo, sans-serif', fontWeight: 800 }}>
-                {ourScore} - {oppScore}
-              </div>
-              <div className="text-center">
-                <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: 'var(--danger-bg)' }}>
-                  <Target className="w-5 h-5" style={{ color: 'var(--danger)' }} />
-                </div>
-              </div>
-            </div>
+      {/* Result panel */}
+      <div style={{
+        width: 110, minWidth: 110, background: theme.panelBg, display: 'flex', flexDirection: 'column',
+        alignItems: 'center', justifyContent: 'center', gap: 4, flexShrink: 0, padding: '14px 6px',
+      }}>
+        <div style={{ fontSize: 26, fontWeight: 900, color: theme.accent, fontFamily: MA.heading, lineHeight: 1 }}>
+          {hasScore ? `${ourScore}–${oppScore}` : '—'}
+        </div>
+        {hasScore && (
+          <span style={{
+            fontSize: 10, fontWeight: 800, letterSpacing: 1, color: '#0D1A12',
+            background: theme.accent, borderRadius: 9999, padding: '2px 10px',
+          }}>
+            {theme.label}
+          </span>
+        )}
+      </div>
 
-            {/* Details */}
-            <div className="mr-4">
-              <h3 className="font-semibold text-lg" style={{ color: 'var(--text-primary)' }}>מול {analysis.opponent}</h3>
-              <div className="flex items-center gap-3 text-sm" style={{ color: 'var(--text-muted)' }}>
-                <span className="flex items-center gap-1">
-                  <Calendar className="w-3 h-3" />
-                  {analysis.date && format(new Date(analysis.date), 'd בMMM yyyy', { locale: he })}
-                </span>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <Badge variant="outline" className={resultColors[result]}>
-              {resultText[result]}
-            </Badge>
-            
-            {/* Quick Stats */}
-            {analysis.stats && (
-              <div className="hidden md:flex items-center gap-3 text-sm">
-                {analysis.stats.possession !== undefined && (
-                  <div className="text-center px-3 py-1 rounded" style={{ backgroundColor: 'var(--bg-card-soft)' }}>
-                    <div className="font-medium" style={{ color: 'var(--text-primary)' }}>{analysis.stats.possession}%</div>
-                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>שליטה</div>
-                  </div>
-                )}
-                {analysis.stats.shots !== undefined && (
-                  <div className="text-center px-3 py-1 rounded" style={{ backgroundColor: 'var(--bg-card-soft)' }}>
-                    <div className="font-medium" style={{ color: 'var(--text-primary)' }}>{analysis.stats.shots}</div>
-                    <div className="text-xs" style={{ color: 'var(--text-muted)' }}>בעיטות</div>
-                  </div>
-                )}
-              </div>
-            )}
-
-            <ChevronLeft className="w-5 h-5 text-slate-400 group-hover:text-emerald-500 group-hover:-translate-x-1 transition-all" />
-          </div>
+      {/* Details */}
+      <div style={{ flex: 1, padding: '16px 20px', display: 'flex', flexDirection: 'column', justifyContent: 'center', gap: 8, minWidth: 0 }}>
+        <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, flexWrap: 'wrap' }}>
+          <h3 style={{ margin: 0, fontSize: 18, fontWeight: 800, fontFamily: MA.heading, color: MA.textPrimary }}>
+            מול {analysis.opponent}
+          </h3>
+          {metaParts.length > 0 && (
+            <span style={{ fontSize: 12, color: MA.textMuted }}>{metaParts.join(' · ')}</span>
+          )}
         </div>
 
-        {/* Delete button — hover */}
-        {onDelete && (
-          <div className="absolute top-3 right-3 opacity-0 group-hover:opacity-100 transition-opacity">
-            {confirmDelete ? (
-              <div className="flex items-center gap-1.5">
-                <button
-                  onClick={handleCancelDelete}
-                  className="px-2 py-1 rounded text-xs font-medium"
-                  style={{ backgroundColor: 'rgba(13,26,18,0.06)', color: 'var(--text-secondary)' }}
-                >
-                  ביטול
-                </button>
-                <button
-                  onClick={handleConfirmDelete}
-                  disabled={deleting}
-                  className="px-2 py-1 rounded text-xs font-medium flex items-center gap-1"
-                  style={{ backgroundColor: 'var(--danger-bg)', color: 'var(--danger)' }}
-                >
-                  {deleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
-                  מחיקה
-                </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
+          {hasPossession ? (
+            <>
+              <span style={{ fontSize: 11, color: MA.textMuted, width: 44 }}>שליטה</span>
+              <div style={{ flex: 1, maxWidth: 220, minWidth: 80, height: 6, borderRadius: 9999, background: 'rgba(13,26,18,.07)', overflow: 'hidden' }}>
+                <div className="ma-bar-fill" style={{ width: `${possession}%`, height: '100%', borderRadius: 9999, background: possTheme.bg }} />
               </div>
-            ) : (
-              <button
-                onClick={handleDeleteClick}
-                className="p-1.5 rounded-lg transition-colors"
-                style={{ backgroundColor: 'var(--danger-bg)', color: 'var(--danger)' }}
-                title="מחק משחק"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-              </button>
-            )}
-          </div>
-        )}
+              <span style={{ fontSize: 12, fontWeight: 700, color: possTheme.color, fontFamily: MA.heading }}>
+                {possession}%
+              </span>
+            </>
+          ) : (
+            <span style={{ ...chipBase, background: 'rgba(13,26,18,.04)', color: MA.textMuted, border: '1px dashed rgba(13,26,18,.15)' }}>
+              ניתוח ללא נתוני שליטה
+            </span>
+          )}
 
-        {/* Summary / Issues Preview */}
-        {(analysis._summary?.issues_found || analysis.report?.summary) && (
-          <div className="mt-3 pt-3 border-t border-slate-800 flex flex-wrap gap-3">
-            {analysis._summary?.issues_found && (
-              <p className="text-xs line-clamp-1 flex-1" style={{ color: 'var(--danger)' }}>
-                ⚠ {analysis._summary.issues_found}
-              </p>
-            )}
-            {analysis._summary?.tactical_topics?.length > 0 && (
-              <div className="flex gap-1 flex-wrap">
-                {analysis._summary.tactical_topics.slice(0, 3).map(t => (
-                  <span key={t} className="text-[11px] px-1.5 py-0.5 rounded" style={{ backgroundColor: 'rgba(13,26,18,0.06)', color: 'var(--text-secondary)' }}>{t}</span>
-                ))}
-              </div>
-            )}
-            {!analysis._summary && analysis.report?.summary && (
-              <p className="text-sm line-clamp-2" style={{ color: 'var(--text-muted)' }}>{analysis.report.summary}</p>
-            )}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          {tag && (
+            <span style={{ ...chipBase, background: 'rgba(13,26,18,.05)', color: MA.textSecondary, maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              {tag}
+            </span>
+          )}
+          {issue && (
+            <span style={{ ...chipBase, background: MA.dangerBg, color: MA.danger, display: 'inline-flex', alignItems: 'center', gap: 4, maxWidth: 240, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+              <AlertTriangle style={{ width: 11, height: 11, flexShrink: 0 }} />
+              <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{issue}</span>
+            </span>
+          )}
+        </div>
+      </div>
+
+      {/* Chevron */}
+      <div style={{ display: 'flex', alignItems: 'center', paddingLeft: 18, color: MA.textMuted }}>
+        <ChevronLeft className="w-5 h-5" />
+      </div>
+
+      {/* Delete — revealed on hover of the row wrapper */}
+      {onDelete && (
+        <div style={{ position: 'absolute', top: 10, left: 10 }}
+          onClick={(e) => e.stopPropagation()}>
+          {confirmDelete ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+              <button onClick={handleCancelDelete}
+                style={{ ...chipBase, border: 'none', cursor: 'pointer', fontWeight: 600, background: 'rgba(13,26,18,0.06)', color: MA.textSecondary }}>
+                ביטול
+              </button>
+              <button onClick={handleConfirmDelete} disabled={deleting}
+                style={{ ...chipBase, border: 'none', cursor: 'pointer', fontWeight: 600, background: MA.dangerBg, color: MA.danger, display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                {deleting ? <Loader2 className="w-3 h-3 animate-spin" /> : <Trash2 className="w-3 h-3" />}
+                מחיקה
+              </button>
+            </div>
+          ) : (
+            <button onClick={handleDeleteClick} title="מחק משחק"
+              className="ma-delete-btn"
+              style={{ padding: 6, borderRadius: 8, border: 'none', cursor: 'pointer', background: MA.dangerBg, color: MA.danger, display: 'flex' }}>
+              <Trash2 className="w-3.5 h-3.5" />
+            </button>
+          )}
+        </div>
+      )}
+    </div>
   );
 }

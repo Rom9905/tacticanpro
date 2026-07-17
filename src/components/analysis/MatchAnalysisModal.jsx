@@ -1,68 +1,98 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Dialog, DialogContent, DialogTitle } from '@/components/ui/dialog';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
 import { base44 } from '@/api/base44Client';
+import { format } from 'date-fns';
+import { he } from 'date-fns/locale';
 import EditPlayerRatingsModal from './EditPlayerRatingsModal';
-import DeepAnalysisSection from './DeepAnalysisSection';
+import DeepAnalysisStory from './DeepAnalysisStory';
 import TrainingImpactCard from './TrainingImpactCard';
 import BottomLine from '@/components/ui/BottomLine';
 import { buildGameStyleContext } from '@/hooks/useGameStyle';
 import { generateTacticalProblems } from '@/lib/tacticalProblemsEngine';
 import { syncTacticalProblemsToGoals } from '@/lib/tacticalGoalsSync';
+import { MA, resultTheme, ratingColor } from './matchAnalysisTheme';
 import {
-  Loader2, BarChart3, Video, FileText, Clock, Target,
-  TrendingUp, AlertTriangle, Lightbulb, ChevronDown, Edit2, X
+  Loader2, BarChart3, Video, FileText, Clock, Target, BookOpen,
+  TrendingUp, AlertTriangle, Lightbulb, ChevronDown, ChevronUp, Edit2, X, Sparkles,
 } from 'lucide-react';
 
-function getColorByRating(rating) {
-  if (rating >= 8) return { bg: 'var(--success-bg)', text: 'var(--brand-green-dark)', label: 'מצוין' };
-  if (rating >= 6) return { bg: 'var(--warning-bg)', text: 'var(--warning)', label: 'סביר' };
-  return { bg: 'var(--danger-bg)', text: 'var(--danger)', label: 'חלש' };
+// Bars in "מספרי המשחק". Only metrics the coach actually entered are rendered —
+// possession / xG / pass accuracy are all optional.
+const BAR_METRICS = [
+  { key: 'possession', label: 'שליטה', max: 100, suffix: '%', from: MA.greenMain, to: MA.greenAccent, color: MA.greenMain },
+  { key: 'pass_accuracy', label: 'דיוק מסירות', max: 100, suffix: '%', from: MA.greenMain, to: MA.greenAccent, color: MA.greenMain },
+  { key: 'xg', label: 'xG', max: 3, suffix: '', from: '#2563EB', to: '#60A5FA', color: MA.info },
+  { key: 'turnovers', label: 'איבודים', max: 30, suffix: '', from: MA.warn, to: MA.drawYellow, color: MA.warn },
+];
+
+const SEVERITY = {
+  high: { bg: MA.dangerBg, border: MA.danger, badge: MA.danger, label: 'חמור' },
+  medium: { bg: MA.warnBg, border: MA.warn, badge: MA.warn, label: 'בינוני' },
+  low: { bg: MA.surfaceSoft, border: 'rgba(13,26,18,.15)', badge: MA.textMuted, label: 'קל' },
+};
+
+function SectionTitle({ children, icon: Icon, color = MA.textPrimary }) {
+  return (
+    <h3 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 800, fontFamily: MA.heading, color, display: 'flex', alignItems: 'center', gap: 8 }}>
+      {Icon && <Icon style={{ width: 15, height: 15 }} />}
+      {children}
+    </h3>
+  );
 }
 
-function StatCard({ label, value, icon: Icon }) {
+function Card({ children, style, className = '', delay = 0 }) {
   return (
-    <div className="p-3 rounded-lg text-center" style={{ backgroundColor: 'var(--bg-card-soft)', border: '1px solid rgba(13,26,18,0.08)' }}>
-      {Icon && <Icon className="w-4 h-4 mx-auto mb-1" style={{ color: 'var(--text-muted)' }} />}
-      <div className="text-xl font-bold" style={{ color: 'var(--text-primary)', fontFamily: 'Heebo, sans-serif', fontWeight: 800 }}>{value}</div>
-      <div className="text-xs" style={{ color: 'var(--text-secondary)' }}>{label}</div>
+    <div className={`ma-fade ${className}`} style={{
+      background: MA.card, borderRadius: 16, padding: '20px 22px', boxShadow: MA.cardShadow,
+      animationDelay: `${delay}ms`, ...style,
+    }}>
+      {children}
     </div>
   );
 }
 
-function InsightCard({ title, content, icon, color, bgColor }) {
-  const Icon = icon;
+function InsightCard({ title, content, icon: Icon, color, bg }) {
   return (
-    <div className="p-4 rounded-xl" style={{ backgroundColor: bgColor, border: `1px solid ${color}30`, borderRight: `3px solid ${color}` }}>
-      <div className="flex items-center gap-2 mb-2">
-        <div className="w-7 h-7 rounded-full flex items-center justify-center" style={{ backgroundColor: bgColor }}>
-          <Icon className="w-3.5 h-3.5" style={{ color }} />
-        </div>
-        <h4 className="font-semibold text-sm" style={{ color }}>{title}</h4>
+    <div style={{ borderRadius: 14, padding: 16, background: MA.card, boxShadow: MA.cardShadow, borderTop: `4px solid ${color}` }}>
+      <div style={{ width: 34, height: 34, borderRadius: 10, background: bg, display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 10 }}>
+        <Icon style={{ width: 16, height: 16, color }} />
       </div>
-      <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>{content}</p>
+      <h4 style={{ margin: '0 0 6px', fontSize: 13, fontWeight: 800, color, fontFamily: MA.heading }}>{title}</h4>
+      <p style={{ margin: 0, fontSize: 13, lineHeight: 1.6, color: MA.textSecondary }}>{content}</p>
     </div>
   );
 }
 
-function SectionHeader({ icon, children }) {
-  const Icon = icon;
+function RatingRing({ rating, name, note, highlight }) {
+  const color = ratingColor(rating);
+  const dash = 138;
+  const offset = Math.max(0, dash - (Math.min(rating, 10) / 10) * dash);
   return (
-    <div className="mb-3">
-      <h3 className="font-bold text-sm flex items-center gap-2" style={{ color: 'var(--text-secondary)', fontFamily: 'Heebo, sans-serif', fontWeight: 700, letterSpacing: '0.4px' }}>
-        {Icon && <Icon className="w-4 h-4" />}
-        {children}
-      </h3>
-      <div className="mt-1.5" style={{ width: '24px', height: '2px', backgroundColor: 'var(--brand-green)', borderRadius: '2px' }} />
+    <div style={{
+      minWidth: 104, flex: '1 0 104px', textAlign: 'center', padding: '14px 8px 10px', borderRadius: 14,
+      background: highlight ? `linear-gradient(180deg,${MA.successBg},#fff)` : MA.surfaceSoft,
+      border: `1px solid ${highlight ? 'rgba(22,163,74,.2)' : 'rgba(13,26,18,.07)'}`,
+    }}>
+      <div style={{ position: 'relative', width: 52, height: 52, margin: '0 auto 6px' }}>
+        <svg viewBox="0 0 52 52" style={{ transform: 'rotate(-90deg)' }}>
+          <circle cx="26" cy="26" r="22" fill="none" stroke="rgba(13,26,18,.07)" strokeWidth="5" />
+          <circle className="ma-ring" cx="26" cy="26" r="22" fill="none" stroke={color} strokeWidth="5"
+            strokeLinecap="round" strokeDasharray={dash} strokeDashoffset={offset} />
+        </svg>
+        <span style={{
+          position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center',
+          fontSize: 16, fontWeight: 900, fontFamily: MA.heading, color,
+        }}>{rating}</span>
+      </div>
+      <div style={{ fontSize: 13, fontWeight: 700, color: MA.textPrimary, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{name}</div>
+      {note && <div style={{ fontSize: 10, color: MA.textMuted, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{note}</div>}
     </div>
   );
 }
 
-export default function MatchAnalysisModal({ open, onClose, analysis, teamName, onRefresh, onDeleteAnalysisType }) {
+export default function MatchAnalysisModal({ open, onClose, analysis, teamName, onRefresh, onDeleteAnalysisType, seasonAverages = {} }) {
   const [aiSummary, setAiSummary] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [_expandedSection, _setExpandedSection] = useState(null);
   const [editingRatings, setEditingRatings] = useState(false);
   const [playerNameMap, setPlayerNameMap] = useState({});
   const [localRatings, setLocalRatings] = useState(null);
@@ -70,6 +100,9 @@ export default function MatchAnalysisModal({ open, onClose, analysis, teamName, 
   const [_teamGameStyleNotes, setTeamGameStyleNotes] = useState('');
   const [deletingType, setDeletingType] = useState(null);
   const [showAllTopics, setShowAllTopics] = useState(false);
+  const [deepOpen, setDeepOpen] = useState(false);
+  const [generatingDeep, setGeneratingDeep] = useState(false);
+  const [deepError, setDeepError] = useState(null);
 
   useEffect(() => {
     if (open && analysis) {
@@ -92,7 +125,6 @@ export default function MatchAnalysisModal({ open, onClose, analysis, teamName, 
   }, [open, analysis]);
 
   const loadOrGenerateAISummary = async (forceRegenerate = false) => {
-    // regenerate if the cached picture is too long (old format before the 3-5 sentence limit)
     const cachedTooLong = (analysis.ai_summary?.summary?.length || 0) > 700;
     if (!forceRegenerate && analysis.ai_summary && !cachedTooLong) {
       setAiSummary(analysis.ai_summary);
@@ -188,6 +220,9 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
   useEffect(() => {
     if (open && !prevOpenRef.current) {
       setLocalRatings(null);
+      setDeepOpen(false);
+      setDeepError(null);
+      setShowAllTopics(false);
     }
     prevOpenRef.current = open;
   }, [open]);
@@ -207,7 +242,6 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
     }
   }, [analysis?.id, analysis?.tactical_problems]);
 
-  // flow the match's tactical problems into Training Center goals (idempotent)
   useEffect(() => {
     if (open && analysis?.id && tacticalProblems.length > 0) {
       syncTacticalProblemsToGoals(analysis, tacticalProblems).catch(err =>
@@ -217,446 +251,498 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
 
   if (!analysis) return null;
 
+  const deep = analysis.deep_analysis;
+
+  const generateDeep = async () => {
+    setGeneratingDeep(true);
+    setDeepError(null);
+    try {
+      const res = await base44.functions.invoke('generateDeepAnalysis', { match_analysis_id: analysis.id });
+      if (res?.success === false) {
+        setDeepError(res.error || 'שגיאה ביצירת הניתוח המעמיק. נסה שוב.');
+      } else {
+        setDeepOpen(true);
+        onRefresh && onRefresh();
+      }
+    } catch {
+      setDeepError('שגיאה ביצירת הניתוח המעמיק. נסה שוב.');
+    } finally {
+      setGeneratingDeep(false);
+    }
+  };
+
+  // Pair each tactical problem with its deep-analysis explanation ("למה זו בעיה").
+  const expansionFor = (problem, i) => {
+    const list = deep?.issue_expansions || [];
+    if (!list.length) return null;
+    const text = problem?.text || '';
+    const match = list.find(e => e.issue && text && (
+      e.issue === text || e.issue.includes(text.slice(0, 30)) || text.includes(e.issue.slice(0, 30))
+    ));
+    return match || list[i] || null;
+  };
+
   const rawRatings = localRatings ?? analysis.player_ratings ?? [];
   const displayRatings = rawRatings.map(r => ({
     ...r,
     did_not_play: !!r.did_not_play || (r.rating == null && r.did_not_play !== false),
   }));
+  const played = displayRatings.filter(r => !r.did_not_play);
+  const dnp = displayRatings.filter(r => r.did_not_play);
+  const topRating = played.length ? Math.max(...played.map(r => Number(r.rating) || 0)) : null;
 
-  const ourScore = analysis._summary?.result_our ?? analysis.result?.our_score ?? '?';
-  const oppScore = analysis._summary?.result_opponent ?? analysis.result?.opponent_score ?? '?';
+  const ourScore = analysis._summary?.result_our ?? analysis.result?.our_score ?? null;
+  const oppScore = analysis._summary?.result_opponent ?? analysis.result?.opponent_score ?? null;
+  const hasScore = ourScore != null && oppScore != null;
+  const outcome = !hasScore ? null : ourScore > oppScore ? 'win' : ourScore < oppScore ? 'loss' : 'draw';
+  const theme = resultTheme(outcome);
 
   const analysisTypes = analysis.analysis_types || [analysis.analysis_mode].filter(Boolean) || [];
   const hasSummary = analysis._summary;
-  const hasStats = analysis.stats && Object.keys(analysis.stats).length > 0;
   const hasVideoMoments = analysis.video_moments?.length > 0;
-  const hasPlayerRatings = displayRatings.length > 0;
   const hasTrainingActions = analysis.training_actions?.length > 0;
 
-  const hasTacticalIssues = tacticalProblems.length > 0;
   const tacticalIssues = tacticalProblems.map(p => p.text);
-
-  const trainingTopics = hasTrainingActions 
+  const trainingTopics = hasTrainingActions
     ? analysis.training_actions.map(a => a.focus)
     : tacticalIssues.slice(0, 4);
-
   const urgentTopics = trainingTopics.slice(0, 3);
   const remainingTopics = trainingTopics.slice(3);
+  const visibleTopics = showAllTopics ? trainingTopics : urgentTopics;
+
+  const bars = BAR_METRICS.filter(m => analysis.stats?.[m.key] != null && !Number.isNaN(Number(analysis.stats[m.key])));
+
+  const metaParts = [];
+  if (analysis.date) metaParts.push(format(new Date(analysis.date), 'd בMMMM', { locale: he }));
+  if (analysis.location) metaParts.push(analysis.location);
+
+  const initial = (name) => (name || '?').trim().charAt(0);
 
   return (
     <Dialog open={open} onOpenChange={onClose}>
-      <DialogContent 
-        dir="rtl" 
-        className="max-w-4xl max-h-[90vh] overflow-hidden p-0"
-        style={{ backgroundColor: 'var(--bg-app)', borderColor: 'rgba(13,26,18,0.10)' }}
+      <DialogContent
+        dir="rtl"
+        className="ma-modal p-0 gap-0 border-0"
+        style={{
+          width: '100%', maxWidth: 820, maxHeight: '92vh', overflowY: 'auto',
+          background: MA.bgContainer, borderRadius: 20, boxShadow: '0 24px 60px rgba(13,26,18,.3)',
+          fontFamily: MA.body, color: MA.textPrimary,
+        }}
       >
-        <div className="overflow-y-auto max-h-[90vh]">
-          {/* Header — dark bar */}
-          <div className="sticky top-0 z-10 p-6 pb-4" style={{ background: 'linear-gradient(135deg, var(--brand-dark), var(--brand-dark-2))', borderBottom: '1px solid rgba(74,222,128,0.15)' }}>
-            <div className="flex items-center justify-between mb-2">
-              <DialogTitle className="text-2xl font-bold" style={{ color: 'var(--bg-card)', fontFamily: 'Heebo, sans-serif', fontWeight: 800 }}>
-                {teamName || 'הקבוצה'} – {analysis.opponent}
+        {/* ── Scoreboard header ── */}
+        <div style={{ position: 'relative', background: MA.darkHeroModal, padding: '28px 32px 24px', overflow: 'hidden' }}>
+          <svg viewBox="0 0 400 260" aria-hidden="true"
+            style={{ position: 'absolute', right: -60, bottom: -90, width: 340, opacity: 0.1, transform: 'rotate(12deg)', pointerEvents: 'none' }}
+            fill="none" stroke={MA.greenAccent} strokeWidth="1.5">
+            <rect x="20" y="20" width="360" height="220" rx="4" />
+            <circle cx="200" cy="130" r="46" />
+            <line x1="200" y1="20" x2="200" y2="240" />
+          </svg>
+
+          <div className="ma-sheet-handle" style={{ width: 40, height: 4, borderRadius: 2, background: 'rgba(255,255,255,.25)', margin: '0 auto 12px' }} />
+
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+            <span style={{ fontSize: 11, fontWeight: 700, letterSpacing: 1.5, color: 'rgba(244,239,230,.5)' }}>
+              {metaParts.join(' · ')}
+            </span>
+            <button onClick={onClose} aria-label="סגור"
+              style={{ width: 30, height: 30, borderRadius: 9999, border: 'none', background: 'rgba(255,255,255,.1)', color: MA.cream, cursor: 'pointer', flexShrink: 0 }}>
+              <X className="w-4 h-4 mx-auto" />
+            </button>
+          </div>
+
+          <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: '1fr auto 1fr', alignItems: 'center', gap: 20, marginTop: 14 }}>
+            <div style={{ textAlign: 'center' }}>
+              <div style={{
+                width: 56, height: 56, margin: '0 auto 8px', borderRadius: 16,
+                background: 'linear-gradient(135deg,#2A7050,#1a4d35)', display: 'flex', alignItems: 'center',
+                justifyContent: 'center', fontFamily: MA.heading, fontWeight: 900, fontSize: 22, color: '#fff',
+              }}>{initial(teamName)}</div>
+              <DialogTitle style={{ fontSize: 15, fontWeight: 800, color: MA.cream, fontFamily: MA.heading, margin: 0 }}>
+                {teamName || 'הקבוצה'}
               </DialogTitle>
-              <button onClick={onClose}
-                className="w-8 h-8 rounded-full flex items-center justify-center transition-colors"
-                style={{ backgroundColor: 'rgba(255,255,255,0.10)', color: 'var(--bg-card)' }}>
-                <X className="w-4 h-4" />
+            </div>
+
+            <div style={{ textAlign: 'center' }}>
+              <div style={{
+                fontSize: 56, fontWeight: 900, color: theme.accent, fontFamily: MA.heading, lineHeight: 1,
+                textShadow: `0 0 32px ${theme.accent}73`,
+              }}>
+                {hasScore ? `${ourScore}–${oppScore}` : '—'}
+              </div>
+              {hasScore && (
+                <span style={{
+                  display: 'inline-block', marginTop: 8, fontSize: 11, fontWeight: 800, letterSpacing: 1,
+                  color: '#0D1A12', background: theme.accent, borderRadius: 9999, padding: '3px 14px',
+                }}>{theme.label}</span>
+              )}
+            </div>
+
+            <div style={{ textAlign: 'center' }}>
+              <div style={{
+                width: 56, height: 56, margin: '0 auto 8px', borderRadius: 16,
+                background: 'rgba(255,255,255,.08)', border: '1px solid rgba(255,255,255,.14)', display: 'flex',
+                alignItems: 'center', justifyContent: 'center', fontFamily: MA.heading, fontWeight: 900,
+                fontSize: 22, color: 'rgba(244,239,230,.8)',
+              }}>{initial(analysis.opponent)}</div>
+              <div style={{ fontSize: 15, fontWeight: 800, color: 'rgba(244,239,230,.8)', fontFamily: MA.heading }}>
+                {analysis.opponent}
+              </div>
+            </div>
+          </div>
+
+          {/* Source chips — each removable (existing behaviour) */}
+          {analysisTypes.length > 0 && (
+            <div style={{ position: 'relative', display: 'flex', justifyContent: 'center', gap: 8, marginTop: 16, flexWrap: 'wrap' }}>
+              {analysisTypes.map((type, i) => {
+                const isStats = type === 'statistics' || type === 'stats';
+                const label = isStats ? 'סטטיסטיקה' : type === 'video' ? 'וידאו' : 'מחברת חופשית';
+                const Icon = isStats ? BarChart3 : type === 'video' ? Video : FileText;
+                const accent = isStats
+                  ? { bg: 'rgba(74,222,128,.12)', color: MA.greenAccent, border: 'rgba(74,222,128,.3)' }
+                  : { bg: 'rgba(255,255,255,.08)', color: 'rgba(244,239,230,.8)', border: 'rgba(255,255,255,.16)' };
+                return (
+                  <span key={i} style={{
+                    display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, padding: '3px 12px',
+                    borderRadius: 9999, background: accent.bg, color: accent.color, border: `1px solid ${accent.border}`,
+                  }}>
+                    <Icon style={{ width: 12, height: 12 }} /> {label}
+                    {onDeleteAnalysisType && (
+                      <button onClick={(e) => { e.stopPropagation(); setDeletingType(type); }}
+                        title={`מחק ${label}`}
+                        style={{ border: 'none', background: 'transparent', color: 'inherit', cursor: 'pointer', padding: 0, display: 'flex', opacity: .7 }}>
+                        {deletingType === type ? <Loader2 className="w-3 h-3 animate-spin" /> : <X className="w-3 h-3" />}
+                      </button>
+                    )}
+                  </span>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* Delete-analysis-type confirmation */}
+        {deletingType && (
+          <div style={{ padding: '12px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, background: MA.dangerBg, flexWrap: 'wrap' }}>
+            <span style={{ fontSize: 13, fontWeight: 600, color: MA.danger }}>
+              למחוק את הניתוח {deletingType === 'statistics' || deletingType === 'stats' ? 'סטטיסטיקה' : deletingType === 'video' ? 'וידאו' : 'חופשי'}? כל הנתונים יאבדו.
+            </span>
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => setDeletingType(null)}
+                style={{ padding: '5px 12px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 600, background: 'rgba(13,26,18,0.06)', color: MA.textSecondary }}>
+                ביטול
+              </button>
+              <button onClick={async () => {
+                const typeToRemove = deletingType;
+                setDeletingType(null);
+                if (onDeleteAnalysisType) await onDeleteAnalysisType(analysis, typeToRemove);
+              }}
+                style={{ padding: '5px 12px', borderRadius: 8, border: 'none', cursor: 'pointer', fontSize: 12, fontWeight: 700, background: MA.danger, color: '#fff' }}>
+                מחק
               </button>
             </div>
-            <div className="flex items-center gap-4">
-              <div className="text-3xl font-bold" style={{ color: 'var(--brand-green)', fontFamily: 'Heebo, sans-serif', fontWeight: 800 }}>
-                {ourScore} – {oppScore}
+          </div>
+        )}
+
+        {/* ── Body ── */}
+        <div className="ma-pad" style={{ display: 'flex', flexDirection: 'column', gap: 22 }}>
+          <BottomLine
+            variant="dark"
+            dataForAI={{
+              opponent: analysis.opponent,
+              result: { our: ourScore, opponent: oppScore },
+              stats: analysis.stats,
+              issues: tacticalIssues,
+              what_worked: analysis._summary?.what_worked,
+              issues_found: analysis._summary?.issues_found,
+              tactical_insights: analysis._summary?.tactical_insights,
+              phase_analysis: analysis.phase_analysis,
+              training_actions: analysis.training_actions,
+            }}
+            context="ניתוח משחק"
+            cacheKey={`match-${analysis.id}`}
+          />
+
+          {/* מספרי המשחק */}
+          {bars.length > 0 && (
+            <Card delay={80}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 4 }}>
+                <SectionTitle icon={BarChart3}>מספרי המשחק</SectionTitle>
+                {Object.keys(seasonAverages).length > 0 && (
+                  <span style={{ fontSize: 11, color: MA.textMuted }}>| מול ממוצע העונה</span>
+                )}
               </div>
-              <div className="flex gap-2">
-                {analysisTypes.map((type, i) => {
-                  const typeLabel = type === 'statistics' || type === 'stats' ? 'סטטיסטיקה' : type === 'video' ? 'וידאו' : 'חופשי';
-                  const typeStyle = type === 'statistics' || type === 'stats'
-                    ? { bg: 'rgba(74,222,128,0.12)', text: 'var(--brand-green)', border: 'rgba(74,222,128,0.25)' }
-                    : type === 'video'
-                    ? { bg: 'rgba(37,99,235,0.12)', text: 'var(--info)', border: 'rgba(37,99,235,0.25)' }
-                    : { bg: 'rgba(255,255,255,0.08)', text: 'var(--bg-card)', border: 'rgba(255,255,255,0.15)' };
-                  const Icon = type === 'statistics' || type === 'stats' ? BarChart3 : type === 'video' ? Video : FileText;
+              <p style={{ margin: '0 0 12px', fontSize: 11, color: MA.textMuted }}>
+                מוצגים רק המדדים שהוזנו לניתוח — אין חובה להזין שליטה או xG
+              </p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {bars.map((m, i) => {
+                  const value = Number(analysis.stats[m.key]);
+                  const pct = Math.max(0, Math.min(100, (value / m.max) * 100));
+                  const avg = seasonAverages[m.key];
+                  const avgPct = avg != null ? Math.max(0, Math.min(100, (avg / m.max) * 100)) : null;
                   return (
-                    <div key={i} className="flex items-center gap-0.5">
-                      <Badge style={{ backgroundColor: typeStyle.bg, color: typeStyle.text, border: `1px solid ${typeStyle.border}` }}>
-                        <Icon className="w-3 h-3 ml-1" /> {typeLabel}
-                      </Badge>
-                      {onDeleteAnalysisType && (
-                        <button
-                          onClick={(e) => { e.stopPropagation(); setDeletingType(type); }}
-                          className="w-5 h-5 rounded-full flex items-center justify-center transition-colors"
-                          style={{ backgroundColor: 'rgba(255,255,255,0.08)', color: 'var(--bg-card)' }}
-                          title={`מחק ${typeLabel}`}
-                        >
-                          {deletingType === type ? <Loader2 className="w-2.5 h-2.5 animate-spin" /> : <X className="w-2.5 h-2.5" />}
-                        </button>
-                      )}
+                    <div key={m.key} style={{ display: 'grid', gridTemplateColumns: '90px 1fr 56px', alignItems: 'center', gap: 12 }}>
+                      <span style={{ fontSize: 12, fontWeight: 600, color: MA.textSecondary }}>{m.label}</span>
+                      <div style={{ position: 'relative', height: 8, borderRadius: 9999, background: 'rgba(13,26,18,.06)' }}>
+                        <div className="ma-bar-fill" style={{
+                          width: `${pct}%`, height: '100%', borderRadius: 9999,
+                          background: `linear-gradient(90deg,${m.from},${m.to})`,
+                          animationDelay: `${200 + i * 100}ms`,
+                        }} />
+                        {avgPct != null && (
+                          <div title={`ממוצע העונה: ${avg.toFixed(1)}${m.suffix}`} style={{
+                            position: 'absolute', top: -3, right: `${avgPct}%`, width: 2, height: 14,
+                            background: MA.textMuted, borderRadius: 2,
+                          }} />
+                        )}
+                      </div>
+                      <span style={{ fontSize: 15, fontWeight: 800, color: m.color, fontFamily: MA.heading }}>
+                        {value}{m.suffix}
+                      </span>
                     </div>
                   );
                 })}
               </div>
-            </div>
-          </div>
-
-          {/* Delete analysis type confirmation */}
-          {deletingType && (
-            <div className="px-6 py-3 flex items-center justify-between"
-              style={{ backgroundColor: 'var(--danger-bg)', borderBottom: '1px solid rgba(220,38,38,0.15)' }}>
-              <span className="text-sm font-medium" style={{ color: 'var(--danger)' }}>
-                למחוק את הניתוח {deletingType === 'statistics' || deletingType === 'stats' ? 'סטטיסטיקה' : deletingType === 'video' ? 'וידאו' : 'חופשי'}? כל הנתונים יאבדו.
-              </span>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => setDeletingType(null)}
-                  className="px-3 py-1 rounded text-xs font-medium"
-                  style={{ backgroundColor: 'rgba(13,26,18,0.06)', color: 'var(--text-secondary)' }}
-                >
-                  ביטול
-                </button>
-                <button
-                  onClick={async () => {
-                    const typeToRemove = deletingType;
-                    setDeletingType(null);
-                    if (onDeleteAnalysisType) await onDeleteAnalysisType(analysis, typeToRemove);
-                  }}
-                  className="px-3 py-1 rounded text-xs font-medium"
-                  style={{ backgroundColor: 'var(--danger)', color: '#fff' }}
-                >
-                  מחק
-                </button>
-              </div>
-            </div>
+            </Card>
           )}
 
-          {/* Content */}
-          <div className="p-6 space-y-6">
-            {/* Bottom Line — AI Insight */}
-            <BottomLine
-              dataForAI={{
-                opponent: analysis.opponent,
-                result: { our: ourScore, opponent: oppScore },
-                stats: analysis.stats,
-                issues: tacticalIssues,
-                what_worked: analysis._summary?.what_worked,
-                issues_found: analysis._summary?.issues_found,
-                tactical_insights: analysis._summary?.tactical_insights,
-                phase_analysis: analysis.phase_analysis,
-                training_actions: analysis.training_actions,
-              }}
-              context="ניתוח משחק"
-              cacheKey={`match-${analysis.id}`}
-              color="var(--brand-green-dark)"
-            />
-
-            {/* Quick Stats */}
-            {hasStats && (
+          {/* תמונת המשחק */}
+          {loading ? (
+            <Card delay={120}>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, padding: '16px 0' }}>
+                <Loader2 className="w-7 h-7 animate-spin" style={{ color: MA.greenMain }} />
+                <span style={{ fontSize: 13, color: MA.textMuted }}>מכין תמונת משחק...</span>
+              </div>
+            </Card>
+          ) : aiSummary?.error ? (
+            <div style={{ borderRadius: 16, padding: '16px 20px', background: MA.warnBg, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+              <AlertTriangle style={{ width: 18, height: 18, color: MA.warn, flexShrink: 0, marginTop: 2 }} />
               <div>
-                <SectionHeader icon={BarChart3}>תקציר סטטיסטי מהיר</SectionHeader>
-                <div className="grid grid-cols-3 md:grid-cols-6 gap-2">
-                  {analysis.stats.passes != null && (
-                    <StatCard label="מסירות" value={analysis.stats.passes} />
-                  )}
-                  {analysis.stats.pass_accuracy != null && (
-                    <StatCard label="דיוק מסירות" value={`${analysis.stats.pass_accuracy}%`} />
-                  )}
-                  {analysis.stats.shots != null && (
-                    <StatCard label="בעיטות" value={analysis.stats.shots} />
-                  )}
-                  {analysis.stats.shots_on_target != null && (
-                    <StatCard label="איומים" value={analysis.stats.shots_on_target} />
-                  )}
-                  {analysis.stats.turnovers != null && (
-                    <StatCard label="איבודים" value={analysis.stats.turnovers} />
-                  )}
-                  {analysis.stats.xg != null && (
-                    <StatCard label="xG" value={analysis.stats.xg} />
-                  )}
-                </div>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: MA.warn }}>ניתוח ה-AI אינו זמין</p>
+                <p style={{ margin: '2px 0 0', fontSize: 12, color: MA.textSecondary }}>{aiSummary.error}</p>
               </div>
-            )}
+            </div>
+          ) : aiSummary ? (
+            <>
+              {aiSummary.summary && (
+                <Card delay={120}>
+                  <SectionTitle icon={BookOpen}>תמונת המשחק</SectionTitle>
+                  <p style={{ margin: 0, fontSize: 13, lineHeight: 1.75, color: MA.textSecondary }}>{aiSummary.summary}</p>
+                </Card>
+              )}
 
-            {/* AI Match Summary */}
-            {loading ? (
-              <div className="flex flex-col items-center justify-center py-8">
-                <Loader2 className="w-8 h-8 animate-spin mb-2" style={{ color: 'var(--brand-green-dark)' }} />
-                <p className="text-sm" style={{ color: 'var(--text-muted)' }}>מכין תמונת משחק...</p>
-              </div>
-            ) : aiSummary?.error ? (
-              <div className="p-4 rounded-xl flex items-center gap-3" style={{ backgroundColor: 'var(--warning-bg)', border: '1px solid rgba(217,119,6,0.25)' }}>
-                <AlertTriangle className="w-5 h-5 flex-shrink-0" style={{ color: 'var(--warning)' }} />
-                <div>
-                  <p className="text-sm font-semibold" style={{ color: 'var(--warning)' }}>ניתוח ה-AI אינו זמין</p>
-                  <p className="text-xs mt-0.5" style={{ color: 'var(--text-secondary)' }}>{aiSummary.error}</p>
-                </div>
-              </div>
-            ) : aiSummary ? (
-              <>
-                {aiSummary.summary && (
-                <div className="p-4 rounded-xl" style={{ backgroundColor: 'var(--success-bg)', border: '1px solid rgba(22,163,74,0.18)' }}>
-                  <h3 className="text-sm font-bold mb-2 flex items-center gap-2" style={{ color: 'var(--brand-green-dark)' }}>
-                    <Lightbulb className="w-4 h-4" /> תמונת המשחק
-                  </h3>
-                  <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)' }}>
-                    {aiSummary.summary}
-                  </p>
-                </div>
-                )}
-
-                {/* Three Key Insights */}
-                {(aiSummary.insights?.critical_issue || aiSummary.insights?.improvement_area || aiSummary.insights?.positive_point) && (
-                <div>
-                  <SectionHeader icon={TrendingUp}>שלוש תובנות מרכזיות</SectionHeader>
-                  <div className="grid md:grid-cols-3 gap-3">
-                    <InsightCard
-                      title="בעיה מרכזית"
-                      content={aiSummary.insights.critical_issue}
-                      icon={AlertTriangle}
-                      color="var(--danger)"
-                      bgColor="var(--danger-bg)"
-                    />
-                    <InsightCard
-                      title="נקודת שיפור"
-                      content={aiSummary.insights.improvement_area}
-                      icon={TrendingUp}
-                      color="var(--warning)"
-                      bgColor="var(--warning-bg)"
-                    />
-                    <InsightCard
-                      title="נקודה חיובית"
-                      content={aiSummary.insights.positive_point}
-                      icon={Lightbulb}
-                      color="var(--brand-green-dark)"
-                      bgColor="var(--success-bg)"
-                    />
+              {(aiSummary.insights?.critical_issue || aiSummary.insights?.improvement_area || aiSummary.insights?.positive_point) && (
+                <div className="ma-fade" style={{ animationDelay: '160ms' }}>
+                  <SectionTitle icon={TrendingUp}>שלוש תובנות מרכזיות</SectionTitle>
+                  <div className="ma-grid-3">
+                    <InsightCard title="בעיה מרכזית" content={aiSummary.insights.critical_issue}
+                      icon={AlertTriangle} color={MA.danger} bg={MA.dangerBg} />
+                    <InsightCard title="נקודת שיפור" content={aiSummary.insights.improvement_area}
+                      icon={TrendingUp} color={MA.warn} bg={MA.warnBg} />
+                    <InsightCard title="נקודה חיובית" content={aiSummary.insights.positive_point}
+                      icon={Lightbulb} color={MA.greenMain} bg={MA.successBg} />
                   </div>
                 </div>
-                )}
-                <div className="flex justify-end">
-                  <button
-                    onClick={() => loadOrGenerateAISummary(true)}
-                    disabled={loading}
-                    className="text-xs px-3 py-1.5 rounded-lg transition-colors"
-                    style={{ color: 'var(--text-muted)', border: '1px solid var(--border-light)' }}
-                  >
-                    {loading ? 'מייצר...' : 'ייצר מחדש'}
-                  </button>
-                </div>
-              </>
-            ) : null}
+              )}
 
-            {/* Training Impact — did the training work pay off? */}
-            <TrainingImpactCard analysis={analysis} />
-
-            {/* Deep Analysis */}
-            <DeepAnalysisSection analysis={analysis} onRefresh={onRefresh} />
-
-            {/* Key Moments */}
-            {hasVideoMoments && (
-              <div>
-                <SectionHeader icon={Clock}>רגעי מפתח במשחק</SectionHeader>
-                <div className="space-y-2">
-                  {analysis.video_moments.slice(0, 5).map((moment, i) => (
-                    <div key={i} className="flex items-start gap-3 p-3 rounded-lg" style={{ backgroundColor: 'var(--bg-card-soft)', border: '1px solid rgba(13,26,18,0.08)' }}>
-                      <div className="text-sm font-bold flex-shrink-0" style={{ color: 'var(--text-secondary)', minWidth: '50px' }}>{moment.timestamp}</div>
-                      <div className="flex-1">
-                        <p className="text-sm" style={{ color: 'var(--text-primary)' }}>{moment.note}</p>
-                        {moment.situation_tag && (
-                          <span className="text-[11px] mt-1 inline-block px-2 py-0.5 rounded-full" style={{ backgroundColor: 'rgba(13,26,18,0.06)', color: 'var(--text-secondary)' }}>
-                            {moment.situation_tag}
-                          </span>
-                        )}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: -12 }}>
+                <button onClick={() => loadOrGenerateAISummary(true)} disabled={loading}
+                  style={{ fontSize: 11, padding: '6px 12px', borderRadius: 8, background: 'transparent', border: `1px solid rgba(13,26,18,.12)`, color: MA.textMuted, cursor: 'pointer', fontFamily: MA.body }}>
+                  {loading ? 'מייצר...' : 'ייצר מחדש'}
+                </button>
               </div>
-            )}
+            </>
+          ) : null}
 
-            {/* Player Ratings */}
-            {hasPlayerRatings && (
-              <div>
-                <div className="flex items-center justify-between mb-3">
-                  <SectionHeader icon={Target}>ציוני שחקנים והערות מאמן</SectionHeader>
-                  <Button
-                    size="sm"
-                    onClick={() => setEditingRatings(true)}
-                    variant="outline"
-                    className="h-7 gap-1.5 text-xs"
-                    style={{ borderColor: 'rgba(22,163,74,0.30)', color: 'var(--brand-green-dark)' }}
-                  >
-                    <Edit2 className="w-3 h-3" />
-                    ערוך ציונים
-                  </Button>
+          {/* Did the training we prescribed actually work? */}
+          <TrainingImpactCard analysis={analysis} />
+
+          {/* ציוני שחקנים */}
+          {played.length > 0 && (
+            <Card delay={240}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                <SectionTitle icon={Target}>ציוני שחקנים</SectionTitle>
+                <button onClick={() => setEditingRatings(true)}
+                  style={{ fontSize: 12, padding: '5px 12px', borderRadius: 8, background: 'transparent', border: '1px solid rgba(22,163,74,.3)', color: MA.greenMain, cursor: 'pointer', fontFamily: MA.body, display: 'inline-flex', alignItems: 'center', gap: 5 }}>
+                  <Edit2 style={{ width: 12, height: 12 }} /> ערוך
+                </button>
+              </div>
+              <div className="ma-scroll-x" style={{ display: 'flex', alignItems: 'flex-end', gap: 14, paddingBottom: 4 }}>
+                {played.map((r, i) => {
+                  const name = r.player_name || playerNameMap[r.player_id] || '—';
+                  const note = r.note && r.note !== name ? r.note : null;
+                  return (
+                    <RatingRing key={i} rating={r.rating} name={name} note={note}
+                      highlight={topRating != null && Number(r.rating) === topRating} />
+                  );
+                })}
+              </div>
+              {dnp.length > 0 && (
+                <div style={{ marginTop: 14, paddingTop: 10, borderTop: '1px dashed rgba(13,26,18,.1)', fontSize: 11, color: MA.textMuted }}>
+                  לא שותפו: {dnp.map(r => r.player_name || playerNameMap[r.player_id] || '—').join(', ')}
                 </div>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
-                  {/* Players who played — circle rating */}
-                  {displayRatings.filter(r => !r.did_not_play).map((rating, i) => {
-                    const colorData = getColorByRating(rating.rating);
-                    const resolvedName = rating.player_name || playerNameMap[rating.player_id] || '—';
-                    const noteToShow = rating.note && rating.note !== resolvedName ? rating.note : null;
-                    return (
-                      <div key={i} className="p-3 rounded-lg flex items-center gap-3" style={{ backgroundColor: colorData.bg, border: `1px solid ${colorData.text}30` }}>
-                        <div className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0"
-                          style={{ backgroundColor: colorData.text }}>
-                          <span className="text-sm font-bold" style={{ color: '#fff', fontFamily: 'Heebo, sans-serif', fontWeight: 800 }}>
-                            {rating.rating}
-                          </span>
-                        </div>
-                        <div className="flex-1 min-w-0">
-                          <span className="text-sm font-semibold block truncate" style={{ color: 'var(--text-primary)' }}>{resolvedName}</span>
-                          {noteToShow && (
-                            <p className="text-xs italic truncate" style={{ color: 'var(--text-secondary)' }}>
-                              "{noteToShow}"
+              )}
+            </Card>
+          )}
+
+          {editingRatings && (
+            <EditPlayerRatingsModal
+              open={editingRatings}
+              onClose={() => setEditingRatings(false)}
+              analysis={{ ...analysis, player_ratings: displayRatings }}
+              onSave={(updatedRatings) => {
+                if (updatedRatings) setLocalRatings(updatedRatings);
+                setEditingRatings(false);
+                onRefresh && onRefresh();
+              }}
+            />
+          )}
+
+          {/* בעיות טקטיות + נושאי עבודה */}
+          {(tacticalProblems.length > 0 || trainingTopics.length > 0) && (
+            <div className="ma-fade ma-grid-split" style={{ animationDelay: '300ms' }}>
+              {/* Issues */}
+              {tacticalProblems.length > 0 && (
+                <div style={{ background: MA.card, borderRadius: 16, padding: '20px 22px', boxShadow: MA.cardShadow }}>
+                  <SectionTitle icon={AlertTriangle}>בעיות טקטיות שזוהו</SectionTitle>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {tacticalProblems.map((problem, i) => {
+                      const colors = SEVERITY[problem.severity] || SEVERITY.medium;
+                      const expansion = deepOpen ? expansionFor(problem, i) : null;
+                      return (
+                        <div key={i} style={{ borderRadius: 12, padding: '12px 14px', background: colors.bg, borderRight: `4px solid ${colors.border}` }}>
+                          <div style={{ display: 'flex', gap: 6, marginBottom: 5, flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: 10, fontWeight: 800, padding: '1px 8px', borderRadius: 9999, background: colors.badge, color: '#fff' }}>
+                              {colors.label}
+                            </span>
+                            {problem.category && (
+                              <span style={{ fontSize: 10, padding: '1px 8px', borderRadius: 9999, background: 'rgba(13,26,18,.06)', color: MA.textSecondary }}>
+                                {problem.category}
+                              </span>
+                            )}
+                          </div>
+                          <p style={{ margin: 0, fontSize: 13, fontWeight: 600, lineHeight: 1.55, color: MA.textPrimary }}>
+                            {problem.text}
+                          </p>
+                          {problem.root_cause && (
+                            <p style={{ margin: '4px 0 0', fontSize: 11, color: MA.textMuted }}>
+                              שורש: {problem.root_cause}
+                            </p>
+                          )}
+                          {expansion?.explanation && (
+                            <p style={{ margin: '8px 0 0', paddingTop: 8, borderTop: `1px dashed ${colors.badge}40`, fontSize: 12, lineHeight: 1.7, color: MA.textSecondary }}>
+                              <span style={{ fontWeight: 700, color: colors.badge }}>למה זו בעיה: </span>
+                              {expansion.explanation}
+                            </p>
+                          )}
+                          {expansion?.supporting_data && (
+                            <p style={{ margin: '6px 0 0', fontSize: 11, color: MA.textMuted }}>
+                              <span style={{ fontWeight: 700 }}>המספרים: </span>{expansion.supporting_data}
                             </p>
                           )}
                         </div>
-                      </div>
-                    );
-                  })}
-                </div>
+                      );
+                    })}
 
-                {/* DNP players — compact text */}
-                {displayRatings.some(r => r.did_not_play) && (
-                  <div className="mt-3 p-3 rounded-lg" style={{ backgroundColor: 'var(--bg-card-soft)', border: '1px solid rgba(13,26,18,0.06)' }}>
-                    <span className="text-xs" style={{ color: 'var(--text-muted)' }}>
-                      <span className="font-semibold">לא שותפו: </span>
-                      {displayRatings.filter(r => r.did_not_play).map(r => r.player_name || playerNameMap[r.player_id] || '—').join(', ')}
-                    </span>
+                    {deepError && (
+                      <p style={{ margin: 0, fontSize: 11, padding: '6px 10px', borderRadius: 8, background: MA.dangerBg, color: MA.danger }}>
+                        {deepError}
+                      </p>
+                    )}
+
+                    {/* Deep-analysis toggle (generates on first use) */}
+                    <button
+                      onClick={() => (deep ? setDeepOpen(o => !o) : generateDeep())}
+                      disabled={generatingDeep}
+                      className="ma-hit"
+                      style={{
+                        marginTop: 2, width: '100%', padding: 9, borderRadius: 10,
+                        border: `1px dashed rgba(22,163,74,.4)`, background: MA.successBg, color: MA.greenMain,
+                        fontSize: 12, fontWeight: 700, cursor: generatingDeep ? 'wait' : 'pointer', fontFamily: MA.body,
+                        display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                      }}>
+                      {generatingDeep ? (
+                        <><Loader2 className="w-3.5 h-3.5 animate-spin" /> מפיק ניתוח מעמיק...</>
+                      ) : !deep ? (
+                        <><Sparkles style={{ width: 14, height: 14 }} /> צור ניתוח מעמיק — הסבר מלא על כל בעיה</>
+                      ) : deepOpen ? (
+                        <><ChevronUp style={{ width: 14, height: 14 }} /> הסתר ניתוח מעמיק</>
+                      ) : (
+                        <><BookOpen style={{ width: 14, height: 14 }} /> הצג ניתוח מעמיק — הסבר מלא על כל בעיה</>
+                      )}
+                    </button>
                   </div>
-                )}
-              </div>
-            )}
-
-            {editingRatings && (
-              <EditPlayerRatingsModal
-                open={editingRatings}
-                onClose={() => setEditingRatings(false)}
-                analysis={{ ...analysis, player_ratings: displayRatings }}
-                onSave={(updatedRatings) => {
-                  if (updatedRatings) setLocalRatings(updatedRatings);
-                  setEditingRatings(false);
-                  onRefresh && onRefresh();
-                }}
-              />
-            )}
-
-            {/* Tactical Issues */}
-            {hasTacticalIssues && tacticalProblems.length > 0 && (
-              <div>
-                <SectionHeader icon={AlertTriangle}>בעיות טקטיות שזוהו במשחק</SectionHeader>
-                <div className="space-y-2">
-                  {tacticalProblems.map((problem, i) => {
-                    const severityColors = {
-                      high: { bg: 'var(--danger-bg)', border: 'rgba(220,38,38,0.18)', badge: 'var(--danger)', label: 'חמור' },
-                      medium: { bg: 'var(--warning-bg)', border: 'rgba(217,119,6,0.18)', badge: 'var(--warning)', label: 'בינוני' },
-                      low: { bg: 'var(--bg-card-soft)', border: 'rgba(13,26,18,0.08)', badge: 'var(--text-muted)', label: 'קל' },
-                    };
-                    const colors = severityColors[problem.severity] || severityColors.medium;
-                    return (
-                      <div key={i} className="p-3 rounded-lg" style={{ backgroundColor: colors.bg, border: `1px solid ${colors.border}` }}>
-                        <div className="flex items-center gap-2 mb-1.5">
-                          <span className="text-[10px] px-1.5 py-0.5 rounded font-bold" style={{ backgroundColor: colors.badge, color: '#fff' }}>
-                            {colors.label}
-                          </span>
-                          {problem.category && (
-                            <span className="text-[10px] px-1.5 py-0.5 rounded" style={{ backgroundColor: 'rgba(13,26,18,0.06)', color: 'var(--text-secondary)' }}>
-                              {problem.category}
-                            </span>
-                          )}
-                        </div>
-                        <p className="text-sm leading-relaxed" style={{ color: 'var(--text-primary)' }}>
-                          {problem.text}
-                        </p>
-                        {problem.root_cause && (
-                          <p className="text-xs mt-1.5 leading-relaxed" style={{ color: 'var(--text-muted)' }}>
-                            <span className="font-semibold" style={{ color: 'var(--text-secondary)' }}>שורש: </span>{problem.root_cause}
-                          </p>
-                        )}
-                        {problem.training_action && (
-                          <p className="text-xs mt-1 leading-relaxed" style={{ color: 'var(--brand-green-dark)' }}>
-                            <span className="font-semibold">🏋️ </span>{problem.training_action}
-                          </p>
-                        )}
-                      </div>
-                    );
-                  })}
                 </div>
-              </div>
-            )}
+              )}
 
-            {/* Training Topics — split urgent / important */}
-            {trainingTopics.length > 0 && (
-              <div>
-                <SectionHeader icon={Target}>נושאי עבודה לאימון</SectionHeader>
-                <div className="space-y-4">
-                  {/* Urgent */}
-                  {urgentTopics.length > 0 && (
-                    <div>
-                      <p className="text-xs font-semibold mb-2 flex items-center gap-1.5" style={{ color: 'var(--danger)' }}>
-                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--danger)' }} />
-                        דחוף
-                      </p>
-                      <div className="space-y-2">
-                        {urgentTopics.map((topic, i) => (
-                          <div key={i} className="flex items-center gap-2 p-3 rounded-lg" style={{ backgroundColor: 'var(--bg-card-soft)', border: '1px solid rgba(13,26,18,0.08)' }}>
-                            <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'var(--success-bg)', color: 'var(--brand-green-dark)', fontSize: '12px', fontWeight: 'bold' }}>
-                              {i + 1}
-                            </div>
-                            <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{topic}</span>
-                          </div>
-                        ))}
+              {/* Work topics — analysis output only, never a training builder */}
+              {trainingTopics.length > 0 && (
+                <div style={{ background: 'linear-gradient(160deg,#0D1A12,#13241A)', borderRadius: 16, padding: '20px 22px', border: '1px solid rgba(74,222,128,.2)' }}>
+                  <h3 style={{ margin: '0 0 12px', fontSize: 14, fontWeight: 800, fontFamily: MA.heading, color: MA.greenAccent, display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Target style={{ width: 15, height: 15 }} /> נושאי עבודה לאימון הבא
+                  </h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {visibleTopics.map((topic, i) => (
+                      <div key={i} style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+                        <span style={{
+                          width: 24, height: 24, borderRadius: 8, flexShrink: 0, fontSize: 12, fontWeight: 900,
+                          fontFamily: MA.heading, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                          background: i === 0 ? MA.greenAccent : 'rgba(74,222,128,.2)',
+                          color: i === 0 ? '#0D1A12' : MA.greenAccent,
+                        }}>{i + 1}</span>
+                        <span style={{ fontSize: 13, fontWeight: 600, color: i === 0 ? MA.cream : 'rgba(244,239,230,.85)' }}>{topic}</span>
                       </div>
-                    </div>
-                  )}
-                  {/* Important — collapsible */}
-                  {remainingTopics.length > 0 && (
-                    <div>
-                      <p className="text-xs font-semibold mb-2 flex items-center gap-1.5" style={{ color: 'var(--text-secondary)' }}>
-                        <span className="w-2 h-2 rounded-full" style={{ backgroundColor: 'var(--text-muted)' }} />
-                        חשוב
-                      </p>
-                      <div className="space-y-2">
-                        {(showAllTopics ? remainingTopics : remainingTopics.slice(0, 3)).map((topic, i) => (
-                          <div key={i} className="flex items-center gap-2 p-3 rounded-lg" style={{ backgroundColor: 'var(--bg-card-soft)', border: '1px solid rgba(13,26,18,0.08)' }}>
-                            <div className="w-6 h-6 rounded-full flex items-center justify-center flex-shrink-0" style={{ backgroundColor: 'var(--success-bg)', color: 'var(--brand-green-dark)', fontSize: '12px', fontWeight: 'bold' }}>
-                              {urgentTopics.length + i + 1}
-                            </div>
-                            <span className="text-sm font-medium" style={{ color: 'var(--text-primary)' }}>{topic}</span>
-                          </div>
-                        ))}
-                        {!showAllTopics && remainingTopics.length > 3 && (
-                          <button onClick={() => setShowAllTopics(true)}
-                            className="text-xs font-semibold flex items-center gap-1 mt-1"
-                            style={{ color: 'var(--brand-green-dark)' }}>
-                            <ChevronDown className="w-3.5 h-3.5" /> הצג עוד ({remainingTopics.length - 3})
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  )}
+                    ))}
+                    {!showAllTopics && remainingTopics.length > 0 && (
+                      <button onClick={() => setShowAllTopics(true)}
+                        style={{ display: 'inline-flex', alignItems: 'center', gap: 4, background: 'transparent', border: 'none', cursor: 'pointer', color: MA.greenAccent, fontSize: 11, fontWeight: 700, fontFamily: MA.body, padding: 0 }}>
+                        <ChevronDown style={{ width: 13, height: 13 }} /> הצג עוד ({remainingTopics.length})
+                      </button>
+                    )}
+                  </div>
+                  <p style={{ margin: '16px 0 0', fontSize: 11, lineHeight: 1.6, color: 'rgba(244,239,230,.55)' }}>
+                    נושאים שזוהו מניתוח המשחק — מומלץ לשלב באימון הקרוב
+                  </p>
                 </div>
-              </div>
-            )}
+              )}
+            </div>
+          )}
 
-            {/* Professional Summary — quote block */}
-            {hasSummary && analysis._summary.tactical_insights && (
-              <div className="p-4 rounded-xl" style={{ backgroundColor: 'var(--bg-card-soft)', borderRight: '4px solid var(--brand-green)', border: '1px solid rgba(13,26,18,0.08)' }}>
-                <h3 className="text-sm font-bold mb-2 flex items-center gap-2" style={{ color: 'var(--brand-green-dark)' }}>
-                  <FileText className="w-4 h-4" /> סיכום מקצועי
-                </h3>
-                <p className="text-sm leading-relaxed" style={{ color: 'var(--text-secondary)', fontFamily: 'Assistant, sans-serif' }}>
-                  {analysis._summary.tactical_insights}
-                </p>
-              </div>
-            )}
-          </div>
+          {/* הסיפור המלא */}
+          {deepOpen && deep && <DeepAnalysisStory deep={deep} />}
 
-          {/* Footer */}
-          <div className="sticky bottom-0 p-4 flex justify-end gap-2" style={{ backgroundColor: 'var(--bg-app)', borderTop: '1px solid rgba(13,26,18,0.10)' }}>
-            <Button onClick={onClose} style={{ backgroundColor: 'var(--brand-green)', color: 'var(--brand-dark)' }}>
-              סגור
-            </Button>
-          </div>
+          {/* רגעי מפתח */}
+          {hasVideoMoments && (
+            <Card delay={340}>
+              <SectionTitle icon={Clock}>רגעי מפתח במשחק</SectionTitle>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                {analysis.video_moments.slice(0, 5).map((moment, i) => (
+                  <div key={i} style={{ display: 'flex', gap: 12, alignItems: 'flex-start', padding: '10px 12px', borderRadius: 12, background: MA.surfaceSoft }}>
+                    <span style={{ fontSize: 12, fontWeight: 800, color: MA.textSecondary, minWidth: 46, fontFamily: MA.heading }}>{moment.timestamp}</span>
+                    <div style={{ flex: 1 }}>
+                      <p style={{ margin: 0, fontSize: 13, color: MA.textPrimary }}>{moment.note}</p>
+                      {moment.situation_tag && (
+                        <span style={{ display: 'inline-block', marginTop: 4, fontSize: 10, padding: '1px 8px', borderRadius: 9999, background: 'rgba(13,26,18,.06)', color: MA.textSecondary }}>
+                          {moment.situation_tag}
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+
+          {/* סיכום מקצועי */}
+          {hasSummary && analysis._summary.tactical_insights && (
+            <Card delay={380} style={{ borderRight: `4px solid ${MA.greenMain}` }}>
+              <SectionTitle icon={FileText} color={MA.greenMain}>סיכום מקצועי</SectionTitle>
+              <p style={{ margin: 0, fontSize: 13, lineHeight: 1.75, color: MA.textSecondary }}>
+                {analysis._summary.tactical_insights}
+              </p>
+            </Card>
+          )}
         </div>
       </DialogContent>
     </Dialog>

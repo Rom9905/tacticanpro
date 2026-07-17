@@ -3,7 +3,7 @@ import { ChevronDown, ChevronUp, Lightbulb, Loader2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
 import { buildGameStyleContext } from '@/hooks/useGameStyle';
 
-export default function BottomLine({ dataForAI, context, staticInsight, color = 'var(--brand-green-dark)', collapsible = true, cacheKey, gameStyle, gameStyleNotes }) {
+export default function BottomLine({ dataForAI, context, staticInsight, color = 'var(--brand-green-dark)', collapsible = true, cacheKey, gameStyle, gameStyleNotes, variant = 'light' }) {
   const [insight, setInsight] = useState(staticInsight || null);
   const [loading, setLoading] = useState(false);
   const [open, setOpen] = useState(true);
@@ -84,6 +84,49 @@ ${JSON.stringify(dataForAI, null, 2).slice(0, 2000)}${gameStyleCtx}
 
   const insightText = typeof insight === 'string' ? insight : insight?.insight;
   const actionText = typeof insight === 'object' ? insight?.action : null;
+
+  // Dark hero treatment used by the Match Analysis redesign.
+  if (variant === 'dark') {
+    return (
+      <div style={{
+        position: 'relative', borderRadius: 16, padding: '20px 22px',
+        background: 'linear-gradient(135deg,#0D1A12,#13241A)',
+        border: '1px solid rgba(74,222,128,.25)', overflow: 'hidden',
+      }}>
+        <div aria-hidden="true" style={{
+          position: 'absolute', top: -30, insetInlineStart: -30, width: 120, height: 120, borderRadius: '50%',
+          background: 'radial-gradient(circle,rgba(74,222,128,.25),transparent 70%)', pointerEvents: 'none',
+        }} />
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+          <Lightbulb className="w-4 h-4 ma-floaty" style={{ color: '#4ADE80' }} />
+          <span style={{ fontSize: 12, fontWeight: 800, letterSpacing: 1.5, color: '#4ADE80' }}>השורה התחתונה</span>
+        </div>
+        {loading ? (
+          <div style={{ position: 'relative', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Loader2 className="w-4 h-4 animate-spin" style={{ color: '#4ADE80' }} />
+            <span style={{ fontSize: 13, color: 'rgba(244,239,230,.6)' }}>מנתח נתונים...</span>
+          </div>
+        ) : (
+          <>
+            <p style={{
+              position: 'relative', margin: 0, fontSize: 17, fontWeight: 600, lineHeight: 1.65,
+              color: insight?.isError ? '#FBBF24' : '#F4EFE6', fontFamily: "'Heebo', sans-serif",
+            }}>
+              {insight?.isError ? '⚠ ' : ''}{insightText}
+            </p>
+            {actionText && (
+              <p style={{
+                position: 'relative', margin: '12px 0 0', paddingTop: 10, fontSize: 13, fontWeight: 600,
+                color: '#4ADE80', borderTop: '1px solid rgba(74,222,128,.2)',
+              }}>
+                ➜ {actionText}
+              </p>
+            )}
+          </>
+        )}
+      </div>
+    );
+  }
 
   return (
     <div

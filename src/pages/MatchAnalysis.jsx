@@ -3,30 +3,26 @@ import { base44 } from '@/api/base44Client';
 import { motion } from 'framer-motion';
 import { useLang } from '@/lib/LanguageContext';
 import { useSubscriptionGuard } from '@/components/useSubscriptionGuard';
-import PageHero from '@/components/ui/PageHero';
-import { 
-  Plus, 
-  BarChart3, 
-  Swords,
+import {
+  Plus,
+  BarChart3,
   Video,
   FileText,
   Loader2,
-  TrendingUp,
-  AlertCircle,
   Trash2
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent } from '@/components/ui/card';
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import TeamSelector from '../components/team/TeamSelector';
 import HowItWorksButton from '../components/HowItWorksButton';
 import MatchReportCard from '../components/analysis/MatchReportCard';
+import MatchAnalysisHero from '../components/analysis/MatchAnalysisHero';
+import { MA, matchAnalysisStyles } from '../components/analysis/matchAnalysisTheme';
 import StatisticsAnalysis from '../components/analysis/StatisticsAnalysis';
 import VideoAnalysis from '../components/analysis/VideoAnalysis';
 import FreeFormAnalysis from '../components/analysis/FreeFormAnalysis';
@@ -35,6 +31,15 @@ import ProblemHeatmap from '../components/analysis/ProblemHeatmap';
 import TrendsTab from '../components/analysis/TrendsTab';
 import MatchAnalysisModal from '../components/analysis/MatchAnalysisModal';
 import { syncMatchRatingsToPlayers } from '@/lib/playerRatingSync';
+
+// Score can come from the linked ProfessionalSummary or the analysis itself.
+const scoreOur = a => a._summary?.result_our ?? a.result?.our_score ?? null;
+const scoreOpp = a => a._summary?.result_opponent ?? a.result?.opponent_score ?? null;
+const outcomeOf = (a) => {
+  const our = scoreOur(a), opp = scoreOpp(a);
+  if (our == null || opp == null) return null;
+  return our > opp ? 'win' : our < opp ? 'loss' : 'draw';
+};
 
 export default function MatchAnalysis() {
   const hasPlan = useSubscriptionGuard();
@@ -105,6 +110,43 @@ export default function MatchAnalysis() {
       loadAnalyses(selectedTeamId);
     }
   }, [selectedTeamId]);
+
+  // Season scoreboard — only matches with a recorded result count toward W/D/L and goals.
+  const seasonStats = React.useMemo(() => {
+    let wins = 0, draws = 0, losses = 0, goalsFor = 0, goalsAgainst = 0;
+    analyses.forEach(a => {
+      const outcome = outcomeOf(a);
+      if (!outcome) return;
+      goalsFor += scoreOur(a);
+      goalsAgainst += scoreOpp(a);
+      if (outcome === 'win') wins++;
+      else if (outcome === 'loss') losses++;
+      else draws++;
+    });
+    return { matches: analyses.length, wins, draws, losses, goalsFor, goalsAgainst };
+  }, [analyses]);
+
+  // Form strip: most recent first (analyses are already sorted newest → oldest).
+  const form = React.useMemo(
+    () => analyses.map(outcomeOf).filter(Boolean).slice(0, 5),
+    [analyses],
+  );
+
+  // Season averages power the "מול ממוצע העונה" markers on the modal's stat bars.
+  const seasonAverages = React.useMemo(() => {
+    const totals = {}, counts = {};
+    analyses.forEach(a => {
+      Object.entries(a.stats || {}).forEach(([k, v]) => {
+        const num = Number(v);
+        if (v == null || Number.isNaN(num)) return;
+        totals[k] = (totals[k] || 0) + num;
+        counts[k] = (counts[k] || 0) + 1;
+      });
+    });
+    const out = {};
+    Object.keys(totals).forEach(k => { out[k] = totals[k] / counts[k]; });
+    return out;
+  }, [analyses]);
 
   if (hasPlan === null) return null;
   if (hasPlan === false) {
@@ -383,155 +425,84 @@ export default function MatchAnalysis() {
   };
 
   return (
-    <div className="min-h-screen p-4 md:p-6 theme-cream" style={{ backgroundColor: '#F4EFE6' }} dir={dir}>
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <div className="mb-6">
-          <PageHero
-            icon={Swords}
-            title={isHe ? 'ניתוח משחקים' : 'Match Analysis'}
-            subtitle={isHe ? 'שלושה מסלולים, מעקב עומק לאורך זמן' : 'Three tracks, deep long-term tracking'}
+    <div className="min-h-screen theme-cream" style={{ backgroundColor: MA.bgPage, padding: '28px 16px', fontFamily: MA.body, color: MA.textPrimary }} dir={dir}>
+      <style>{matchAnalysisStyles}</style>
+      <div style={{ maxWidth: 1080, margin: '0 auto' }}>
+        <div style={{ background: MA.bgContainer, borderRadius: 20, overflow: 'hidden', boxShadow: MA.containerShadow }}>
+          <MatchAnalysisHero
+            stats={seasonStats}
+            form={form}
+            view={view}
+            onViewChange={setView}
+            onNewAnalysis={() => setShowNewAnalysis(true)}
+            teamSelector={<TeamSelector teams={teams} selectedTeamId={selectedTeamId} onSelect={setSelectedTeamId} />}
             titleExtra={<HowItWorksButton page="MatchAnalysis" />}
-            style={{ border: '1px solid rgba(74,222,128,0.20)' }}
-            actions={
-              <>
-                <TeamSelector teams={teams} selectedTeamId={selectedTeamId} onSelect={setSelectedTeamId} />
-                <Button
-                  onClick={() => setShowNewAnalysis(true)}
-                  className="premium-btn-green"
-                >
-                  <Plus className="w-4 h-4 ml-2" />
-                  {isHe ? 'ניתוח חדש' : 'New Analysis'}
-                </Button>
-              </>
-            }
+            isHe={isHe}
           />
-        </div>
 
-        {/* View Tabs */}
-        <Tabs value={view} onValueChange={setView} className="mb-6">
-          <TabsList className="border border-slate-800" style={{ backgroundColor: 'rgba(13,26,18,0.04)', borderRadius: '12px' }}>
-            <TabsTrigger value="list" className="data-[state=active]:text-emerald-400" style={{ '--tw-bg-opacity': 1 }} data-state-active-style="dark">
-              <BarChart3 className="w-4 h-4 ml-2" />
-              {isHe ? 'כל המשחקים' : 'All Matches'}
-            </TabsTrigger>
-            <TabsTrigger value="weekly" className="data-[state=active]:text-emerald-400">
-              <TrendingUp className="w-4 h-4 ml-2" />
-              {isHe ? 'סיכום שבועי' : 'Weekly Summary'}
-            </TabsTrigger>
-            <TabsTrigger value="heatmap" className="data-[state=active]:text-emerald-400">
-              <AlertCircle className="w-4 h-4 ml-2" />
-              {isHe ? 'מפת בעיות' : 'Problem Map'}
-            </TabsTrigger>
-            <TabsTrigger value="trends" className="data-[state=active]:text-emerald-400">
-              <TrendingUp className="w-4 h-4 ml-2" />
-              {isHe ? 'מגמות' : 'Trends'}
-            </TabsTrigger>
-          </TabsList>
-
-          <TabsContent value="list" className="mt-4">
-            {/* Stats Summary */}
-            {analyses.length > 0 && (() => {
-              // Use summary result when available (same source as dashboard), fall back to analysis result
-              const withResults = analyses.filter(a => {
-                const s = a._summary;
-                if (s && s.result_our != null) return true;
-                return a.result?.our_score != null;
-              });
-              const getOur = a => a._summary?.result_our ?? a.result?.our_score ?? 0;
-              const getOpp = a => a._summary?.result_opponent ?? a.result?.opponent_score ?? 0;
-              const wins = withResults.filter(a => getOur(a) > getOpp(a)).length;
-              const draws = withResults.filter(a => getOur(a) === getOpp(a)).length;
-              const losses = withResults.filter(a => getOur(a) < getOpp(a)).length;
-              return (
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                  <Card className="premium-card" style={{ border: '1px solid rgba(13,26,18,0.08)' }}>
-                    <CardContent className="p-4 text-center">
-                      <div className="text-2xl font-bold" style={{ color: 'var(--text-primary)', fontFamily: 'Heebo, sans-serif', fontWeight: 800 }}>{analyses.length}</div>
-                      <div className="text-sm" style={{ color: 'var(--text-muted)' }}>{isHe ? 'משחקים' : 'Matches'}</div>
-                    </CardContent>
-                      </Card>
-                      <Card className="premium-card" style={{ border: '1px solid rgba(13,26,18,0.08)' }}>
-                      <CardContent className="p-4 text-center">
-                      <div className="text-2xl font-bold" style={{ color: 'var(--brand-green-dark)', fontFamily: 'Heebo, sans-serif', fontWeight: 800 }}>{wins}</div>
-                      <div className="text-sm" style={{ color: 'var(--text-muted)' }}>{isHe ? 'ניצחונות' : 'Wins'}</div>
-                      </CardContent>
-                      </Card>
-                      <Card className="premium-card" style={{ border: '1px solid rgba(13,26,18,0.08)' }}>
-                      <CardContent className="p-4 text-center">
-                      <div className="text-2xl font-bold" style={{ color: 'var(--warning)', fontFamily: 'Heebo, sans-serif', fontWeight: 800 }}>{draws}</div>
-                      <div className="text-sm" style={{ color: 'var(--text-muted)' }}>{isHe ? 'תיקו' : 'Draws'}</div>
-                      </CardContent>
-                      </Card>
-                      <Card className="premium-card" style={{ border: '1px solid rgba(13,26,18,0.08)' }}>
-                      <CardContent className="p-4 text-center">
-                      <div className="text-2xl font-bold" style={{ color: 'var(--danger)', fontFamily: 'Heebo, sans-serif', fontWeight: 800 }}>{losses}</div>
-                      <div className="text-sm" style={{ color: 'var(--text-muted)' }}>{isHe ? 'הפסדים' : 'Losses'}</div>
-                      </CardContent>
-                      </Card>
+          <div className="ma-pad">
+            {view === 'list' && (
+              loading ? (
+                <div className="flex items-center justify-center py-20">
+                  <Loader2 className="w-8 h-8 animate-spin" style={{ color: MA.greenMain }} />
                 </div>
-              );
-            })()}
-
-            {/* Analyses List */}
-            {loading ? (
-              <div className="flex items-center justify-center py-20">
-                <Loader2 className="w-8 h-8 animate-spin text-emerald-500" />
-              </div>
-            ) : analyses.length > 0 ? (
-              <div className="space-y-4">
-                {analyses.map((analysis) => (
-                  <div key={analysis.id} className="relative group">
-                    <MatchReportCard 
-                      analysis={analysis} 
-                      onClick={() => setSelectedAnalysis(analysis)}
-                      onDelete={handleDeleteMatch}
-                    />
-                    <Button
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setAddingToMatch(analysis);
-                        setShowNewAnalysis(true);
-                      }}
-                      className="absolute top-4 left-4 opacity-0 group-hover:opacity-100 transition-opacity premium-btn-green text-xs"
-                      size="sm"
-                    >
-                      <Plus className="w-3 h-3 ml-1" />
-                      {isHe ? 'הוסף ניתוח' : 'Add Analysis'}
-                    </Button>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <Card className="premium-card" style={{ border: '1px solid rgba(13,26,18,0.08)' }}>
-                <CardContent className="p-12 text-center">
-                  <BarChart3 className="w-12 h-12 mx-auto mb-4" style={{ color: 'var(--text-muted)' }} />
-                  <h3 className="text-lg font-medium mb-2" style={{ color: 'var(--text-primary)' }}>{isHe ? 'אין ניתוחים' : 'No Analyses'}</h3>
-                  <p className="mb-4" style={{ color: 'var(--text-muted)' }}>{isHe ? 'התחל עם המשחק הראשון' : 'Start with the first match'}</p>
-                  <Button 
-                    onClick={() => setShowNewAnalysis(true)}
-                    className="premium-btn-green"
-                  >
-                    <Plus className="w-4 h-4 ml-2" />
+              ) : analyses.length > 0 ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  {analyses.map((analysis, i) => (
+                    <div key={analysis.id} className="ma-row" style={{ position: 'relative' }}>
+                      <MatchReportCard
+                        analysis={analysis}
+                        index={i}
+                        onClick={() => setSelectedAnalysis(analysis)}
+                        onDelete={handleDeleteMatch}
+                      />
+                      <button
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setAddingToMatch(analysis);
+                          setShowNewAnalysis(true);
+                        }}
+                        className="ma-row-action"
+                        style={{
+                          position: 'absolute', bottom: 10, left: 10, display: 'flex', alignItems: 'center', gap: 4,
+                          padding: '4px 10px', borderRadius: 8, border: 'none', cursor: 'pointer',
+                          background: MA.successBg, color: MA.greenMain, fontSize: 11, fontWeight: 700,
+                          fontFamily: MA.body,
+                        }}
+                      >
+                        <Plus className="w-3 h-3" />
+                        {isHe ? 'הוסף ניתוח' : 'Add Analysis'}
+                      </button>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{ background: MA.card, borderRadius: 16, boxShadow: MA.cardShadow, padding: '48px 24px', textAlign: 'center' }}>
+                  <BarChart3 className="w-12 h-12 mx-auto mb-4" style={{ color: MA.textMuted }} />
+                  <h3 style={{ margin: '0 0 6px', fontSize: 18, fontWeight: 800, fontFamily: MA.heading, color: MA.textPrimary }}>
+                    {isHe ? 'אין ניתוחים' : 'No Analyses'}
+                  </h3>
+                  <p style={{ margin: '0 0 16px', fontSize: 13, color: MA.textMuted }}>
+                    {isHe ? 'התחל עם המשחק הראשון' : 'Start with the first match'}
+                  </p>
+                  <button onClick={() => setShowNewAnalysis(true)} className="ma-hit"
+                    style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 8, padding: '11px 22px', borderRadius: 12,
+                      border: 'none', background: MA.greenAccent, color: '#0D1A12', fontWeight: 700, fontSize: 15,
+                      fontFamily: MA.body, cursor: 'pointer',
+                    }}>
+                    <Plus className="w-4 h-4" />
                     {isHe ? 'ניתוח חדש' : 'New Analysis'}
-                  </Button>
-                </CardContent>
-              </Card>
+                  </button>
+                </div>
+              )
             )}
-          </TabsContent>
 
-          <TabsContent value="weekly">
-            <WeeklySummary analyses={analyses} teamId={selectedTeamId} />
-          </TabsContent>
-
-          <TabsContent value="heatmap">
-            <ProblemHeatmap analyses={analyses} teamId={selectedTeamId} />
-          </TabsContent>
-
-          <TabsContent value="trends" className="mt-4">
-            <TrendsTab analyses={analyses} teamId={selectedTeamId} />
-          </TabsContent>
-        </Tabs>
+            {view === 'weekly' && <WeeklySummary analyses={analyses} teamId={selectedTeamId} />}
+            {view === 'heatmap' && <ProblemHeatmap analyses={analyses} teamId={selectedTeamId} />}
+            {view === 'trends' && <TrendsTab analyses={analyses} teamId={selectedTeamId} />}
+          </div>
+        </div>
 
         {/* Mode Selection */}
         <ModeSelectionDialog />
@@ -567,6 +538,7 @@ export default function MatchAnalysis() {
           onClose={() => setSelectedAnalysis(null)}
           analysis={selectedAnalysis}
           teamName={selectedTeam?.name}
+          seasonAverages={seasonAverages}
           onRefresh={async () => {
             const refreshed = await loadAnalyses(selectedTeamId);
             if (selectedAnalysis) {
