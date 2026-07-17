@@ -63,7 +63,7 @@ export default function TrainingHistory({ outcomes = [], reviews = [] }) {
                   <div className="bg-slate-900/50 rounded-lg p-3 mb-3">
                     <p className="text-xs text-emerald-400 font-medium mb-1 flex items-center gap-1">
                       <Brain className="w-3 h-3" />
-                      תובנת AI
+                      תובנה
                     </p>
                     <p className="text-sm text-slate-300 leading-relaxed">
                       {outcome.ai_evaluation_summary}
@@ -140,7 +140,7 @@ export default function TrainingHistory({ outcomes = [], reviews = [] }) {
                   <CardContent className="p-4">
                     <h3 className="font-semibold text-white mb-3 flex items-center gap-2">
                       <Brain className="w-4 h-4 text-emerald-400" />
-                      הערכת AI
+                      הערכה
                     </h3>
                     <div className="space-y-3">
                       <div>

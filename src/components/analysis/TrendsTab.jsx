@@ -1,13 +1,14 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import {
   TrendingUp, TrendingDown, Minus, Repeat, Sparkles, Loader2,
-  AlertTriangle, LineChart as LineChartIcon,
+  AlertTriangle, LineChart as LineChartIcon, RefreshCw,
 } from 'lucide-react';
 import {
   ResponsiveContainer, LineChart, Line, XAxis, YAxis, Tooltip, CartesianGrid, Legend,
 } from 'recharts';
 import { buildStatSeries, computeStatTrends, findRecurringIssues } from '@/lib/trendsEngine';
+import { periodFingerprint } from '@/lib/analysisFingerprint';
 import { MA } from './matchAnalysisTheme';
 
 // The design leads the comparison card with these four, in this order, and uses
@@ -28,6 +29,10 @@ export default function TrendsTab({ analyses }) {
   const series = useMemo(() => buildStatSeries(analyses), [analyses]);
   const statTrends = useMemo(() => computeStatTrends(analyses), [analyses]);
   const recurring = useMemo(() => findRecurringIssues(analyses), [analyses]);
+
+  // The mentor read regenerates itself whenever the underlying matches change,
+  // and is reused from cache otherwise — there is no manual trigger.
+  const fingerprint = useMemo(() => periodFingerprint(analyses), [analyses]);
 
   // Goals already come from the trends engine — just lead with them and shorten
   // the labels to match the design.
@@ -97,10 +102,31 @@ ${recurringLines || 'לא זוהו בעיות חוזרות'}
       },
     });
 
-    if (result?.__ai_error) setAiError(result.__ai_error);
-    else setAiInsights(result);
+    if (result?.__ai_error) {
+      setAiError(result.__ai_error);
+    } else {
+      setAiInsights(result);
+      try { localStorage.setItem(`trends_${fingerprint}`, JSON.stringify(result)); } catch { /* ignore */ }
+    }
     setAiLoading(false);
   };
+
+  // Keep the generator out of the effect deps — it closes over trend data that
+  // changes every render; the fingerprint already decides when to re-run.
+  const generateRef = useRef(generateAiInsights);
+  generateRef.current = generateAiInsights;
+
+  // Self-updating: reuse the cached read while the matches are unchanged,
+  // regenerate on its own the moment they change.
+  useEffect(() => {
+    if (!analyses || analyses.length < 2) { setAiInsights(null); return; }
+    setAiError(null);
+    let cached = null;
+    try { cached = JSON.parse(localStorage.getItem(`trends_${fingerprint}`) || 'null'); } catch { /* ignore */ }
+    if (cached) { setAiInsights(cached); return; }
+    setAiInsights(null);
+    generateRef.current();
+  }, [fingerprint, analyses]);
 
   if (!analyses || analyses.length < 2) {
     return (
@@ -121,16 +147,13 @@ ${recurringLines || 'לא זוהו בעיות חוזרות'}
       }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, marginBottom: aiInsights || aiLoading || aiError ? 14 : 0 }}>
           <p style={{ margin: 0, fontSize: 12, fontWeight: 800, letterSpacing: 1, color: MA.greenAccent, display: 'flex', alignItems: 'center', gap: 6 }}>
-            <Sparkles style={{ width: 14, height: 14 }} /> ניתוח מגמות AI
+            <Sparkles style={{ width: 14, height: 14 }} /> ניתוח מגמות
           </p>
-          <button onClick={generateAiInsights} disabled={aiLoading} className="ma-hit"
-            style={{
-              padding: '6px 16px', borderRadius: 8, fontSize: 12, fontWeight: 700, background: MA.greenAccent,
-              color: '#0D1A12', border: 'none', cursor: aiLoading ? 'wait' : 'pointer', fontFamily: MA.body,
-              opacity: aiLoading ? 0.6 : 1,
-            }}>
-            {aiLoading ? 'מנתח...' : aiInsights ? 'רענן ניתוח' : 'נתח מגמות'}
-          </button>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, fontSize: 11, color: 'rgba(244,239,230,.55)' }}>
+            {aiLoading
+              ? <><Loader2 className="w-3 h-3 animate-spin" /> מעדכן...</>
+              : <><RefreshCw style={{ width: 11, height: 11 }} /> מתעדכן אוטומטית</>}
+          </span>
         </div>
         {aiLoading && (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>

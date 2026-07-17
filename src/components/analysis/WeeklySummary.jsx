@@ -184,7 +184,7 @@ Be concise and specific. Focus on patterns, not individual games. Reply in ${isH
 
       {summary?.error && (
         <div style={{ borderRadius: 16, padding: '14px 18px', background: MA.warnBg }}>
-          <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: MA.warn }}>שירות ה-AI אינו זמין</p>
+          <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: MA.warn }}>השירות אינו זמין</p>
           <p style={{ margin: '2px 0 0', fontSize: 12, color: MA.textSecondary }}>{summary.error}</p>
         </div>
       )}

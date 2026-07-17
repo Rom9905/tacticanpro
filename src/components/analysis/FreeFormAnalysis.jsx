@@ -176,7 +176,7 @@ ${formData.team_structure_impact || 'לא צוין'}
     setGenerating(false);
 
     if (response?.__ai_error) {
-      alert(`${response.__ai_error}\nההערות והציונים שהזנת יישמרו ללא ניתוח AI.`);
+      alert(`${response.__ai_error}\nההערות והציונים שהזנת יישמרו ללא ניתוח.`);
     }
 
     // Convert player_ratings from object to array — include DNP players with did_not_play flag

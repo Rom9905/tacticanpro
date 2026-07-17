@@ -1,19 +1,22 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
-import { Loader2, Copy, FileText, Users } from 'lucide-react';
+import { objectFingerprint } from '@/lib/analysisFingerprint';
+import { Loader2, Copy, Users, RefreshCw } from 'lucide-react';
 
 export default function PlayerReportModal({ open, onClose, player, matchAnalyses = [], teamPlayers: _teamPlayers = [] }) {
   const [report, setReport] = useState(null);
   const [loading, setLoading] = useState(false);
   const [copied, setCopied] = useState(false);
 
-  useEffect(() => {
-    if (open && player?.ai_report && !report) {
-      setReport(player.ai_report);
-    }
-  }, [open, player]);
+  // The report builds and refreshes itself from the player's data — no button.
+  const fingerprint = useMemo(() => objectFingerprint({
+    skills: player?.skill_ratings, strengths: player?.strengths, improvements: player?.improvements,
+    notes: player?.coach_professional_notes, position: player?.position, role: player?.role,
+    ratings: (matchAnalyses || []).flatMap(a =>
+      (a.player_ratings || []).filter(r => r.player_id === player?.id).map(r => [r.rating, r.note, r.did_not_play])),
+  }), [player, matchAnalyses]);
 
   const generateReport = async () => {
     setLoading(true);
@@ -104,14 +107,29 @@ ${skillText || 'לא הוזנו'}
         const text = typeof result === 'string' ? result : result?.response || JSON.stringify(result);
         setReport(text);
         try {
-          await base44.entities.Player.update(player.id, { ai_report: text, ai_report_updated_at: new Date().toISOString() });
+          await base44.entities.Player.update(player.id, { ai_report: text, ai_report_fingerprint: fingerprint, ai_report_updated_at: new Date().toISOString() });
         } catch (e) { console.warn('Failed to cache player report:', e); }
       }
     } catch {
-      setReport('שגיאה בהפקת הדוח. נסה שוב.');
+      setReport('שגיאה בהפקת הדוח. נסה לפתוח את החלון שוב.');
     }
     setLoading(false);
   };
+
+  // Keep the generator out of the effect deps; the fingerprint decides re-runs.
+  const generateRef = useRef(generateReport);
+  generateRef.current = generateReport;
+
+  // On open: show the cached report if it matches the current data, otherwise
+  // build/refresh it automatically.
+  useEffect(() => {
+    if (!open || !player) return;
+    if (player.ai_report && player.ai_report_fingerprint === fingerprint) {
+      setReport(player.ai_report);
+    } else {
+      generateRef.current();
+    }
+  }, [open, fingerprint, player]);
 
   const handleCopy = () => {
     if (report) {
@@ -211,12 +229,10 @@ ${skillText || 'לא הוזנו'}
               </div>
             </div>
 
-            {/* Generate Button */}
-            <div className="flex justify-center">
-              <Button onClick={generateReport} style={{ backgroundColor: '#2A7050', color: '#fff', padding: '10px 24px' }}>
-                <FileText className="w-4 h-4 ml-2" />
-                הפק דוח מלא
-              </Button>
+            {/* The report builds itself on open; this state only shows briefly. */}
+            <div className="flex items-center justify-center gap-2 text-sm" style={{ color: '#9A8672' }}>
+              <RefreshCw className="w-3.5 h-3.5" />
+              הדוח מתעדכן אוטומטית לפי נתוני השחקן
             </div>
           </div>
         ) : null}
@@ -225,13 +241,11 @@ ${skillText || 'לא הוזנו'}
           <div className="mt-2 space-y-5">
             <ReportDisplay content={report} />
             
-            <div className="pt-4 flex gap-2" style={{ borderTop: '1px solid rgba(139,115,85,0.2)' }}>
-              <Button
-              variant="outline"
-              onClick={generateReport}
-              style={{ borderColor: 'rgba(139,115,85,0.3)', color: '#7A6B57' }}>
-                הפק מחדש
-              </Button>
+            <div className="pt-4 flex items-center justify-between gap-2" style={{ borderTop: '1px solid rgba(139,115,85,0.2)' }}>
+              <span className="flex items-center gap-1.5 text-xs" style={{ color: '#9A8672' }}>
+                <RefreshCw className="w-3 h-3" />
+                מתעדכן אוטומטית עם נתונים חדשים
+              </span>
               <Button onClick={handleCopy} style={{ backgroundColor: '#2A7050', color: '#fff' }}>
                 <Copy className="w-3.5 h-3.5 ml-1.5" />
                 {copied ? 'הועתק!' : 'העתק דוח'}

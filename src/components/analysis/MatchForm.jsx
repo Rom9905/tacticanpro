@@ -67,7 +67,7 @@ Use data if provided but don't invent numbers. Reply in ${isHe ? 'Hebrew' : 'Eng
 
     setGenerating(false);
     if (response?.__ai_error) {
-      alert(`${response.__ai_error}\nהנתונים שהזנת יישמרו ללא דו"ח AI.`);
+      alert(`${response.__ai_error}\nהנתונים שהזנת יישמרו ללא דו"ח ניתוח.`);
     }
     const { __ai_error, ...cleanReport } = response || {};
     onSave({ ...formData, report: cleanReport });

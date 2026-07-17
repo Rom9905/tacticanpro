@@ -52,3 +52,14 @@ export function matchFingerprint(analysis) {
 export function periodFingerprint(analyses = []) {
   return hashString(analyses.map(a => `${a.id}:${matchFingerprint(a)}`).sort().join('|'));
 }
+
+// Generic list fingerprint for records that aren't match analyses (e.g. training
+// summaries). `pick` returns the source-only subset that should drive a refresh.
+export function listFingerprint(items = [], pick = (x) => x) {
+  return hashString(items.map(x => `${x.id}:${hashString(stable(pick(x)))}`).sort().join('|'));
+}
+
+// Fingerprint of an arbitrary object's source data (e.g. a player's profile).
+export function objectFingerprint(obj) {
+  return hashString(stable(obj ?? null));
+}

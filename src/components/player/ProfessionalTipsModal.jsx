@@ -129,7 +129,7 @@ ${recentMatches.map(m => `- מול ${m.opponent} (${m.date}): ${m.player_ratings
           </div>
         ) : tips?.error ? (
           <div className="py-8 text-center">
-            <p className="text-sm font-semibold mb-1" style={{ color: '#D97706' }}>⚠ שירות ה-AI אינו זמין</p>
+            <p className="text-sm font-semibold mb-1" style={{ color: '#D97706' }}>⚠ השירות אינו זמין</p>
             <p className="text-xs" style={{ color: '#7A6B57' }}>{tips.error}</p>
           </div>
         ) : tips ? (
@@ -184,18 +184,6 @@ ${recentMatches.map(m => `- מול ${m.opponent} (${m.date}): ${m.player_ratings
                 </div>
               </div>
             )}
-
-            {/* Regenerate button */}
-            <div className="flex justify-end">
-              <button
-                onClick={() => { setTips(null); generateDetailedTips(); }}
-                disabled={generating}
-                className="text-xs px-3 py-1.5 rounded-lg transition-colors"
-                style={{ color: '#7A6B57', border: '1px solid rgba(139,115,85,0.25)' }}
-              >
-                {generating ? 'מייצר...' : 'ייצר מחדש'}
-              </button>
-            </div>
 
             {/* Contextual Analysis */}
             {tips.contextual_analysis && (

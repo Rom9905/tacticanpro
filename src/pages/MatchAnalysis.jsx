@@ -764,7 +764,7 @@ Write clearly and simply, no special characters or asterisks. Plain readable tex
           </div>
         ) : guide?.error ? (
           <div className="text-center py-8">
-            <p className="text-amber-400 font-semibold mb-1">⚠ {gIsHe ? 'שירות ה-AI אינו זמין' : 'AI service unavailable'}</p>
+            <p className="text-amber-400 font-semibold mb-1">⚠ {gIsHe ? 'השירות אינו זמין' : 'Service unavailable'}</p>
             <p className="text-slate-400 text-sm">{guide.error}</p>
           </div>
         ) : guide ? (

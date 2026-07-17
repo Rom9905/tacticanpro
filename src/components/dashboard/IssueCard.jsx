@@ -40,7 +40,7 @@ const SEVERITY_CONFIG = {
 const SOURCE_CONFIG = {
   match: { icon: BarChart3, label: 'ניתוח משחקים', color: '#2A5FA8' },
   training: { icon: Dumbbell, label: 'ניתוח אימונים', color: '#2A7050' },
-  manual: { icon: Brain, label: 'תובנות AI', color: '#B94040' }
+  manual: { icon: Brain, label: 'תובנות', color: '#B94040' }
 };
 
 function getImpactLevel(occurrenceCount) {

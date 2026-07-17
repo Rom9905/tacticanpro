@@ -369,7 +369,7 @@ export default function PlayerProfile() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <h4 className="font-bold text-sm mb-1" style={{ color: '#15803D' }}>
-                    הערכת AI — עדכון יכולות
+                    הערכה — עדכון יכולות
                   </h4>
                   <p className="text-sm mb-3" style={{ color: '#166534' }}>
                     {aiInsight.summary}

@@ -14,7 +14,7 @@ import { matchFingerprint } from '@/lib/analysisFingerprint';
 import { MA, resultTheme, ratingColor } from './matchAnalysisTheme';
 import {
   Loader2, BarChart3, Video, FileText, Clock, Target, BookOpen,
-  TrendingUp, AlertTriangle, Lightbulb, ChevronDown, ChevronUp, Edit2, X, Sparkles, RefreshCw,
+  TrendingUp, AlertTriangle, Lightbulb, ChevronDown, ChevronUp, Edit2, X, RefreshCw,
 } from 'lucide-react';
 
 // Bars in "מספרי המשחק". Only metrics the coach actually entered are rendered —
@@ -233,7 +233,7 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
       }
     } catch (error) {
       console.error('Error generating AI summary:', error);
-      setAiSummary({ error: 'שגיאה בהפקת ניתוח ה-AI. נסה לפתוח את המשחק שוב.' });
+      setAiSummary({ error: 'שגיאה בהפקת הניתוח. נסה לפתוח את המשחק שוב.' });
     }
     setLoading(false);
   };
@@ -272,12 +272,13 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
     }
   }, [open, analysis?.id, tacticalProblems]);
 
-  // Refresh an existing deep analysis once its data has moved on. Deliberately
-  // never creates one from scratch — that stays an opt-in, and an expensive one.
+  // The deep analysis builds and refreshes itself — there is no manual trigger.
+  // It generates when missing and regenerates once its source data has moved on.
+  // Summary-only rows have no MatchAnalysis to attach it to, so they're skipped.
   useEffect(() => {
-    if (!open || !analysis) return;
+    if (!open || !analysis || analysis._summaryOnly) return;
     const existing = analysis.deep_analysis;
-    if (!existing || existing.fingerprint === fingerprint) return;
+    if (existing && existing.fingerprint === fingerprint) return;
     if (deepAttemptRef.current === fingerprint) return; // don't retry a failure on every render
     deepAttemptRef.current = fingerprint;
     generateDeepRef.current?.({ keepClosed: true });
@@ -286,8 +287,6 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
   if (!analysis) return null;
 
   const deep = analysis.deep_analysis;
-  // A deep analysis built before this data existed no longer describes the match.
-  const deepStale = !!deep && deep.fingerprint !== fingerprint;
 
   const generateDeep = async ({ keepClosed = false } = {}) => {
     setGeneratingDeep(true);
@@ -559,7 +558,7 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
             <div style={{ borderRadius: 16, padding: '16px 20px', background: MA.warnBg, display: 'flex', gap: 10, alignItems: 'flex-start' }}>
               <AlertTriangle style={{ width: 18, height: 18, color: MA.warn, flexShrink: 0, marginTop: 2 }} />
               <div>
-                <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: MA.warn }}>ניתוח ה-AI אינו זמין</p>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: MA.warn }}>הניתוח אינו זמין</p>
                 <p style={{ margin: '2px 0 0', fontSize: 12, color: MA.textSecondary }}>{aiSummary.error}</p>
               </div>
             </div>
@@ -689,35 +688,31 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
                       </p>
                     )}
 
-                    {/* Deep analysis: created on request, refreshed on its own */}
-                    <button
-                      onClick={() => (deep ? setDeepOpen(o => !o) : generateDeep())}
-                      disabled={generatingDeep}
-                      className="ma-hit"
-                      style={{
+                    {/* Deep analysis builds and refreshes itself — the button only
+                        shows or hides the result once it's ready. */}
+                    {generatingDeep ? (
+                      <div style={{
                         marginTop: 2, width: '100%', padding: 9, borderRadius: 10,
                         border: `1px dashed rgba(22,163,74,.4)`, background: MA.successBg, color: MA.greenMain,
-                        fontSize: 12, fontWeight: 700, cursor: generatingDeep ? 'wait' : 'pointer', fontFamily: MA.body,
+                        fontSize: 12, fontWeight: 700, fontFamily: MA.body,
                         display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
                       }}>
-                      {generatingDeep ? (
-                        <><Loader2 className="w-3.5 h-3.5 animate-spin" />
-                          {deep ? 'מעדכן ניתוח מעמיק לפי הנתונים החדשים...' : 'מפיק ניתוח מעמיק...'}</>
-                      ) : !deep ? (
-                        <><Sparkles style={{ width: 14, height: 14 }} /> צור ניתוח מעמיק — הסבר מלא על כל בעיה</>
-                      ) : deepOpen ? (
-                        <><ChevronUp style={{ width: 14, height: 14 }} /> הסתר ניתוח מעמיק</>
-                      ) : (
-                        <><BookOpen style={{ width: 14, height: 14 }} /> הצג ניתוח מעמיק — הסבר מלא על כל בעיה</>
-                      )}
-                    </button>
-
-                    {deepStale && !generatingDeep && (
-                      <p style={{ margin: 0, fontSize: 11, color: MA.warn, display: 'flex', alignItems: 'center', gap: 5 }}>
-                        <RefreshCw style={{ width: 11, height: 11 }} />
-                        הניתוח המעמיק נבנה לפני שהנתונים האלה נוספו — מתעדכן כעת
-                      </p>
-                    )}
+                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                        {deep ? 'מעדכן ניתוח מעמיק לפי הנתונים החדשים...' : 'מכין ניתוח מעמיק...'}
+                      </div>
+                    ) : deep ? (
+                      <button onClick={() => setDeepOpen(o => !o)} className="ma-hit"
+                        style={{
+                          marginTop: 2, width: '100%', padding: 9, borderRadius: 10,
+                          border: `1px dashed rgba(22,163,74,.4)`, background: MA.successBg, color: MA.greenMain,
+                          fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: MA.body,
+                          display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 6,
+                        }}>
+                        {deepOpen
+                          ? <><ChevronUp style={{ width: 14, height: 14 }} /> הסתר ניתוח מעמיק</>
+                          : <><BookOpen style={{ width: 14, height: 14 }} /> הצג ניתוח מעמיק — הסבר מלא על כל בעיה</>}
+                      </button>
+                    ) : null}
                   </div>
                 </div>
               )}

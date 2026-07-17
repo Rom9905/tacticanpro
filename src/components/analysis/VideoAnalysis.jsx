@@ -173,7 +173,7 @@ ${momentsText}
     setGenerating(false);
 
     if (response?.__ai_error) {
-      alert(`${response.__ai_error}\nהרגעים שתיעדת יישמרו ללא ניתוח AI.`);
+      alert(`${response.__ai_error}\nהרגעים שתיעדת יישמרו ללא ניתוח.`);
     }
 
     // Convert to legacy format

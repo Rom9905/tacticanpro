@@ -27,8 +27,8 @@ const INSIGHT_VIEWS_CONFIG = [
   {
     id: 'match', labelKey: 'matchAnalysis', icon: Swords,
     color: '#2A5FA8', bg: 'rgba(41,82,168,0.09)', border: 'rgba(41,82,168,0.30)',
-    descHe: 'ניתוחי משחקים, בעיות טקטיות ותובנות AI',
-    descEn: 'Match analyses, tactical issues & AI insights',
+    descHe: 'ניתוחי משחקים, בעיות טקטיות ותובנות',
+    descEn: 'Match analyses, tactical issues & insights',
     trackId: 'match_analysis', Component: MatchAnalysisPage,
   },
   {

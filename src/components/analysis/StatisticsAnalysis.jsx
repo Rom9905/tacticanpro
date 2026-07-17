@@ -171,7 +171,7 @@ export default function StatisticsAnalysis({ isOpen, onClose, onSave, team, exis
     setGenerating(false);
 
     if (response?.__ai_error) {
-      alert(`${response.__ai_error}\nהנתונים שהזנת יישמרו ללא ניתוח AI.`);
+      alert(`${response.__ai_error}\nהנתונים שהזנת יישמרו ללא ניתוח.`);
     }
 
     // Convert to legacy format for backward compatibility

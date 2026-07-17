@@ -258,7 +258,7 @@ export default function GamePrepForm({ teamId, players, generalPreps, onClose, o
             <Button variant="ghost" onClick={onClose} style={{ color: '#7A6B57' }}>ביטול</Button>
             <Button onClick={handleSave} disabled={saving || !name} className="flex-1"
               style={{ backgroundColor: '#2A5FA8', color: '#fff' }}>
-              {saving ? 'שומר...' : 'שמור וצור ניתוח'}
+              {saving ? 'שומר...' : 'שמור הכנה'}
             </Button>
           </div>
         )}

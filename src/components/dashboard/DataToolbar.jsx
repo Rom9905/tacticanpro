@@ -80,7 +80,7 @@ export default function DataToolbar({
     { id: 'training', label: 'תובנות אימונים', icon: Dumbbell, color: '#2A7050', bg: 'rgba(42,112,80,0.09)', border: 'rgba(42,112,80,0.22)', view: 'training' },
     { id: 'team', label: 'תובנות שחקנים', icon: Users, color: '#7A2A8A', bg: 'rgba(122,42,138,0.09)', border: 'rgba(122,42,138,0.22)', view: 'team' },
     { id: 'decision', label: 'השוואות שחקנים', icon: TrendingUp, color: '#B97A2A', bg: 'rgba(185,122,42,0.09)', border: 'rgba(185,122,42,0.22)', view: 'decision' },
-    { id: 'assistant', label: 'המלצות AI', icon: Brain, color: '#B94040', bg: 'rgba(185,64,64,0.09)', border: 'rgba(185,64,64,0.22)', view: 'assistant' },
+    { id: 'assistant', label: 'המלצות', icon: Brain, color: '#B94040', bg: 'rgba(185,64,64,0.09)', border: 'rgba(185,64,64,0.22)', view: 'assistant' },
   ];
 
   return (

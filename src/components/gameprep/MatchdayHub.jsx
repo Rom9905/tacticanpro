@@ -1,9 +1,8 @@
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
+import { objectFingerprint } from '@/lib/analysisFingerprint';
 import {
-  ShieldCheck, Crosshair, Target, Shield, Dumbbell, Sparkles,
-  PencilLine, Scale, Shirt, Printer, Plus, Users,
-  AlertTriangle, Lightbulb, Moon, ClipboardList, ArrowRight, X, Loader2, RefreshCw
+  ShieldCheck, Crosshair, Sparkles, Scale, Printer, Lightbulb, ArrowRight, Loader2
 } from 'lucide-react';
 
 const SHADOW_CARD = '0 1px 2px rgba(13,26,18,.05), 0 4px 12px rgba(13,26,18,.06)';
@@ -230,7 +229,7 @@ function EditModal({ prep, onClose, onSave }) {
 }
 
 // ─── Work Mode ───
-function WorkMode({ prep, analysis, players, matchAnalyses, onShowBalance, onShowReport, onShowEdit, generating, onRegenerate }) {
+function WorkMode({ prep, analysis, players, matchAnalyses, onShowBalance, onShowReport, onShowEdit, generating }) {
   const balance = getBalanceData(matchAnalyses, prep.opponent_formation);
   const formation = prep.opponent_formation || '4-3-3';
 
@@ -252,7 +251,7 @@ function WorkMode({ prep, analysis, players, matchAnalyses, onShowBalance, onSho
                 <Crosshair className="w-[18px] h-[18px]" style={{ color: '#16A34A' }} />
               </div>
               <div>
-                <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 700, letterSpacing: '.06em', color: '#16A34A' }}>המשימה שלך · ניתוח AI</p>
+                <p style={{ margin: '0 0 4px', fontSize: 11, fontWeight: 700, letterSpacing: '.06em', color: '#16A34A' }}>המשימה שלך · ניתוח</p>
                 <p style={{ margin: 0, fontSize: 16, fontWeight: 700, lineHeight: 1.55, color: '#14231A', fontFamily: 'Heebo,sans-serif' }}>{analysis.mission}</p>
               </div>
             </div>
@@ -308,9 +307,8 @@ function WorkMode({ prep, analysis, players, matchAnalyses, onShowBalance, onSho
         ) : (
           <div style={{ borderRadius: 14, padding: '48px 20px', background: '#fff', boxShadow: SHADOW_CARD, textAlign: 'center' }}>
             <Sparkles className="w-10 h-10 mx-auto mb-3" style={{ color: '#C8BFB3' }} />
-            <p style={{ fontSize: 14, fontWeight: 600, color: '#14231A', marginBottom: 4 }}>אין ניתוח AI עדיין</p>
-            <p style={{ fontSize: 12, color: '#5C6B61', marginBottom: 16 }}>לחץ כדי ליצור ניתוח מותאם</p>
-            <button onClick={onRegenerate} style={{ padding: '8px 20px', borderRadius: 10, fontSize: 13, fontWeight: 700, background: '#4ADE80', color: '#0D1A12', border: 'none', cursor: 'pointer', fontFamily: 'Assistant,sans-serif' }}>צור ניתוח</button>
+            <p style={{ fontSize: 14, fontWeight: 600, color: '#14231A', marginBottom: 4 }}>הניתוח בהכנה</p>
+            <p style={{ fontSize: 12, color: '#5C6B61' }}>הוא נוצר ומתעדכן אוטומטית מנתוני ההכנה</p>
           </div>
         )}
       </div>
@@ -588,11 +586,26 @@ export default function MatchdayHub({ prep: initialPrep, players, matchAnalyses,
     base44.entities.Team.filter({ id: prep.team_id }).then(teams => setTeam(teams[0] || null));
   }, [prep.team_id]);
 
+  // Identity of the scouting data. The prep analysis builds itself and refreshes
+  // whenever these change — there is no manual trigger.
+  const prepFingerprint = useMemo(() => objectFingerprint({
+    formation: prep.opponent_formation, attack: prep.opponent_attack_style,
+    defense: prep.opponent_defense_style, strength: prep.opponent_strength_level,
+    keyStrength: prep.opponent_key_strength, keyWeakness: prep.opponent_key_weakness,
+    dangerous: prep.opponent_dangerous_players, patterns: prep.opponent_patterns,
+  }), [prep]);
+
+  const generateRef = useRef(null);
+  const attemptRef = useRef(null);
+
   useEffect(() => {
-    if (!analysis && !generating) {
-      generateAnalysis();
-    }
-  }, []);
+    if (generating) return;
+    const current = prep.ai_analysis;
+    if (current && current.fingerprint === prepFingerprint) return;
+    if (attemptRef.current === prepFingerprint) return; // don't retry a failure each render
+    attemptRef.current = prepFingerprint;
+    generateRef.current?.();
+  }, [prepFingerprint, generating, prep.ai_analysis]);
 
   const generateAnalysis = async () => {
     setGenerating(true);
@@ -636,12 +649,14 @@ ${prep.opponent_patterns ? `דפוסים: ${prep.opponent_patterns}` : ''}
     });
 
     if (result && !result.__ai_error) {
-      await base44.entities.GamePrep.update(prep.id, { ai_analysis: result });
-      setAnalysis(result);
-      setPrep(p => ({ ...p, ai_analysis: result }));
+      const stored = { ...result, fingerprint: prepFingerprint };
+      await base44.entities.GamePrep.update(prep.id, { ai_analysis: stored });
+      setAnalysis(stored);
+      setPrep(p => ({ ...p, ai_analysis: stored }));
     }
     setGenerating(false);
   };
+  generateRef.current = generateAnalysis;
 
   const handleEditSave = (updated) => {
     setPrep(updated);
@@ -731,7 +746,6 @@ ${prep.opponent_patterns ? `דפוסים: ${prep.opponent_patterns}` : ''}
             onShowReport={() => setShowReport(true)}
             onShowEdit={() => setShowEdit(true)}
             generating={generating}
-            onRegenerate={generateAnalysis}
           />
         )}
         {!isMatchday && view === 'balance' && (

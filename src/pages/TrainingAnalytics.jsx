@@ -1,11 +1,11 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useTeam } from '@/components/TeamContext';
 import { useLang } from '@/lib/LanguageContext';
+import { listFingerprint } from '@/lib/analysisFingerprint';
 import BottomLine from '@/components/ui/BottomLine';
 import PageHero from '@/components/ui/PageHero';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -64,17 +64,38 @@ export default function TrainingAnalytics() {
     setPlayers(playersData);
     setPrograms(programsData);
     setTrainingEvaluations(evalsData);
-
-    // Load cached training analysis if data hasn't changed
-    try {
-      const teams = await base44.entities.Team.filter({ id: selectedTeamId });
-      const team = teams[0];
-      const cache = team?.training_analysis_cache;
-      if (cache?.data && cache.timeRange === timeRange && cache.training_count === summariesData.length) {
-        setTeamAnalysis(cache.data);
-      }
-    } catch {}
   };
+
+  // Identity of the training data feeding the team analysis. When it changes the
+  // analysis regenerates itself; while it holds, the cache is reused. No button.
+  const trainingFingerprint = useMemo(
+    () => `${timeRange}:${listFingerprint(summaries, s => ({
+      d: s.event_date, t: s.tactical_topics, w: s.what_worked, i: s.issues_found,
+      ins: s.tactical_insights, sat: s.satisfaction,
+    }))}`,
+    [timeRange, summaries],
+  );
+
+  const analyzeRef = useRef(null);
+
+  useEffect(() => {
+    if (!selectedTeamId || summaries.length === 0) { setTeamAnalysis(null); return; }
+    let cancelled = false;
+    (async () => {
+      let cache = null;
+      try {
+        const teams = await base44.entities.Team.filter({ id: selectedTeamId });
+        cache = teams[0]?.training_analysis_cache || null;
+      } catch { /* regenerate */ }
+      if (cancelled) return;
+      if (cache?.data && cache.fingerprint === trainingFingerprint) {
+        setTeamAnalysis(cache.data);
+      } else {
+        analyzeRef.current?.();
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [trainingFingerprint, selectedTeamId, summaries.length]);
 
   const analyzeTeamTrainings = async () => {
     setAnalyzingTeam(true);
@@ -157,21 +178,21 @@ The "status" field in period_comparison must be one of: "שיפור", "שימו�
       });
 
       if (result?.__ai_error) {
-        alert(result.__ai_error);
+        console.warn('Training analysis unavailable:', result.__ai_error);
       } else {
         setTeamAnalysis(result);
         try {
           await base44.entities.Team.update(selectedTeamId, {
-            training_analysis_cache: { data: result, timeRange, updated_at: new Date().toISOString(), training_count: summaries.length }
+            training_analysis_cache: { data: result, timeRange, fingerprint: trainingFingerprint, updated_at: new Date().toISOString() }
           });
         } catch (e) { console.warn('Failed to cache training analysis:', e); }
       }
     } catch (error) {
       console.error('Error analyzing team trainings:', error);
-      alert('שגיאה בניתוח האימונים. נסה שוב מאוחר יותר.');
     }
     setAnalyzingTeam(false);
   };
+  analyzeRef.current = analyzeTeamTrainings;
 
   // Dev trend from evaluations
   const calcDevTrend = (evals) => {
@@ -262,15 +283,11 @@ The "status" field in period_comparison must be one of: "שיפור", "שימו�
                   </SelectContent>
                 </Select>
               </div>
-              <Button
-                onClick={analyzeTeamTrainings}
-                disabled={analyzingTeam}
-                style={{ backgroundColor: '#2A7050', color: '#fff' }}
-                className="gap-2"
-              >
-                {analyzingTeam ? <Loader2 className="w-4 h-4 animate-spin" /> : <Sparkles className="w-4 h-4" />}
-                {analyzingTeam ? (isHe ? 'מנתח...' : 'Analyzing...') : (isHe ? 'הפק תובנות' : 'Generate Insights')}
-              </Button>
+              <span className="flex items-center gap-1.5 text-xs" style={{ color: '#9A8672' }}>
+                {analyzingTeam
+                  ? <><Loader2 className="w-3.5 h-3.5 animate-spin" style={{ color: '#2A7050' }} />{isHe ? 'מעדכן תובנות...' : 'Updating...'}</>
+                  : <><Sparkles className="w-3.5 h-3.5" />{isHe ? 'מתעדכן אוטומטית עם כל אימון חדש' : 'Updates automatically'}</>}
+              </span>
             </div>
 
             {analyzingTeam && (
