@@ -10,6 +10,7 @@ import MatchAnalysisHero from '@/components/analysis/MatchAnalysisHero';
 import MatchReportCard from '@/components/analysis/MatchReportCard';
 import TeamForm from '@/components/team/TeamForm';
 import LineupBuilder from '@/components/team/LineupBuilder';
+import SetupWizard from '@/components/setup/SetupWizard';
 import { MA, matchAnalysisStyles } from '@/components/analysis/matchAnalysisTheme';
 
 const players = [
@@ -227,7 +228,8 @@ export default function GamePrepPreview() {
         {tabBtn('form', 'טופס יצירת הכנה')}
         {tabBtn('match', 'מודל ניתוח משחק')}
         {tabBtn('matchpage', 'עמוד ניתוח משחקים')}
-        {tabBtn('teamform', 'הקמת קבוצה')}
+        {tabBtn('teamform', 'עריכת קבוצה')}
+        {tabBtn('wizard', 'אשף הקמה')}
         {tabBtn('lineup7', 'הרכב 7 על 7')}
       </div>
 
@@ -277,6 +279,10 @@ export default function GamePrepPreview() {
 
       {tab === 'teamform' && (
         <TeamForm isOpen={true} onClose={() => setTab('hub')} team={null} onSave={() => setTab('hub')} />
+      )}
+
+      {tab === 'wizard' && (
+        <SetupWizard onComplete={() => setTab('hub')} allowBackToHome={true} />
       )}
 
       {tab === 'lineup7' && (

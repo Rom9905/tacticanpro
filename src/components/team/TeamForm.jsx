@@ -13,7 +13,8 @@ import { FORMATS, FORMAT_KEYS, formationsFor, getFormat } from '@/lib/teamFormat
 
 // Mini pitch drawn from the format's real default-formation layout, so the
 // card literally shows how many players take the field.
-function MiniPitch({ formatKey, selected }) {
+// Shared with SetupWizard's format question.
+export function MiniPitch({ formatKey, selected }) {
   const fmt = FORMATS[formatKey];
   const layout = fmt.layouts[fmt.defaultFormation];
   const dot = selected ? '#4ADE80' : '#94A39A';

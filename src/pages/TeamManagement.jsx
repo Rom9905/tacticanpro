@@ -3,10 +3,10 @@ import { base44 } from '@/api/base44Client';
 import { useSubscriptionGuard } from '@/components/useSubscriptionGuard';
 import PageHero from '@/components/ui/PageHero';
 import { motion } from 'framer-motion';
-import { 
-  Plus, 
-  Settings, 
-  Users, 
+import {
+  Plus,
+  Pencil,
+  Users,
   Target,
   Search,
   Star,
@@ -183,13 +183,6 @@ export default function TeamManagement({ initialTab, initialPreselect } = {}) {
                   selectedTeamId={selectedTeamId}
                   onSelect={selectTeam}
                 />
-                <Button
-                  onClick={() => { setEditingTeam(null); setShowTeamForm(true); }}
-                  className="bg-emerald-600 hover:bg-emerald-700"
-                >
-                  <Plus className="w-4 h-4 ml-2" />
-                  {isHe ? 'קבוצה חדשה' : 'New Team'}
-                </Button>
               </>
             }
           />
@@ -231,10 +224,11 @@ export default function TeamManagement({ initialTab, initialPreselect } = {}) {
                       variant="ghost"
                       size="sm"
                       onClick={() => { setEditingTeam(selectedTeam); setShowTeamForm(true); }}
-                      className="text-slate-400 hover:text-white"
+                      className="hover:text-white"
+                      style={{ color: '#4ADE80' }}
                     >
-                      <Settings className="w-4 h-4 ml-1" />
-                      {isHe ? 'הגדרות' : 'Settings'}
+                      <Pencil className="w-4 h-4 ml-1" />
+                      {isHe ? 'עריכה' : 'Edit'}
                     </Button>
                     <AlertDialog>
                       <AlertDialogTrigger asChild>
@@ -448,8 +442,8 @@ export default function TeamManagement({ initialTab, initialPreselect } = {}) {
               <p className="text-slate-400 mb-6">
                 {isHe ? 'צור את הקבוצה הראשונה שלך כדי להתחיל לנהל את הסגל' : 'Create your first team to start managing the squad'}
               </p>
-              <Button 
-                onClick={() => { setEditingTeam(null); setShowTeamForm(true); }}
+              <Button
+                onClick={() => { window.location.href = '/'; }}
                 className="bg-emerald-600 hover:bg-emerald-700"
               >
                 <Plus className="w-4 h-4 ml-2" />

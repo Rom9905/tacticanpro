@@ -11,8 +11,11 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/components/ui/select';
+import { FORMATS, FORMAT_KEYS, formationsFor, getFormat, lineupSizeFor } from '@/lib/teamFormats';
+import { MiniPitch } from '@/components/team/TeamForm';
 
 const POSITIONS = ['שוער', 'בלם', 'מגן ימין', 'מגן שמאל', 'קשר הגנתי', 'קשר מרכזי', 'קשר התקפי', 'כנף ימין', 'כנף שמאל', 'חלוץ'];
+const PLAYING_STYLES = ['התקפי', 'מאוזן', 'הגנתי', 'החזקת כדור', 'קונטרה'];
 
 
 export default function SetupWizard({ onComplete, allowBackToHome }) {
@@ -21,9 +24,26 @@ export default function SetupWizard({ onComplete, allowBackToHome }) {
   // Step 1
   const [teamName, setTeamName] = useState('');
   const [ageGroup, setAgeGroup] = useState('');
+  const [format, setFormat] = useState('11v11');
+  const [league, setLeague] = useState('');
+  const [playingStyle, setPlayingStyle] = useState('מאוזן');
+  const [formation, setFormation] = useState('4-4-2');
+  const [tacticalFocus, setTacticalFocus] = useState('');
   const [players, setPlayers] = useState(
     Array.from({ length: 15 }, (_, i) => ({ name: '', position: 'כנף ימין', number: i + 1 }))
   );
+
+  // Switching format invalidates a formation from another format.
+  const handleFormatChange = (key) => {
+    setFormat(key);
+    if (!formationsFor(key).includes(formation)) {
+      setFormation(getFormat(key).defaultFormation);
+    }
+  };
+
+  // Squad minimum follows the format: full lineup + 4 subs
+  // (11v11 keeps the original 15).
+  const minPlayers = lineupSizeFor(format) + 4;
 
 
 
@@ -40,7 +60,7 @@ export default function SetupWizard({ onComplete, allowBackToHome }) {
   };
 
   const filledPlayers = players.filter(p => p.name.trim());
-  const canProceed = teamName.trim() && ageGroup && filledPlayers.length >= 15;
+  const canProceed = teamName.trim() && ageGroup && filledPlayers.length >= minPlayers;
 
   const handleFinish = async () => {
     setSaving(true);
@@ -49,6 +69,11 @@ export default function SetupWizard({ onComplete, allowBackToHome }) {
       const team = await base44.entities.Team.create({
         name: teamName,
         age_group: ageGroup,
+        format,
+        league: league || null,
+        playing_style: playingStyle,
+        formation,
+        ...(format === '11v11' && tacticalFocus.trim() ? { tactical_focus: tacticalFocus.trim() } : {}),
       });
 
       // Create players
@@ -97,7 +122,7 @@ export default function SetupWizard({ onComplete, allowBackToHome }) {
                     <Users className="w-5 h-5 text-emerald-400" />
                     הקבוצה והסגל
                   </h2>
-                  <p className="text-slate-400 text-sm mb-5">מינימום 15 שחקנים כדי להמשיך</p>
+                  <p className="text-slate-400 text-sm mb-5">מינימום {minPlayers} שחקנים כדי להמשיך</p>
 
                   <div className="grid grid-cols-2 gap-3 mb-5">
                     <div>
@@ -124,10 +149,97 @@ export default function SetupWizard({ onComplete, allowBackToHome }) {
                     </div>
                   </div>
 
+                  {/* Format question — visual cards */}
+                  <div className="mb-5">
+                    <label className="text-xs text-slate-400 mb-2 block">באיזה פורמט הקבוצה משחקת? *</label>
+                    <div className="grid grid-cols-3 gap-3">
+                      {FORMAT_KEYS.map((key) => {
+                        const selected = format === key;
+                        return (
+                          <button
+                            key={key}
+                            type="button"
+                            onClick={() => handleFormatChange(key)}
+                            aria-pressed={selected}
+                            className="rounded-xl p-3 text-center transition-all"
+                            style={{
+                              backgroundColor: selected ? 'rgba(74,222,128,0.10)' : 'rgba(30,41,59,0.6)',
+                              border: `2px solid ${selected ? '#4ADE80' : 'rgba(71,85,105,0.6)'}`,
+                              boxShadow: selected ? '0 0 18px rgba(74,222,128,0.15)' : 'none',
+                              cursor: 'pointer',
+                            }}
+                          >
+                            <div className="w-12 mx-auto mb-2">
+                              <MiniPitch formatKey={key} selected={selected} />
+                            </div>
+                            <p className="text-sm font-bold" style={{ color: selected ? '#4ADE80' : '#E2E8F0', fontFamily: "'Heebo',sans-serif" }}>
+                              {FORMATS[key].label}
+                            </p>
+                            <p className="text-[10px] mt-0.5 leading-snug" style={{ color: selected ? 'rgba(74,222,128,0.75)' : '#94A39A' }}>
+                              {FORMATS[key].subtitle}
+                            </p>
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  {/* Team identity: league, style, formation, tactical focus */}
+                  <div className="grid grid-cols-2 gap-3 mb-5">
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1 block">ליגה</label>
+                      <Input
+                        value={league}
+                        onChange={e => setLeague(e.target.value)}
+                        placeholder="לדוגמה: ליגת ילדים א'"
+                        className="bg-slate-800 border-slate-700 text-white"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1 block">סגנון משחק</label>
+                      <Select value={playingStyle} onValueChange={setPlayingStyle}>
+                        <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
+                          <span>{playingStyle}</span>
+                        </SelectTrigger>
+                        <SelectContent className="bg-slate-800 border-slate-700">
+                          {PLAYING_STYLES.map(s => (
+                            <SelectItem key={s} value={s}>{s}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-slate-400 mb-1 block">מערך משחק</label>
+                      <Select value={formation} onValueChange={setFormation}>
+                        <SelectTrigger className="bg-slate-800 border-slate-700 text-white">
+                          {/* Explicit text — Radix drops the cached label when the
+                              format switch swaps the item list under a closed select */}
+                          <span>{formation}</span>
+                        </SelectTrigger>
+                        <SelectContent className="bg-slate-800 border-slate-700">
+                          {formationsFor(format).map(f => (
+                            <SelectItem key={f} value={f}>{f}</SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    {format === '11v11' && (
+                      <div>
+                        <label className="text-xs text-slate-400 mb-1 block">דגש טקטי מרכזי</label>
+                        <Input
+                          value={tacticalFocus}
+                          onChange={e => setTacticalFocus(e.target.value)}
+                          placeholder="לדוגמה: בנייה מהשוער"
+                          className="bg-slate-800 border-slate-700 text-white"
+                        />
+                      </div>
+                    )}
+                  </div>
+
                   <div className="flex items-center justify-between mb-3">
                     <label className="text-xs text-slate-400">
-                      שחקנים ({filledPlayers.length} מוזנים, צריך לפחות 15)
-                      {filledPlayers.length >= 15 && <span className="text-emerald-400 mr-1">✓</span>}
+                      שחקנים ({filledPlayers.length} מוזנים, צריך לפחות {minPlayers})
+                      {filledPlayers.length >= minPlayers && <span className="text-emerald-400 mr-1">✓</span>}
                     </label>
                     <Button size="sm" variant="ghost" onClick={addPlayer} className="text-emerald-400 hover:text-emerald-300 text-xs">
                       <Plus className="w-3.5 h-3.5 ml-1" />הוסף שחקן
