@@ -3,8 +3,23 @@ import { base44 } from '@/api/base44Client';
 import { useTeam } from '@/components/TeamContext';
 import { Loader2, Upload, FileText, CheckCircle2, PlusCircle, AlertCircle, ShieldCheck, Zap, Target, Swords, Users, Lightbulb, ArrowRight, ArrowLeft, ChevronDown, ChevronUp, X, BarChart3, Search, Send, Lock, Save } from 'lucide-react';
 import PageHero from '@/components/ui/PageHero';
+import MatchCenterResult from '@/components/analysis/MatchCenterResult';
 
 const SUPPORTED_TYPES = '.pdf,.csv,.xlsx,.xls';
+
+// Client-side day counters — display only (server enforces the real quota).
+const dayKey = () => new Date().toISOString().slice(0, 10);
+function bumpCounter(name) {
+  try {
+    const k = `mfa_${name}_${dayKey()}`;
+    const n = (parseInt(localStorage.getItem(k), 10) || 0) + 1;
+    localStorage.setItem(k, String(n));
+    return n;
+  } catch { return 0; }
+}
+function readCounter(name) {
+  try { return parseInt(localStorage.getItem(`mfa_${name}_${dayKey()}`), 10) || 0; } catch { return 0; }
+}
 const SUPPORTED_LABELS = ['PDF', 'CSV', 'Excel'];
 
 const C = {
@@ -266,6 +281,8 @@ export default function MatchFileAnalysis() {
   const [saving, setSaving] = useState(false);
   const [saveDone, setSaveDone] = useState(false);
   const [activeChapter, setActiveChapter] = useState('overview');
+  const [addedTopics, setAddedTopics] = useState(new Set());
+  const [usage, setUsage] = useState({ uploadsToday: readCounter('uploads'), analysesToday: readCounter('analyses') });
   const fileInputRef = useRef();
   const sectionRefs = useRef({});
 
@@ -293,6 +310,7 @@ export default function MatchFileAnalysis() {
       const uploadResult = await base44.integrations.Core.UploadFile({ file });
       const url = uploadResult.file_url || uploadResult?.data?.file_url;
       if (!url) throw new Error('העלאת הקובץ נכשלה');
+      setUsage(u => ({ ...u, uploadsToday: bumpCounter('uploads') }));
       setFileUrl(url);
       const result = await base44.functions.invoke('analyzeMatchFile', { file_url: url, mode: 'identify_teams' });
       const teams = result.data || result;
@@ -320,6 +338,7 @@ export default function MatchFileAnalysis() {
         file_url: fileUrl, our_team_name: ourTeamDisplayName, opponent_name: opponentName
       });
       const data = result.data || result;
+      setUsage(u => ({ ...u, analysesToday: bumpCounter('analyses') }));
       setAnalysis({ ...data, _ourTeamDisplayName: ourTeamDisplayName, _opponentName: opponentName });
       setStep('result');
       setExpandedSections({ overview: true, possession: true, defense: true, duels: true });
@@ -465,6 +484,32 @@ export default function MatchFileAnalysis() {
     } finally { setSaving(false); }
   };
 
+  const resetToUpload = () => {
+    setStep('upload'); setFile(null); setFileUrl(null); setAnalysis(null);
+    setIdentifiedTeams({ ourTeam: '', opponent: '' }); setOriginalTeamNames({ team_a: '', team_b: '' });
+    setAddedIssues(new Set()); setAddedTopics(new Set()); setSaveDone(false);
+  };
+
+  // Add a single training topic to the tactical pipeline (goal + situation).
+  const handleAddTopic = async (topic) => {
+    const title = (topic?.topic || '').substring(0, 80);
+    if (!title || addedTopics.has(topic.topic)) return;
+    setAddedTopics(prev => new Set(prev).add(topic.topic));
+    try {
+      const userTeams = await base44.entities.Team.list();
+      const ourName = analysis?._ourTeamDisplayName || identifiedTeams.ourTeam || '';
+      let teamId = userTeams.find(t =>
+        t.name?.toLowerCase().includes(ourName.toLowerCase()) || ourName.toLowerCase().includes((t.name || '').toLowerCase())
+      )?.id || (selectedTeamId || userTeams[0]?.id);
+      if (!teamId) return;
+      const desc = topic.rationale_with_numbers || topic.rationale || title;
+      await base44.entities.TacticalGoal.create({
+        team_id: teamId, title, description: desc,
+        priority: topic.urgency === 'דחוף' ? 'high' : 'medium', status: 'active', source: 'match',
+      });
+    } catch (e) { console.warn('Add topic failed:', e); }
+  };
+
   const toggleSection = (key) => setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
 
   const StatsSection = ({ title, icon, iconColor, summary, stats, ourLabel, oppLabel, sectionKey }) => (
@@ -585,12 +630,24 @@ export default function MatchFileAnalysis() {
 
         {/* RESULT */}
         {step === 'result' && analysis && (() => {
-          const isFull = analysis.analysis_type === 'full';
+          const isFull = analysis.analysis_type === 'full' && analysis.full_report;
           const fr = analysis.full_report;
           const sr = analysis.summary_report;
           const md = analysis.match_details;
           const ourLabel = analysis._ourTeamDisplayName || 'אנחנו';
           const oppLabel = analysis._opponentName || 'יריבה';
+
+          // Full analysis → the redesigned "Match Center" (scoreboard, rings,
+          // bars, halves, players, training topics, ask-the-file, save).
+          if (isFull) {
+            return (
+              <MatchCenterResult
+                analysis={analysis} fileUrl={fileUrl} ourLabel={ourLabel} oppLabel={oppLabel}
+                onSave={handleSaveToAnalysis} saving={saving} saveDone={saveDone}
+                onNewFile={resetToUpload} onAddTopic={handleAddTopic} addedTopics={addedTopics} usage={usage}
+              />
+            );
+          }
 
           const heroStats = [];
           if (isFull && fr) {
