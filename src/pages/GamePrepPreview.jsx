@@ -13,6 +13,11 @@ import LineupBuilder from '@/components/team/LineupBuilder';
 import SetupWizard from '@/components/setup/SetupWizard';
 import DashboardTopBar from '@/components/dashboard/DashboardTopBar';
 import IssueCard from '@/components/dashboard/IssueCard';
+import WorkTopicsList from '@/components/training/WorkTopicsList';
+import TrainingSessionsList from '@/components/training/TrainingSessionsList';
+import MatchSummariesTab from '@/components/training/MatchSummariesTab';
+import PlayerDevelopmentList from '@/components/training/PlayerDevelopmentList';
+import ProgramTrendsWidget from '@/components/training/ProgramTrendsWidget';
 import { MA, matchAnalysisStyles } from '@/components/analysis/matchAnalysisTheme';
 
 const players = [
@@ -192,6 +197,36 @@ const pageAnalyses = [
   },
 ];
 
+// ── Mock data for the redesigned Training Center tabs ──
+const tcTopics = [
+  { id: 'g1', title: 'איבודי כדור ביציאה מלחץ', description: 'זוהה בסיכומי המשחקים האחרונים', priority: 'critical', status: 'active', source: 'match', occurrence_count: 4, progress_pct: 35, last_seen_date: '2026-07-12', linked_topics: ['בנייה מהגנה'] },
+  { id: 'g2', title: 'תזמון היציאה ללחץ גבוה', description: 'שיפור עקבי לאורך שלושה אימונים', priority: 'high', status: 'active', source: 'training', occurrence_count: 3, progress_pct: 60, last_seen_date: '2026-07-08', linked_topics: ['לחץ גבוה'] },
+  { id: 'g3', title: 'שליטה במרכז המגרש', priority: 'medium', status: 'active', source: 'manual', occurrence_count: 0, progress_pct: 45, linked_topics: ['שליטה במרכז'] },
+  { id: 'g4', title: 'מצבים נייחים — הגנה על קרנות', priority: 'low', status: 'resolved', source: 'training', progress_pct: 100, last_seen_date: '2026-07-10', progress_note: '0 ספיגות מקרנות מאז', linked_topics: ['מצבים נייחים'] },
+];
+const tcSummaries = [
+  { id: 's1', event_type: 'training', event_date: '2026-07-16', event_label: 'אימון יציאה מלחץ', duration_minutes: 90, tactical_topics: ['לחץ גבוה', 'בנייה מהגנה'], what_worked: 'מהירות מסירות בשליש האחורי השתפרה משמעותית', issues_found: 'מגנים עדיין מהססים תחת לחץ כפול', satisfaction: 4, event_id: 'e1' },
+  { id: 's2', event_type: 'training', event_date: '2026-07-14', event_label: 'אימון מעברים התקפיים', duration_minutes: 75, tactical_topics: ['מעברים התקפיים'], satisfaction: 3, event_id: 'e2' },
+  { id: 's3', event_type: 'training', event_date: '2026-07-11', event_label: 'אימון מצבים נייחים', duration_minutes: 60, tactical_topics: ['מצבים נייחים'], what_worked: 'סימון אזור עבד', satisfaction: 5, event_id: 'e3' },
+  { id: 'm1', event_type: 'match', event_date: '2026-07-12', event_label: 'מול בית"ר דרום', result_our: 1, result_opponent: 3, tactical_topics: ['בנייה מהגנה'], issues_found: 'איבודי כדור ביציאה מלחץ הובילו לשני שערים', satisfaction: 2 },
+  { id: 'm2', event_type: 'match', event_date: '2026-07-05', event_label: 'מול מכבי צפון', result_our: 2, result_opponent: 0, tactical_topics: ['לחץ גבוה'], what_worked: 'לחץ גבוה מתוזמן יצר 8 החזרות כדור בחצי היריב', satisfaction: 4 },
+];
+const tcPrograms = [
+  { id: 'pr1', player_id: 'p1', status: 'active', work_topics: ['משחק בלחץ', 'מסירות ארוכות'], progress_percentage: 70 },
+  { id: 'pr2', player_id: 'p2', status: 'active', work_topics: ['משחק בלחץ', 'הגנה 1 על 1'], progress_percentage: 40 },
+  { id: 'pr3', player_id: 'p3', status: 'active', work_topics: ['סיומות', 'משחק בלחץ'], progress_percentage: 25 },
+];
+const tcEvals = [
+  { player_id: 'p1', rating: 8, training_date: '2026-07-16', topic_scores: { 'משחק בלחץ': 8 }, coach_note: 'קבלת החלטות טובה' },
+  { player_id: 'p1', rating: 7, training_date: '2026-07-11', topic_scores: { 'משחק בלחץ': 6 } },
+  { player_id: 'p1', rating: 6, training_date: '2026-07-04' },
+  { player_id: 'p2', rating: 6, training_date: '2026-07-16', topic_scores: { 'הגנה 1 על 1': 5 } },
+  { player_id: 'p2', rating: 7, training_date: '2026-07-11' },
+  { player_id: 'p3', rating: 4, training_date: '2026-07-16', topic_scores: { 'סיומות': 4 } },
+  { player_id: 'p3', rating: 5, training_date: '2026-07-11' },
+  { player_id: 'p3', rating: 6, training_date: '2026-07-04' },
+];
+
 // Pre-seed the BottomLine cache so it renders without an LLM call.
 function seedBottomLine() {
   try {
@@ -234,6 +269,7 @@ export default function GamePrepPreview() {
         {tabBtn('wizard', 'אשף הקמה')}
         {tabBtn('topbar', 'בר עליון')}
         {tabBtn('issue', 'כרטיס בעיה')}
+        {tabBtn('tc', 'מרכז אימונים')}
         {tabBtn('lineup7', 'הרכב 7 על 7')}
       </div>
 
@@ -287,6 +323,32 @@ export default function GamePrepPreview() {
 
       {tab === 'wizard' && (
         <SetupWizard onComplete={() => setTab('hub')} allowBackToHome={true} />
+      )}
+
+      {tab === 'tc' && (
+        <div style={{ background: '#F4EFE6', minHeight: '100vh', padding: 16 }} dir="rtl">
+          <div style={{ maxWidth: 900, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 28 }}>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#94A39A', marginBottom: 8 }}>נושאי עבודה</div>
+              <WorkTopicsList topics={tcTopics} summaries={tcSummaries} onAddTopic={() => {}} onEditTopic={() => {}} onRefresh={() => {}} teamId="t1" />
+            </div>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#94A39A', marginBottom: 8 }}>אימונים</div>
+              <TrainingSessionsList summaries={tcSummaries.filter(s => s.event_type === 'training')} topics={tcTopics} onRefresh={() => {}} teamId="t1" />
+            </div>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#94A39A', marginBottom: 8 }}>משחקים</div>
+              <MatchSummariesTab summaries={tcSummaries} topics={tcTopics} onRefresh={() => {}} teamId="t1" analyses={[]} />
+            </div>
+            <div>
+              <div style={{ fontSize: 11, fontWeight: 700, color: '#94A39A', marginBottom: 8 }}>שחקנים</div>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                <ProgramTrendsWidget programs={tcPrograms} players={players} onCreateTopic={() => {}} />
+                <PlayerDevelopmentList players={players} programs={tcPrograms} topics={tcTopics} summaries={tcSummaries} teamId="t1" trainingEvaluations={tcEvals} onRefresh={() => {}} />
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {tab === 'issue' && (

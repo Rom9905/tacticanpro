@@ -163,10 +163,17 @@
   to { opacity: 1; transform: translateY(0); }
 }
 
+/* Training Center "Premium Match-Day" — progress bar grow-in */
+.tc-bar-fill { animation: tcBarGrow .8s ease-out both; transform-origin: right; }
+@keyframes tcBarGrow { from { width: 0 !important; } }
+.tc-hide-scroll::-webkit-scrollbar { display: none; }
+.tc-hide-scroll { scrollbar-width: none; }
+
 @media (prefers-reduced-motion: reduce) {
   .premium-card-clickable:hover,
   .premium-card-clickable:active,
   .premium-fade-in,
+  .tc-bar-fill,
   .premium-skeleton { animation: none !important; transform: none !important; }
   .premium-card-clickable:hover { box-shadow: var(--shadow-card); }
 }
