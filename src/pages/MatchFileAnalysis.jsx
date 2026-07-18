@@ -1,7 +1,7 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { useTeam } from '@/components/TeamContext';
-import { Loader2, Upload, FileText, CheckCircle2, PlusCircle, AlertCircle, ShieldCheck, Zap, Target, Swords, Users, Lightbulb, ArrowRight, ArrowLeft, ChevronDown, ChevronUp, X, BarChart3, TrendingUp, TrendingDown, Search, Send, Lock, Save } from 'lucide-react';
+import { Loader2, Upload, FileText, CheckCircle2, PlusCircle, AlertCircle, ShieldCheck, Zap, Target, Swords, Users, Lightbulb, ArrowRight, ArrowLeft, ChevronDown, ChevronUp, X, BarChart3, Search, Send, Lock, Save } from 'lucide-react';
 import PageHero from '@/components/ui/PageHero';
 
 const SUPPORTED_TYPES = '.pdf,.csv,.xlsx,.xls';
