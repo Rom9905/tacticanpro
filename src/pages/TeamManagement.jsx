@@ -5,7 +5,6 @@ import PageHero from '@/components/ui/PageHero';
 import { motion } from 'framer-motion';
 import {
   Plus,
-  Pencil,
   Users,
   Target,
   Search,
@@ -25,10 +24,8 @@ import {
   AlertDialogFooter,
   AlertDialogHeader,
   AlertDialogTitle,
-  AlertDialogTrigger,
 } from "@/components/ui/alert-dialog";
 
-import TeamSelector from '../components/team/TeamSelector';
 import HowItWorksButton from '../components/HowItWorksButton';
 import TeamForm from '../components/team/TeamForm';
 import PlayerCard from '../components/team/PlayerCard';
@@ -176,15 +173,6 @@ export default function TeamManagement({ initialTab, initialPreselect } = {}) {
             subtitle={isHe ? 'נהל את הסגל, בנה הרכב ופתח שחקנים' : 'Manage the squad, build lineup and develop players'}
             titleExtra={<HowItWorksButton page="TeamManagement" />}
             style={{ border: '1px solid rgba(74,222,128,0.20)' }}
-            actions={
-              <>
-                <TeamSelector
-                  teams={teams}
-                  selectedTeamId={selectedTeamId}
-                  onSelect={selectTeam}
-                />
-              </>
-            }
           />
         </div>
 
@@ -220,53 +208,6 @@ export default function TeamManagement({ initialTab, initialPreselect } = {}) {
                       <span className="text-slate-400">{isHe ? 'סגנון:' : 'Style:'} </span>
                       <span className="text-white font-medium">{selectedTeam.playing_style || 'מאוזן'}</span>
                     </div>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => { setEditingTeam(selectedTeam); setShowTeamForm(true); }}
-                      className="hover:text-white"
-                      style={{ color: '#4ADE80' }}
-                    >
-                      <Pencil className="w-4 h-4 ml-1" />
-                      {isHe ? 'עריכה' : 'Edit'}
-                    </Button>
-                    <AlertDialog>
-                      <AlertDialogTrigger asChild>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                        >
-                          {isHe ? 'מחק קבוצה' : 'Delete Team'}
-                        </Button>
-                      </AlertDialogTrigger>
-                      <AlertDialogContent className="bg-slate-900 border-slate-800 text-white">
-                        <AlertDialogHeader>
-                          <AlertDialogTitle>{isHe ? 'מחיקת קבוצה' : 'Delete Team'}</AlertDialogTitle>
-                          <AlertDialogDescription className="text-slate-400">
-                            {isHe ? `האם אתה בטוח שברצונך למחוק את ${selectedTeam.name}? כל השחקנים והנתונים ימחקו לצמיתות.` : `Are you sure you want to delete ${selectedTeam.name}? All players and data will be permanently deleted.`}
-                          </AlertDialogDescription>
-                        </AlertDialogHeader>
-                        <AlertDialogFooter>
-                          <AlertDialogCancel className="bg-slate-800 border-slate-700 text-white hover:bg-slate-700">
-                            {isHe ? 'ביטול' : 'Cancel'}
-                          </AlertDialogCancel>
-                          <AlertDialogAction 
-                            onClick={async () => {
-                              await base44.entities.Team.delete(selectedTeamId);
-                              // Delete all players of this team
-                              const teamPlayers = await base44.entities.Player.filter({ team_id: selectedTeamId });
-                              await Promise.all(teamPlayers.map(p => base44.entities.Player.delete(p.id)));
-                              selectTeam(null);
-                              loadTeams();
-                            }}
-                            className="bg-red-600 hover:bg-red-700"
-                          >
-                            {isHe ? 'מחק' : 'Delete'}
-                          </AlertDialogAction>
-                        </AlertDialogFooter>
-                      </AlertDialogContent>
-                    </AlertDialog>
                   </div>
                 </div>
               </CardContent>

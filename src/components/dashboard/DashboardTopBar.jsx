@@ -1,9 +1,10 @@
 import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Plus, ChevronDown, Users, Trophy, Activity, LogOut, Trash2, CreditCard, FileText } from 'lucide-react';
+import { Plus, ChevronDown, Users, Trophy, Activity, LogOut, Trash2, Pencil, CreditCard, FileText } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { base44 } from '@/api/base44Client';
 import AddEventModal from '@/components/calendar/AddEventModal';
+import TeamForm from '@/components/team/TeamForm';
 import { useLang } from '@/lib/LanguageContext';
 
 export default function DashboardTopBar({ user, teams, selectedTeamId, onSelectTeam, onNewTeam, teamId, onTeamDeleted }) {
@@ -14,6 +15,20 @@ export default function DashboardTopBar({ user, teams, selectedTeamId, onSelectT
   const [addType, setAddType] = useState('training');
   const [confirmDeleteId, setConfirmDeleteId] = useState(null);
   const [deleting, setDeleting] = useState(false);
+  const [editTeam, setEditTeam] = useState(null);
+
+  // Team settings live here, next to team delete — the single place to
+  // manage a team's identity (name, format, formation, style...).
+  const handleSaveTeam = async (formData) => {
+    if (!editTeam) return;
+    try {
+      await base44.entities.Team.update(editTeam.id, formData);
+      setEditTeam(null);
+      onTeamDeleted?.(); // parent's team-list refresh
+    } catch (e) {
+      console.error(e);
+    }
+  };
 
   const handleDeleteTeam = async (tid) => {
     setDeleting(true);
@@ -76,6 +91,14 @@ export default function DashboardTopBar({ user, teams, selectedTeamId, onSelectT
                       className={`flex-1 ${dir === 'rtl' ? 'text-right' : 'text-left'} px-4 py-2.5 text-sm transition-all hover:bg-slate-50`}
                       style={{ color: tm.id === selectedTeamId ? '#16A34A' : '#14231A', fontWeight: tm.id === selectedTeamId ? '600' : '400' }}>
                       {tm.name}
+                    </button>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setEditTeam(tm); setTeamOpen(false); }}
+                      className="opacity-0 group-hover:opacity-100 px-1.5 py-2.5 transition-all"
+                      style={{ color: '#16A34A' }}
+                      title="עריכת הגדרות הקבוצה"
+                    >
+                      <Pencil className="w-3.5 h-3.5" />
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(tm.id); }}
@@ -198,6 +221,14 @@ export default function DashboardTopBar({ user, teams, selectedTeamId, onSelectT
         teamId={teamId}
         defaultType={addType}
         onSaved={() => { setAddOpen(false); }}
+      />
+
+      {/* Team settings editor — opened from the pencil in the team dropdown */}
+      <TeamForm
+        isOpen={!!editTeam}
+        onClose={() => setEditTeam(null)}
+        team={editTeam}
+        onSave={handleSaveTeam}
       />
     </>
   );

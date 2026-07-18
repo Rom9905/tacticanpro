@@ -11,6 +11,7 @@ import MatchReportCard from '@/components/analysis/MatchReportCard';
 import TeamForm from '@/components/team/TeamForm';
 import LineupBuilder from '@/components/team/LineupBuilder';
 import SetupWizard from '@/components/setup/SetupWizard';
+import DashboardTopBar from '@/components/dashboard/DashboardTopBar';
 import { MA, matchAnalysisStyles } from '@/components/analysis/matchAnalysisTheme';
 
 const players = [
@@ -230,6 +231,7 @@ export default function GamePrepPreview() {
         {tabBtn('matchpage', 'עמוד ניתוח משחקים')}
         {tabBtn('teamform', 'עריכת קבוצה')}
         {tabBtn('wizard', 'אשף הקמה')}
+        {tabBtn('topbar', 'בר עליון')}
         {tabBtn('lineup7', 'הרכב 7 על 7')}
       </div>
 
@@ -283,6 +285,23 @@ export default function GamePrepPreview() {
 
       {tab === 'wizard' && (
         <SetupWizard onComplete={() => setTab('hub')} allowBackToHome={true} />
+      )}
+
+      {tab === 'topbar' && (
+        <div style={{ minHeight: 300 }}>
+          <DashboardTopBar
+            user={{ full_name: 'מאמן דוגמה' }}
+            teams={[
+              { id: 't1', name: 'ארסנל', format: '11v11', age_group: 'בוגרים' },
+              { id: 't2', name: 'ילדי דוגמה', format: '9v9', age_group: 'ילדים' },
+            ]}
+            selectedTeamId="t1"
+            onSelectTeam={() => {}}
+            onNewTeam={() => {}}
+            teamId="t1"
+            onTeamDeleted={() => {}}
+          />
+        </div>
       )}
 
       {tab === 'lineup7' && (
