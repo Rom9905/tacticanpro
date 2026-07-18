@@ -79,7 +79,7 @@ const H3 = ({ children }) => (
 
 const PRESET_QUESTIONS = ['איך נראה הלחץ שלנו?', 'מי איבד הכי הרבה כדורים?', 'מה קרה אחרי החילופים?'];
 
-export default function MatchCenterResult({
+export default function FileAnalysisResult({
   analysis, fileUrl, ourLabel, oppLabel,
   onSave, saving, saveDone, onNewFile, onAddTopic, addedTopics, usage,
 }) {
@@ -102,12 +102,15 @@ export default function MatchCenterResult({
       const res = await base44.functions.invoke('analyzeMatchFile', {
         file_url: fileUrl, mode: 'deep_dive', our_team_name: ourLabel, opponent_name: oppLabel, question: q,
       });
+      // Server-enforced 3-questions-per-file quota.
+      if (res?.limit_error) { setQuestionsLeft(0); return; }
       const data = res.data || res || {};
       const a = data.no_data
         ? 'אין מספיק מידע בקובץ כדי לענות על השאלה הזו.'
         : (data.blocks || []).map(b => b.content).filter(Boolean).join(' ') || data.title || 'לא התקבלה תשובה.';
       setAnswers(prev => [...prev, { q, a }]);
-      setQuestionsLeft(n => Math.max(0, n - 1));
+      // Trust the server's remaining count when present; otherwise decrement.
+      setQuestionsLeft(n => res?.usage?.questions_remaining != null ? res.usage.questions_remaining : Math.max(0, n - 1));
     } catch {
       setAnswers(prev => [...prev, { q, a: 'שגיאה בפנייה לשרת. נסה שוב.' }]);
     } finally { setAsking(false); }

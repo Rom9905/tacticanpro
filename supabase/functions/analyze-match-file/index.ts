@@ -1,6 +1,86 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent";
+
+// Daily quotas (server-enforced). See migration 20260719000000_file_analysis_usage.
+const LIMITS = { uploads: 2, analyses: 2, questions: 3 };
+
+// Stable short key for a file within a day's usage row.
+function fileKey(url: string): string {
+  let h = 5381;
+  for (let i = 0; i < url.length; i++) h = ((h << 5) + h + url.charCodeAt(i)) | 0;
+  return "f" + (h >>> 0).toString(36);
+}
+
+function nextUtcMidnight(): string {
+  const d = new Date();
+  d.setUTCHours(24, 0, 0, 0);
+  return d.toISOString();
+}
+
+// Returns { blocked?: {...}, commit: () => Promise<usage> }. If the DB isn't
+// reachable, enforcement is skipped (analysis still runs) rather than failing.
+async function enforceQuota(req: Request, mode: string, url: string) {
+  const noop = { commit: async () => null as unknown };
+  try {
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    const SERVICE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
+    if (!SUPABASE_URL || !SERVICE_KEY || !ANON_KEY) return noop;
+
+    const authHeader = req.headers.get("Authorization") || "";
+    const authed = createClient(SUPABASE_URL, ANON_KEY, { global: { headers: { Authorization: authHeader } } });
+    const { data: { user } } = await authed.auth.getUser();
+    if (!user) return noop; // unauthenticated calls aren't metered here
+
+    const admin = createClient(SUPABASE_URL, SERVICE_KEY);
+    const day = new Date().toISOString().slice(0, 10);
+    const { data: rows } = await admin
+      .from("file_analysis_usage")
+      .select("*")
+      .eq("user_id", user.id)
+      .eq("day", day)
+      .limit(1);
+    const row = rows?.[0] || { user_id: user.id, day, uploads: 0, analyses: {}, questions: {} };
+    const key = url ? fileKey(url) : "_";
+
+    const mkBlocked = (code: string, limit: number, used: number) => ({
+      blocked: { code, limit, used, reset_at: nextUtcMidnight() },
+      commit: async () => null as unknown,
+    });
+
+    if (mode === "identify_teams") {
+      if ((row.uploads || 0) >= LIMITS.uploads) return mkBlocked("LIMIT_UPLOADS", LIMITS.uploads, row.uploads);
+    } else if (mode === "deep_dive") {
+      const used = row.questions?.[key] || 0;
+      if (used >= LIMITS.questions) return mkBlocked("LIMIT_QUESTIONS", LIMITS.questions, used);
+    } else {
+      const used = row.analyses?.[key] || 0;
+      if (used >= LIMITS.analyses) return mkBlocked("LIMIT_ANALYSES", LIMITS.analyses, used);
+    }
+
+    // Not blocked — commit() bumps the counter once the analysis succeeds.
+    const commit = async () => {
+      const next = { ...row };
+      if (mode === "identify_teams") next.uploads = (row.uploads || 0) + 1;
+      else if (mode === "deep_dive") next.questions = { ...(row.questions || {}), [key]: (row.questions?.[key] || 0) + 1 };
+      else next.analyses = { ...(row.analyses || {}), [key]: (row.analyses?.[key] || 0) + 1 };
+      await admin.from("file_analysis_usage").upsert({
+        user_id: user.id, day, uploads: next.uploads || 0,
+        analyses: next.analyses || {}, questions: next.questions || {}, updated_at: new Date().toISOString(),
+      }, { onConflict: "user_id,day" });
+      return {
+        uploads_used: next.uploads || 0, uploads_remaining: Math.max(0, LIMITS.uploads - (next.uploads || 0)),
+        analyses_used_for_file: next.analyses?.[key] || 0, analyses_remaining_for_file: Math.max(0, LIMITS.analyses - (next.analyses?.[key] || 0)),
+        questions_used_for_file: next.questions?.[key] || 0, questions_remaining: Math.max(0, LIMITS.questions - (next.questions?.[key] || 0)),
+      };
+    };
+    return { commit };
+  } catch (_e) {
+    return noop; // never let quota bookkeeping break analysis
+  }
+}
 
 const SYSTEM_PROMPT = `אתה אנליסט כדורגל בכיר וחלק ממערכת TACTICANPRO. אתה מנתח דוחות משחק (PDF/CSV/Excel — Wyscout, Instat, ידני) ומפיק ניתוח טקטי מפורט.
 
@@ -76,9 +156,11 @@ function buildFullAnalysisPrompt(fileContent: string, ourTeam: string, opponent:
   "analysis_type": "summary" | "full",
   "match_details": {
     "date": "YYYY-MM-DD" | null,
+    "competition": "שם התחרות/ליגה" | null,
     "our_score": number | null,
     "opponent_score": number | null,
-    "location": "בית" | "חוץ"
+    "location": "בית" | "חוץ",
+    "scorers": [{"name": "שם הכובש באנגלית", "minute": number|null, "team": "our"|"opponent"}]
   },
   "summary_report": {
     "what_happened": "פסקה — מה קרה, עם מספרים אמיתיים מהקובץ",
@@ -88,25 +170,34 @@ function buildFullAnalysisPrompt(fileContent: string, ourTeam: string, opponent:
   },
   "full_report": {
     "tactical_overview": "מערך, קו הגנה, מאיפה הגיעו הגולים",
+    "headline_insights": [{"type": "good"|"bad"|"watch", "text": "משפט קצר עם מספרים מהקובץ"}],
+    "key_metrics": [{"label": "שם מדד בעברית", "our_value": "ערך", "opponent_value": "ערך", "our_pct": number|null, "opponent_pct": number|null, "better_when": "high"|"low"}],
     "possession_passing_summary": "סיכום החזקה ומסירות",
     "possession_passing_stats": [{"label": "שם מדד בעברית", "our_value": "ערך", "opponent_value": "ערך", "our_pct": number|null, "opponent_pct": number|null, "advantage": "our"|"opponent"|"none"}],
     "defense_pressure_summary": "סיכום הגנה ולחץ",
     "defense_pressure_stats": [{"label": "שם מדד", "our_value": "ערך", "opponent_value": "ערך", "our_pct": number|null, "opponent_pct": number|null, "advantage": "our"|"opponent"|"none"}],
     "duels_transitions_summary": "סיכום דו-קרבות ומעברים",
     "duels_transitions_stats": [{"label": "שם מדד", "our_value": "ערך", "opponent_value": "ערך", "our_pct": number|null, "opponent_pct": number|null, "advantage": "our"|"opponent"|"none"}],
-    "standout_players": [{"name": "שם באנגלית", "position": "עמדה בעברית", "summary": "תיאור תרומתו", "stats": [{"label": "מדד", "value": "ערך"}]}],
-    "training_topics": [{"topic": "נושא", "urgency": "דחוף"|"חשוב", "rationale": "הסבר"}],
+    "halves": {"first": {"score": "1–0"|null, "summary": "סיפור המחצית עם מספרים", "pass_accuracy": "81%"|null, "ppda": "7.9"|null}, "second": {"score": "1–1"|null, "summary": "...", "pass_accuracy": null, "ppda": null}} | null,
+    "possession_by_interval": [{"interval": "1-15", "our_pct": number|null}],
+    "standout_players": [{"name": "שם באנגלית", "shirt_number": "13"|null, "position": "עמדה בעברית", "moment": "שער בדקה 55'"|null, "summary": "תיאור תרומתו", "stats": [{"label": "מדד", "value": "ערך"}]}],
+    "training_topics": [{"topic": "נושא", "urgency": "דחוף"|"חשוב", "rationale": "הסבר", "rationale_with_numbers": "נימוק תמציתי עם מספרים מהקובץ"}],
     "key_issues": ["בעיה מרכזית 1", "בעיה מרכזית 2"],
     "executive_summary": "3-4 משפטים — המסקנה הכי חשובה"
   }
 }
 
 חוקי תוכן:
+- headline_insights: בדיוק 3 — אחת type="good" (מה עבד), אחת "bad" (מה לתקן), אחת "watch" (לשים לב). כל אחת משפט אחד עם מספרים אמיתיים
+- key_metrics: 3-6 מדדים מספריים מרכזיים (החזקה, דיוק מסירות, דו-קרבות, שערים צפויים...) עם better_when ("high"=גבוה טוב, "low"=נמוך טוב כמו עבירות/PPDA). רק מה שקיים בקובץ
 - possession_passing_stats: 4-6 מדדים (רק מה שקיים בקובץ)
 - defense_pressure_stats: 4-6 מדדים
 - duels_transitions_stats: 3-5 מדדים
-- standout_players: 4-5 שחקנים
-- training_topics: 3-6 נושאים
+- halves: רק אם הקובץ מפרק למחצית א'/ב', אחרת null
+- possession_by_interval: אחוזי החזקה שלנו לפי רבעי-שעה (עד 6: 1-15, 16-30...). רק אם קיים בקובץ, אחרת []
+- standout_players: 4-5 שחקנים (shirt_number ו-moment אם קיימים)
+- training_topics: 3-6 נושאים (rationale_with_numbers = נימוק עם מספרים)
+- match_details: כלול competition ו-scorers אם מופיעים בקובץ
 - key_issues: 3-6 בעיות
 - summary_report: תמיד יהיה קיים (גם ב-full)
 - full_report: רק אם analysis_type="full", אחרת null
@@ -166,6 +257,12 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "GEMINI_API_KEY not configured" }), {
         status: 500, headers: CORS_HEADERS,
       });
+    }
+
+    // Server-side daily quota. Blocked → 200 with a limit_error the UI can read.
+    const quota = await enforceQuota(req, mode || "full", file_url || "");
+    if (quota.blocked) {
+      return new Response(JSON.stringify({ limit_error: quota.blocked }), { headers: CORS_HEADERS });
     }
 
     // Resolve file content: use provided text, or fetch from URL
@@ -229,7 +326,8 @@ serve(async (req) => {
                 status: 500, headers: CORS_HEADERS,
               });
             }
-            return new Response(JSON.stringify({ data: JSON.parse(jsonMatch[0]) }), { headers: CORS_HEADERS });
+            const usage = await quota.commit();
+            return new Response(JSON.stringify({ data: JSON.parse(jsonMatch[0]), usage }), { headers: CORS_HEADERS });
           }
         }
       } catch (fetchErr) {
@@ -278,7 +376,8 @@ serve(async (req) => {
     }
 
     const parsed = JSON.parse(jsonMatch[0]);
-    return new Response(JSON.stringify({ data: parsed }), {
+    const usage = await quota.commit();
+    return new Response(JSON.stringify({ data: parsed, usage }), {
       headers: CORS_HEADERS,
     });
   } catch (err) {

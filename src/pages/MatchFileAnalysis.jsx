@@ -3,23 +3,16 @@ import { base44 } from '@/api/base44Client';
 import { useTeam } from '@/components/TeamContext';
 import { Loader2, Upload, FileText, CheckCircle2, PlusCircle, AlertCircle, ShieldCheck, Zap, Target, Swords, Users, Lightbulb, ArrowRight, ArrowLeft, ChevronDown, ChevronUp, X, BarChart3, Search, Send, Lock, Save } from 'lucide-react';
 import PageHero from '@/components/ui/PageHero';
-import MatchCenterResult from '@/components/analysis/MatchCenterResult';
+import FileAnalysisResult from '@/components/analysis/FileAnalysisResult';
 
 const SUPPORTED_TYPES = '.pdf,.csv,.xlsx,.xls';
 
-// Client-side day counters — display only (server enforces the real quota).
-const dayKey = () => new Date().toISOString().slice(0, 10);
-function bumpCounter(name) {
-  try {
-    const k = `mfa_${name}_${dayKey()}`;
-    const n = (parseInt(localStorage.getItem(k), 10) || 0) + 1;
-    localStorage.setItem(k, String(n));
-    return n;
-  } catch { return 0; }
-}
-function readCounter(name) {
-  try { return parseInt(localStorage.getItem(`mfa_${name}_${dayKey()}`), 10) || 0; } catch { return 0; }
-}
+// Friendly copy for the server-enforced daily quota (analyze-match-file).
+const LIMIT_MESSAGES = {
+  LIMIT_UPLOADS: 'הגעת למכסת ההעלאות היומית (2 קבצים ליום). אפשר לנסות שוב מחר.',
+  LIMIT_ANALYSES: 'ניתחת את הקובץ הזה כבר פעמיים היום (מכסה: 2 ניתוחים ליום לקובץ). נסה שוב מחר או העלה קובץ אחר.',
+  LIMIT_QUESTIONS: 'ניצלת את 3 השאלות לקובץ הזה. העלה קובץ חדש כדי לשאול שוב.',
+};
 const SUPPORTED_LABELS = ['PDF', 'CSV', 'Excel'];
 
 const C = {
@@ -282,7 +275,7 @@ export default function MatchFileAnalysis() {
   const [saveDone, setSaveDone] = useState(false);
   const [activeChapter, setActiveChapter] = useState('overview');
   const [addedTopics, setAddedTopics] = useState(new Set());
-  const [usage, setUsage] = useState({ uploadsToday: readCounter('uploads'), analysesToday: readCounter('analyses') });
+  const [usage, setUsage] = useState({ uploadsToday: 0, analysesToday: 0 });
   const fileInputRef = useRef();
   const sectionRefs = useRef({});
 
@@ -310,9 +303,14 @@ export default function MatchFileAnalysis() {
       const uploadResult = await base44.integrations.Core.UploadFile({ file });
       const url = uploadResult.file_url || uploadResult?.data?.file_url;
       if (!url) throw new Error('העלאת הקובץ נכשלה');
-      setUsage(u => ({ ...u, uploadsToday: bumpCounter('uploads') }));
       setFileUrl(url);
       const result = await base44.functions.invoke('analyzeMatchFile', { file_url: url, mode: 'identify_teams' });
+      if (result?.limit_error) {
+        setError(LIMIT_MESSAGES[result.limit_error.code] || 'הגעת למכסת השימוש היומית.');
+        setStep('upload');
+        return;
+      }
+      if (result?.usage) setUsage(u => ({ ...u, uploadsToday: result.usage.uploads_used }));
       const teams = result.data || result;
       setOriginalTeamNames({ team_a: teams?.team_a || '', team_b: teams?.team_b || '' });
       setStep('pick_teams');
@@ -337,8 +335,13 @@ export default function MatchFileAnalysis() {
       const result = await base44.functions.invoke('analyzeMatchFile', {
         file_url: fileUrl, our_team_name: ourTeamDisplayName, opponent_name: opponentName
       });
+      if (result?.limit_error) {
+        setError(LIMIT_MESSAGES[result.limit_error.code] || 'הגעת למכסת השימוש היומית.');
+        setStep('pick_teams');
+        return;
+      }
+      if (result?.usage) setUsage(u => ({ ...u, analysesToday: result.usage.analyses_used_for_file }));
       const data = result.data || result;
-      setUsage(u => ({ ...u, analysesToday: bumpCounter('analyses') }));
       setAnalysis({ ...data, _ourTeamDisplayName: ourTeamDisplayName, _opponentName: opponentName });
       setStep('result');
       setExpandedSections({ overview: true, possession: true, defense: true, duels: true });
@@ -637,11 +640,11 @@ export default function MatchFileAnalysis() {
           const ourLabel = analysis._ourTeamDisplayName || 'אנחנו';
           const oppLabel = analysis._opponentName || 'יריבה';
 
-          // Full analysis → the redesigned "Match Center" (scoreboard, rings,
-          // bars, halves, players, training topics, ask-the-file, save).
+          // Full analysis → the redesigned file-analysis result (scoreboard,
+          // rings, bars, halves, players, training topics, ask-the-file, save).
           if (isFull) {
             return (
-              <MatchCenterResult
+              <FileAnalysisResult
                 analysis={analysis} fileUrl={fileUrl} ourLabel={ourLabel} oppLabel={oppLabel}
                 onSave={handleSaveToAnalysis} saving={saving} saveDone={saveDone}
                 onNewFile={resetToUpload} onAddTopic={handleAddTopic} addedTopics={addedTopics} usage={usage}
@@ -951,3 +954,4 @@ export default function MatchFileAnalysis() {
     </div>
   );
 }
+
