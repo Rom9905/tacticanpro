@@ -92,9 +92,10 @@ export default function DashboardTopBar({ user, teams, selectedTeamId, onSelectT
                       style={{ color: tm.id === selectedTeamId ? '#16A34A' : '#14231A', fontWeight: tm.id === selectedTeamId ? '600' : '400' }}>
                       {tm.name}
                     </button>
+                    {/* Always visible on touch (no hover there); hover-revealed on desktop */}
                     <button
                       onClick={(e) => { e.stopPropagation(); setEditTeam(tm); setTeamOpen(false); }}
-                      className="opacity-0 group-hover:opacity-100 px-1.5 py-2.5 transition-all"
+                      className="opacity-100 md:opacity-0 md:group-hover:opacity-100 px-1.5 py-2.5 transition-all"
                       style={{ color: '#16A34A' }}
                       title="עריכת הגדרות הקבוצה"
                     >
@@ -102,7 +103,7 @@ export default function DashboardTopBar({ user, teams, selectedTeamId, onSelectT
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); setConfirmDeleteId(tm.id); }}
-                      className="opacity-0 group-hover:opacity-100 px-2 py-2.5 transition-all"
+                      className="opacity-100 md:opacity-0 md:group-hover:opacity-100 px-2 py-2.5 transition-all"
                       style={{ color: '#94A39A' }}
                       title={t.nav.deleteTeam}
                     >
