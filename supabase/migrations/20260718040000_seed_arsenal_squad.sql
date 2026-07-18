@@ -1,36 +1,35 @@
--- =============================================
--- Arsenal FC 2025/26 Squad — CORRECTED
--- Run in Supabase SQL Editor
--- =============================================
--- skill_ratings: 1-5 scale
--- Field players: passing, dribbling, finishing, tackling, defensive_positioning, speed, strength, heading, vision, decision_making
--- GK: reflexes, shot_stopping, one_on_one, high_balls, positioning, timing, box_control, short_passing, long_passing, decision_under_pressure, agility, jumping, physical_strength
--- strengths/improvements: from app's predefined lists only
--- positions: שוער, בלם, מגן ימין, מגן שמאל, קשר הגנתי, קשר מרכזי, קשר התקפי, כנף ימין, כנף שמאל, חלוץ
+-- ============================================================
+-- Seed Arsenal FC 2025/26 squad (converted from loose arsenal_squad.sql)
+-- ============================================================
+-- Non-destructive: only seeds on a fresh DB. If the team already has
+-- players it skips entirely — player ids are referenced elsewhere
+-- (lineups, ratings, programs) and must never be regenerated. The team
+-- row is created only if missing (ON CONFLICT DO NOTHING keeps any edits).
 
--- 1. Create team
-INSERT INTO public.teams (id, user_id, name, age_group, league, formation, playing_style, tactical_focus)
-VALUES (
-  'a1b2c3d4-0001-4000-a000-000000000001',
-  'c8633898-5dd6-4695-a540-35240cdf6fe0',
-  'Arsenal FC',
-  'בוגרים',
-  'Premier League',
-  '4-3-3',
-  'possession',
-  'Build-up play, high press, positional dominance'
-)
-ON CONFLICT (id) DO UPDATE SET name = EXCLUDED.name;
-
--- 2. Delete existing players for this team (clean re-insert)
-DELETE FROM public.players WHERE team_id = 'a1b2c3d4-0001-4000-a000-000000000001';
-
--- 3. Insert players
 DO $$
 DECLARE
   tid UUID := 'a1b2c3d4-0001-4000-a000-000000000001';
-  uid UUID := 'c8633898-5dd6-4695-a540-35240cdf6fe0';
+  uid UUID;
+  admin UUID;
+  existing INT;
 BEGIN
+  SELECT id INTO admin FROM auth.users WHERE email = 'romfranko99@gmail.com';
+
+  INSERT INTO public.teams (id, user_id, name, age_group, league, format, formation, playing_style, tactical_focus)
+  VALUES (tid, admin, 'Arsenal FC', 'בוגרים', 'Premier League', '11v11', '4-3-3', 'possession', 'Build-up play, high press, positional dominance')
+  ON CONFLICT (id) DO NOTHING;
+
+  SELECT user_id INTO uid FROM public.teams WHERE id = tid;
+  IF uid IS NULL THEN
+    RAISE NOTICE 'Arsenal team missing and admin user not found — skipping squad seed';
+    RETURN;
+  END IF;
+
+  SELECT count(*) INTO existing FROM public.players WHERE team_id = tid;
+  IF existing > 0 THEN
+    RAISE NOTICE 'Arsenal squad already present (% players) — skipping', existing;
+    RETURN;
+  END IF;
 
 -- ============ GOALKEEPERS ============
 
