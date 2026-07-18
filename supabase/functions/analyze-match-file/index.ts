@@ -35,6 +35,17 @@ async function enforceQuota(req: Request, mode: string, url: string) {
     if (!user) return noop; // unauthenticated calls aren't metered here
 
     const admin = createClient(SUPABASE_URL, SERVICE_KEY);
+
+    // Admins are exempt from all quotas. Canonical check is profiles.role;
+    // the founding admin email is kept as a fallback.
+    const ADMIN_EMAIL = "romfranko99@gmail.com";
+    let isAdmin = user.email === ADMIN_EMAIL;
+    if (!isAdmin) {
+      const { data: prof } = await admin.from("profiles").select("role").eq("id", user.id).limit(1);
+      isAdmin = prof?.[0]?.role === "admin";
+    }
+    if (isAdmin) return noop;
+
     const day = new Date().toISOString().slice(0, 10);
     const { data: rows } = await admin
       .from("file_analysis_usage")
