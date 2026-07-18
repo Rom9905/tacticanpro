@@ -50,7 +50,7 @@ function getImpactLevel(occurrenceCount) {
   return { level: 'נמוכה', score: 3, color: '#2A7050' };
 }
 
-export default function IssueCard({ issue, onGoToTraining, onGoToAnalysis, compact = false, professionalSummaries = [] }) {
+export default function IssueCard({ issue, onGoToTraining, onGoToAnalysis, compact = false, professionalSummaries = [], matchAnalyses = [] }) {
   const [expanded, setExpanded] = useState(false);
   
   const severity = SEVERITY_CONFIG[issue.priority] || SEVERITY_CONFIG.medium;
@@ -299,15 +299,24 @@ export default function IssueCard({ issue, onGoToTraining, onGoToAnalysis, compa
               </p>
               <div className="space-y-1.5">
                 {issue.source_summaries.map((summaryId, i) => {
-                  const matched = professionalSummaries.find(s => s.id === summaryId);
-                  let label = summaryId;
-                  if (matched) {
-                    const dateStr = matched.event_date ? new Date(matched.event_date).toLocaleDateString('he-IL') : '';
-                    label = matched.event_label
-                      ? `${matched.event_label}${dateStr ? ` — ${dateStr}` : ''}`
-                      : matched.topic
-                        ? `${matched.topic}${dateStr ? ` — ${dateStr}` : ''}`
-                        : dateStr || summaryId;
+                  // source_summaries mixes ProfessionalSummary ids and
+                  // MatchAnalysis ids (tacticalGoalsSync stores analysis.id) —
+                  // resolve against both; never show a raw UUID.
+                  const summary = professionalSummaries.find(s => s.id === summaryId);
+                  const analysis = !summary ? matchAnalyses.find(a => a.id === summaryId) : null;
+                  let label;
+                  if (summary) {
+                    const dateStr = summary.event_date ? new Date(summary.event_date).toLocaleDateString('he-IL') : '';
+                    label = summary.event_label
+                      ? `${summary.event_label}${dateStr ? ` — ${dateStr}` : ''}`
+                      : summary.topic
+                        ? `${summary.topic}${dateStr ? ` — ${dateStr}` : ''}`
+                        : dateStr || 'סיכום מקצועי';
+                  } else if (analysis) {
+                    const dateStr = analysis.date ? new Date(analysis.date).toLocaleDateString('he-IL') : '';
+                    label = `ניתוח משחק מול ${analysis.opponent || '?'}${dateStr ? ` — ${dateStr}` : ''}`;
+                  } else {
+                    label = 'סיכום שנמחק מהמערכת';
                   }
                   return (
                     <div 

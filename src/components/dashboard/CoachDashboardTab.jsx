@@ -21,7 +21,7 @@ function _getUrgencyColor(sev) {
 const _SOURCE_LABELS = { match: 'ניתוח משחק', training: 'אימון', manual: 'הוזן ידנית' };
 const _CATEGORY_LABELS = { התקפה: 'התקפה', הגנה: 'הגנה', מעברים: 'מעברים', 'מצבים ניייחים': 'מצבים נייחים', לחץ: 'לחץ', כללי: 'כללי' };
 
-function IssuesModal({ open, onClose, issues, onGoInsight, professionalSummaries }) {
+function IssuesModal({ open, onClose, issues, onGoInsight, professionalSummaries, matchAnalyses }) {
   const { t, dir } = useLang();
   const db = t.dashboard;
   return (
@@ -40,6 +40,7 @@ function IssuesModal({ open, onClose, issues, onGoInsight, professionalSummaries
               key={goal.id}
               issue={goal}
               professionalSummaries={professionalSummaries}
+              matchAnalyses={matchAnalyses}
               onGoToTraining={() => { onGoInsight && onGoInsight('training_center'); onClose(); }}
               onGoToAnalysis={() => { onGoInsight && onGoInsight('match'); onClose(); }}
               compact={false}
@@ -622,6 +623,7 @@ export default function CoachDashboardTab({
         })}
         onGoInsight={onGoInsight}
         professionalSummaries={professionalSummaries}
+        matchAnalyses={matchAnalyses}
       />
       <TopScorersModal
         open={modal === 'scorers'}

@@ -12,6 +12,7 @@ import TeamForm from '@/components/team/TeamForm';
 import LineupBuilder from '@/components/team/LineupBuilder';
 import SetupWizard from '@/components/setup/SetupWizard';
 import DashboardTopBar from '@/components/dashboard/DashboardTopBar';
+import IssueCard from '@/components/dashboard/IssueCard';
 import { MA, matchAnalysisStyles } from '@/components/analysis/matchAnalysisTheme';
 
 const players = [
@@ -232,6 +233,7 @@ export default function GamePrepPreview() {
         {tabBtn('teamform', 'עריכת קבוצה')}
         {tabBtn('wizard', 'אשף הקמה')}
         {tabBtn('topbar', 'בר עליון')}
+        {tabBtn('issue', 'כרטיס בעיה')}
         {tabBtn('lineup7', 'הרכב 7 על 7')}
       </div>
 
@@ -285,6 +287,24 @@ export default function GamePrepPreview() {
 
       {tab === 'wizard' && (
         <SetupWizard onComplete={() => setTab('hub')} allowBackToHome={true} />
+      )}
+
+      {tab === 'issue' && (
+        <div style={{ padding: 16, maxWidth: 640, margin: '0 auto' }} dir="rtl">
+          <IssueCard
+            issue={{
+              id: 'g1', title: 'אובדן כדור במעברים', description: 'הקבוצה מאבדת כדורים רבים במעבר להתקפה.',
+              category: 'מעברים', priority: 'high', source: 'match', status: 'active',
+              occurrence_count: 2, last_seen_date: '2026-05-10', progress_pct: 30,
+              linked_topics: ['אובדן כדור'],
+              source_summaries: ['ps-1', 'ma-preview-1', 'deadbeef-0000-4444-8888-000000000000'],
+            }}
+            professionalSummaries={[{ id: 'ps-1', event_type: 'match', event_label: 'מול מכבי צפון', event_date: '2026-05-10' }]}
+            matchAnalyses={[matchData]}
+            onGoToTraining={() => {}}
+            onGoToAnalysis={() => {}}
+          />
+        </div>
       )}
 
       {tab === 'topbar' && (
