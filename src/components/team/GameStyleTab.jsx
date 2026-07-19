@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
-import { Sword, Shield, Zap, ArrowLeftRight, Save, ChevronDown } from 'lucide-react';
+import { Sword, Shield, Zap, ArrowLeftRight, Save } from 'lucide-react';
 
 const SECTIONS = [
   {
@@ -163,32 +163,56 @@ const SECTIONS = [
   },
 ];
 
-function SelectField({ label, options, value, onChange, accentColor }) {
-  const [focused, setFocused] = useState(false);
+// Total selectable fields across all sections (for the progress ring)
+const TOTAL_FIELDS = SECTIONS.reduce((n, s) => n + s.fields.length, 0);
+
+// Chip-based field: click to select, click again to clear.
+function ChipField({ label, options, value, onChange, accentColor }) {
   return (
-    <div className="flex flex-col gap-1.5 bg-white rounded-lg p-3"
-      style={{
-        border: `1px solid ${focused ? accentColor : 'rgba(139,115,85,0.18)'}`,
-        transition: 'border-color 0.15s',
-        boxShadow: focused ? `0 0 0 2px ${accentColor}18` : 'none',
-      }}>
+    <div className="flex flex-col gap-2">
       <label className="text-[11px] font-semibold uppercase tracking-wide" style={{ color: '#9A8672' }}>{label}</label>
-      <div className="relative">
-        <select
-          value={value || ''}
-          onChange={(e) => onChange(e.target.value)}
-          onFocus={() => setFocused(true)}
-          onBlur={() => setFocused(false)}
-          className="w-full appearance-none bg-transparent text-sm pr-6 outline-none"
-          style={{ color: value ? '#2C2416' : '#C8BFB3' }}
-        >
-          <option value="">— בחר —</option>
-          {options.map(opt => (
-            <option key={opt} value={opt}>{opt}</option>
-          ))}
-        </select>
-        <ChevronDown className="absolute left-0 top-1/2 -translate-y-1/2 w-3.5 h-3.5 pointer-events-none" style={{ color: '#9A8672' }} />
+      <div className="flex flex-wrap gap-1.5">
+        {options.map(opt => {
+          const selected = value === opt;
+          return (
+            <button
+              key={opt}
+              type="button"
+              onClick={() => onChange(selected ? '' : opt)}
+              className="text-xs font-medium transition-all"
+              style={{
+                borderRadius: 999,
+                padding: '5px 12px',
+                cursor: 'pointer',
+                fontFamily: 'Assistant,sans-serif',
+                background: selected ? accentColor : '#FFFFFF',
+                color: selected ? '#FFFFFF' : '#5C6B61',
+                border: `1px solid ${selected ? accentColor : 'rgba(139,115,85,0.22)'}`,
+              }}
+            >
+              {opt}
+            </button>
+          );
+        })}
       </div>
+    </div>
+  );
+}
+
+// Live mini-pitch reacting to defensive line + press zone.
+function MiniPitch({ defensiveLine, pressZone }) {
+  const linePct = defensiveLine === 'גבוה' ? 32 : defensiveLine === 'נמוך' ? 72 : 52;
+  const pressPct = pressZone === 'גבוה במחצית היריב' ? 42 : pressZone === 'נמוך ליד הקו שלנו' ? 14 : 28;
+  return (
+    <div style={{ position: 'relative', width: 110, height: 150, borderRadius: 10, border: '2px solid rgba(255,255,255,0.25)', background: 'linear-gradient(180deg,#1B5E3B,#14472C)', flexShrink: 0, overflow: 'hidden' }}>
+      {/* pressing zone shade (from opponent half, top) */}
+      <div style={{ position: 'absolute', top: 0, left: 0, right: 0, height: `${pressPct}%`, background: 'rgba(74,222,128,0.18)', transition: 'height .4s ease' }} />
+      {/* halfway line */}
+      <div style={{ position: 'absolute', top: '50%', left: 0, right: 0, height: 1, background: 'rgba(255,255,255,0.25)' }} />
+      {/* centre circle */}
+      <div style={{ position: 'absolute', top: '50%', left: '50%', width: 34, height: 34, transform: 'translate(-50%,-50%)', border: '1px solid rgba(255,255,255,0.25)', borderRadius: '50%' }} />
+      {/* defensive line (glowing green) */}
+      <div style={{ position: 'absolute', top: `${linePct}%`, left: 6, right: 6, height: 2, background: '#4ADE80', boxShadow: '0 0 8px rgba(74,222,128,0.8)', transition: 'top .4s ease' }} />
     </div>
   );
 }
@@ -226,10 +250,55 @@ export default function GameStyleTab({ teamId }) {
     setTimeout(() => setSaved(false), 3000);
   };
 
+  const filled = Object.values(style).filter(Boolean).length;
+  const ringOffset = (144.5 * (1 - filled / TOTAL_FIELDS)).toFixed(1);
+  const selectedChips = SECTIONS.flatMap(sec =>
+    sec.fields.filter(f => style[f.key]).map(f => ({ value: style[f.key], color: sec.color }))
+  );
+  const statusSentence = filled === 0
+    ? 'עדיין לא הגדרת את הזהות הטקטית של הקבוצה'
+    : filled === TOTAL_FIELDS
+      ? 'הזהות הטקטית שלך הושלמה במלואה'
+      : `${filled} מתוך ${TOTAL_FIELDS} מרכיבים הוגדרו`;
+
   return (
-    <div className="space-y-0 rounded-xl overflow-hidden" style={{ border: '1px solid rgba(139,115,85,0.18)', backgroundColor: '#FAF7F2' }}>
+    <div className="space-y-4">
+      {/* ── Tactical identity (dark hero) ── */}
+      <div style={{ background: 'linear-gradient(135deg,#0D1A12,#12251A)', borderRadius: 18, border: '1px solid rgba(74,222,128,0.15)', padding: 20, display: 'flex', alignItems: 'center', gap: 18, flexWrap: 'wrap' }}>
+        {/* progress ring */}
+        <div style={{ position: 'relative', width: 72, height: 72, flexShrink: 0 }}>
+          <svg width="72" height="72" viewBox="0 0 52 52" style={{ transform: 'rotate(-90deg)' }}>
+            <circle cx="26" cy="26" r="23" fill="none" stroke="rgba(244,239,230,0.12)" strokeWidth="4" />
+            <circle cx="26" cy="26" r="23" fill="none" stroke="#4ADE80" strokeWidth="4" strokeLinecap="round"
+              strokeDasharray="144.5" strokeDashoffset={ringOffset} style={{ animation: 'ringIn 1s ease-out' }} />
+          </svg>
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+            <span style={{ fontFamily: 'Heebo,sans-serif', fontWeight: 800, fontSize: 17, color: '#F4EFE6', lineHeight: 1 }}>{filled}</span>
+            <span style={{ fontSize: 8.5, color: 'rgba(244,239,230,0.5)' }}>מתוך {TOTAL_FIELDS}</span>
+          </div>
+        </div>
+        <div style={{ flex: 1, minWidth: 180 }}>
+          <div style={{ fontFamily: 'Heebo,sans-serif', fontWeight: 800, fontSize: 18, color: '#F4EFE6' }}>הזהות הטקטית שלך</div>
+          <div style={{ fontSize: 12.5, color: 'rgba(244,239,230,0.55)', marginTop: 2 }}>{statusSentence}</div>
+          {selectedChips.length > 0 && (
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6, marginTop: 10 }}>
+              {selectedChips.slice(0, 6).map((c, i) => (
+                <span key={i} style={{ background: 'rgba(74,222,128,0.12)', color: '#4ADE80', border: '1px solid rgba(74,222,128,0.25)', fontSize: 11, fontWeight: 600, padding: '3px 10px', borderRadius: 999 }}>{c.value}</span>
+              ))}
+              {selectedChips.length > 6 && (
+                <span style={{ color: 'rgba(244,239,230,0.5)', fontSize: 11, padding: '3px 4px' }}>+{selectedChips.length - 6}</span>
+              )}
+            </div>
+          )}
+        </div>
+        <MiniPitch defensiveLine={style.defensive_line} pressZone={style.press_zone} />
+      </div>
+
+      {/* ── Sections ── */}
+      <div className="space-y-0 rounded-xl overflow-hidden" style={{ border: '1px solid rgba(139,115,85,0.18)', backgroundColor: '#FAF7F2' }}>
       {SECTIONS.map((section, idx) => {
         const Icon = section.icon;
+        const secFilled = section.fields.filter(f => style[f.key]).length;
         return (
           <div key={section.id}>
             {/* Section header */}
@@ -238,17 +307,18 @@ export default function GameStyleTab({ teamId }) {
                 style={{ backgroundColor: section.bg, border: `1px solid ${section.border}` }}>
                 <Icon className="w-4 h-4" style={{ color: section.color }} />
               </div>
-              <div>
+              <div className="flex-1">
                 <p className="text-sm font-bold" style={{ color: '#2C2416' }}>{section.title}</p>
                 <p className="text-[11px]" style={{ color: section.color }}>{section.subtitle}</p>
               </div>
+              <span className="text-[11px] font-bold" style={{ color: section.color }}>{secFilled}/{section.fields.length}</span>
             </div>
 
-            {/* Fields grid */}
-            <div className="px-5 py-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3"
+            {/* Fields */}
+            <div className="px-5 py-4 grid grid-cols-1 sm:grid-cols-2 gap-x-6 gap-y-4"
               style={{ borderBottom: idx < SECTIONS.length - 1 ? '2px solid rgba(139,115,85,0.12)' : 'none' }}>
               {section.fields.map(field => (
-                <SelectField
+                <ChipField
                   key={field.key}
                   label={field.label}
                   options={field.options}
@@ -290,6 +360,7 @@ export default function GameStyleTab({ teamId }) {
           <Save className="w-4 h-4" />
           {saving ? 'שומר...' : saved ? '✓ נשמר!' : 'שמור שיטת משחק'}
         </Button>
+      </div>
       </div>
     </div>
   );

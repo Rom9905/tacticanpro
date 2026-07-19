@@ -68,6 +68,7 @@ export default function PlayerProfile() {
   const [editingNoteText, setEditingNoteText] = useState('');
   const [savingNote, setSavingNote] = useState(false);
   const [aiInsight, setAiInsight] = useState(null);
+  const [profileTab, setProfileTab] = useState('overview');
 
   const queryClient = useQueryClient();
 
@@ -397,56 +398,58 @@ export default function PlayerProfile() {
           )}
         </AnimatePresence>
 
-        {/* ── Player Header ── */}
+        {/* ── Player Header (dark Match-Day hero) ── */}
         <div
-          className="rounded-2xl p-5 mb-5"
-          style={{ backgroundColor: '#FAF7F2', border: '1px solid rgba(139,115,85,0.18)' }}
+          className="rounded-2xl p-5 mb-4"
+          style={{ background: 'linear-gradient(135deg,#0D1A12,#12251A)', border: '1px solid rgba(74,222,128,0.15)' }}
         >
-          <div className="flex items-start justify-between gap-4 flex-wrap">
-            {/* Photo */}
-            {player.photo_url && (
-              <div className="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0"
-                style={{ border: '2px solid rgba(139,115,85,0.20)' }}>
+          <div className="flex items-center gap-4 flex-wrap">
+            {/* Number / photo square */}
+            {player.photo_url ? (
+              <div className="w-[60px] h-[60px] rounded-2xl overflow-hidden flex-shrink-0" style={{ border: '1px solid rgba(74,222,128,0.25)' }}>
                 <img src={player.photo_url} alt={player.name} className="w-full h-full object-cover" />
               </div>
+            ) : (
+              <div style={{ width: 60, height: 60, borderRadius: 16, background: 'rgba(74,222,128,0.14)', border: '1px solid rgba(74,222,128,0.25)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Heebo,sans-serif', fontWeight: 800, fontSize: 23, color: '#4ADE80', flexShrink: 0 }}>
+                {player.number || '?'}
+              </div>
             )}
-            <div className="flex-1">
-              <div className="flex items-center gap-3 flex-wrap mb-1">
-                <h1 className="text-2xl font-bold" style={{ color: '#2C2416' }}>
-                  {player.number ? `#${player.number} ` : ''}{player.name}
-                </h1>
-                {/* Status */}
-                <span
-                  className="flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium"
-                  style={{ backgroundColor: currentStatus.bg, color: currentStatus.color, border: `1px solid ${currentStatus.border}` }}
-                >
+            <div className="flex-1" style={{ minWidth: 180 }}>
+              <div className="flex items-center gap-2 flex-wrap">
+                <span style={{ fontFamily: 'Heebo,sans-serif', fontWeight: 800, fontSize: 21, color: '#F4EFE6' }}>{player.name}</span>
+                <span className="flex items-center gap-1" style={{ backgroundColor: currentStatus.bg, color: currentStatus.color, border: `1px solid ${currentStatus.border}`, fontSize: 11, fontWeight: 600, padding: '2px 10px', borderRadius: 999 }}>
                   <StatusIcon className="w-3 h-3" />
                   {player.professional_status || 'יציב'}
                 </span>
-                {/* Availability */}
-                <span
-                  className="px-2.5 py-0.5 rounded-full text-xs font-medium"
-                  style={{ backgroundColor: avail.bg, color: avail.color, border: `1px solid ${avail.border}` }}
-                >
+                <span style={{ backgroundColor: avail.bg, color: avail.color, border: `1px solid ${avail.border}`, fontSize: 11, fontWeight: 600, padding: '2px 10px', borderRadius: 999 }}>
                   {player.availability || 'זמין'}
                 </span>
               </div>
-              <div className="flex flex-wrap gap-3 text-sm" style={{ color: '#7A6B57' }}>
-                <span>{player.position}</span>
-                {player.role && <span>• {player.role}</span>}
-                {player.dominant_foot && <span>• רגל {player.dominant_foot}</span>}
-                {player.squad_status && (
-                  <span className="px-2 py-0 rounded-full text-xs" style={{ backgroundColor: 'rgba(139,115,85,0.1)', color: '#5C4E38' }}>
-                    {player.squad_status}
-                  </span>
-                )}
+              <div style={{ fontSize: 13, color: 'rgba(244,239,230,0.55)', marginTop: 4 }}>
+                {player.position}
+                {player.dominant_foot ? ` · רגל ${player.dominant_foot}` : ''}
+                {player.is_starter ? ' · הרכב' : ' · ספסל'}
               </div>
             </div>
-            {/* Report button */}
+            {/* Rating ring */}
+            <div style={{ position: 'relative', width: 64, height: 64, flexShrink: 0 }}>
+              <svg width="64" height="64" viewBox="0 0 52 52" style={{ transform: 'rotate(-90deg)' }}>
+                <circle cx="26" cy="26" r="23" fill="none" stroke="rgba(244,239,230,0.12)" strokeWidth="4" />
+                <circle cx="26" cy="26" r="23" fill="none"
+                  stroke={avgRating ? (avgRating >= 7 ? '#4ADE80' : avgRating >= 5.5 ? '#F5B454' : '#F87171') : 'rgba(244,239,230,0.2)'}
+                  strokeWidth="4" strokeLinecap="round" strokeDasharray="144.5"
+                  strokeDashoffset={avgRating ? (144.5 * (1 - avgRating / 10)).toFixed(1) : 144.5}
+                  style={{ animation: 'ringIn 1s ease-out' }} />
+              </svg>
+              <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+                <span style={{ fontFamily: 'Heebo,sans-serif', fontWeight: 800, fontSize: 17, color: '#F4EFE6', lineHeight: 1 }}>{avgRating || '—'}</span>
+                <span style={{ fontSize: 8.5, color: 'rgba(244,239,230,0.5)' }}>ממוצע</span>
+              </div>
+            </div>
             <Button
               onClick={() => setShowReportModal(true)}
               className="gap-2 shrink-0"
-              style={{ backgroundColor: '#2A7050', color: '#fff', fontWeight: 600 }}
+              style={{ backgroundColor: '#4ADE80', color: '#0D1A12', fontWeight: 700 }}
             >
               <FileText className="w-4 h-4" />
               דוח שחקן
@@ -454,6 +457,29 @@ export default function PlayerProfile() {
           </div>
         </div>
 
+        {/* ── Inner tab bar ── */}
+        <div style={{ display: 'flex', gap: 4, background: '#FFFFFF', border: '1px solid rgba(13,26,18,0.08)', borderRadius: 14, padding: 4, marginBottom: 18, overflowX: 'auto' }}>
+          {[
+            { id: 'overview', label: 'סקירה' },
+            { id: 'development', label: 'התפתחות' },
+            { id: 'matches', label: 'משחקים' },
+            { id: 'program', label: 'תוכנית' },
+          ].map(tb => {
+            const active = profileTab === tb.id;
+            return (
+              <button
+                key={tb.id}
+                onClick={() => setProfileTab(tb.id)}
+                style={{ flex: 1, minWidth: 84, border: 'none', cursor: 'pointer', borderRadius: 10, padding: '9px 8px', fontFamily: 'Assistant,sans-serif', fontWeight: 600, fontSize: 13.5, background: active ? '#0D1A12' : 'transparent', color: active ? '#4ADE80' : '#5C6B61', transition: 'all .2s' }}
+              >
+                {tb.label}
+              </button>
+            );
+          })}
+        </div>
+
+        {profileTab === 'overview' && (
+        <>
         {/* ── Bottom Line — AI Insight ── */}
         <div className="mb-5">
           <BottomLine
@@ -579,9 +605,12 @@ export default function PlayerProfile() {
             ) : <p className="text-xs" style={{ color: '#9A8672' }}>לא הוגדרו</p>}
           </div>
         </div>
+        </>
+        )}
 
         {/* ── Training Program ── */}
-        {trainingProgram ? (
+        {profileTab === 'program' && (
+        trainingProgram ? (
           <div
             className="rounded-xl p-5 mb-5"
             style={{ backgroundColor: '#FAF7F2', border: '1px solid rgba(122,79,160,0.25)' }}
@@ -691,10 +720,10 @@ export default function PlayerProfile() {
               <p className="text-xs" style={{ color: '#9A6A10' }}>הגדר נקודות לשיפור לפני יצירת תוכנית</p>
             )}
           </div>
-        )}
+        ))}
 
         {/* ── Professional Tips ── */}
-        {(() => {
+        {profileTab === 'overview' && (() => {
           const tips = [];
           
           // Based on work topics in active program
@@ -756,6 +785,8 @@ export default function PlayerProfile() {
 
 
 
+        {profileTab === 'development' && (
+        <>
         {/* ── Training Evaluations ── */}
         {trainingEvaluations.length > 0 && (
           <div className="rounded-xl mb-5"
@@ -797,8 +828,11 @@ export default function PlayerProfile() {
         <div className="mb-5">
           <TrainingHistory outcomes={programOutcomes} reviews={programReviews} />
         </div>
+        </>
+        )}
 
         {/* ── Last 5 Matches ── */}
+        {profileTab === 'matches' && (
         <div
           className="rounded-xl mb-5"
           style={{ backgroundColor: '#FAF7F2', border: '1px solid rgba(139,115,85,0.16)' }}
@@ -952,6 +986,7 @@ export default function PlayerProfile() {
             </div>
           )}
         </div>
+        )}
 
         {/* ── Edit Stats Dialog ── */}
         <Dialog open={showEditStats} onOpenChange={setShowEditStats}>

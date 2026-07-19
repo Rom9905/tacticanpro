@@ -1,22 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { 
   Search, 
   X,
-  Users,
   Download
 } from 'lucide-react';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
+
+
 import {
   Dialog,
   DialogContent,
@@ -24,6 +16,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import ComparisonRadarChart from './ComparisonRadarChart';
+import ComparisonDuel from './ComparisonDuel';
 import { useLang } from '@/lib/LanguageContext';
 import ComparisonTable from './ComparisonTable';
 import ComparisonInsights from './ComparisonInsights';
@@ -48,10 +41,11 @@ export default function PlayerComparison({
   const [searchQuery, setSearchQuery] = useState('');
   const [positionFilter, setPositionFilter] = useState('all');
   const [samePositionOnly, setSamePositionOnly] = useState(false);
-  const [contextFilter, setContextFilter] = useState('all'); // 'all', 'before_match', 'after_match', 'last_month'
+  const [contextFilter] = useState('all'); // 'all', 'before_match', 'after_match', 'last_month'
   const [showSaveDialog, setShowSaveDialog] = useState(false);
   const [reportName, setReportName] = useState('');
   const [_matchData, setMatchData] = useState([]);
+  const [ratingsByPlayer, setRatingsByPlayer] = useState({});
 
   useEffect(() => {
     if (teamId) {
@@ -69,8 +63,20 @@ export default function PlayerComparison({
   };
 
   const loadMatchData = async () => {
-    const analyses = await base44.entities.MatchAnalysis.filter({ team_id: teamId }, '-date', 5);
-    setMatchData(analyses);
+    const analyses = await base44.entities.MatchAnalysis.filter({ team_id: teamId }, '-date', 50);
+    setMatchData(analyses.slice(0, 5));
+
+    // Average match rating per player (same logic as squad/profile)
+    const acc = {};
+    analyses.forEach(a => {
+      (a.player_ratings || []).forEach(r => {
+        if (r.did_not_play || !r.rating || !r.player_id) return;
+        (acc[r.player_id] || (acc[r.player_id] = [])).push(r.rating);
+      });
+    });
+    const map = {};
+    Object.entries(acc).forEach(([pid, arr]) => { map[pid] = arr.reduce((s, v) => s + v, 0) / arr.length; });
+    setRatingsByPlayer(map);
   };
 
   const loadTeamData = async () => {
@@ -280,129 +286,96 @@ export default function PlayerComparison({
 
   return (
     <div className="space-y-6">
-      {/* Selection Interface */}
-      <Card className="bg-slate-900/50 border-slate-800">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="flex items-center gap-2 text-white">
-            <Users className="w-5 h-5 text-emerald-400" />
-            {isHe ? 'בחר שחקנים להשוואה (2-4)' : 'Select Players to Compare (2-4)'}
-            </CardTitle>
-            {selectedPlayerIds.length > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={() => setSelectedPlayerIds([])}
-              className="text-slate-400 hover:text-white"
-            >
+      {/* Selection Interface — chip picker (Premium Match-Day) */}
+      <div className="premium-card" style={{ padding: 16 }}>
+        <div className="flex items-center justify-between mb-3">
+          <div style={{ fontFamily: 'Heebo,sans-serif', fontWeight: 700, fontSize: 14.5, color: '#14231A' }}>
+            {isHe ? 'בחר שחקנים להשוואה (2–4)' : 'Select Players to Compare (2–4)'}
+          </div>
+          {selectedPlayerIds.length > 0 && (
+            <button onClick={() => setSelectedPlayerIds([])} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 12.5, color: '#94A39A', fontFamily: 'Assistant,sans-serif' }}>
               {isHe ? 'נקה הכל' : 'Clear all'}
-              </Button>
-            )}
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          {/* Search & Filters */}
-          <div className="flex flex-col md:flex-row gap-3">
-            <div className="relative flex-1">
-              <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-500" />
-              <Input
-                placeholder={isHe ? 'חפש שחקן...' : 'Search player...'}
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pr-10 bg-slate-800 border-slate-700 text-white"
-              />
-            </div>
-            
-            <Select value={positionFilter} onValueChange={setPositionFilter}>
-              <SelectTrigger className="w-40 bg-slate-800 border-slate-700 text-white">
-                <SelectValue placeholder={isHe ? 'כל העמדות' : 'All Positions'} />
-              </SelectTrigger>
-              <SelectContent className="bg-slate-800 border-slate-700">
-                <SelectItem value="all">{isHe ? 'כל העמדות' : 'All Positions'}</SelectItem>
-                {positions.map(pos => (
-                  <SelectItem key={pos} value={pos}>{pos}</SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-
-            <Select value={contextFilter} onValueChange={setContextFilter}>
-              <SelectTrigger className="w-40 bg-slate-800 border-slate-700 text-white">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent className="bg-slate-800 border-slate-700">
-                <SelectItem value="all">{isHe ? 'כל התקופה' : 'All Time'}</SelectItem>
-                <SelectItem value="before_match">{isHe ? 'לפני משחק' : 'Before Match'}</SelectItem>
-                <SelectItem value="after_match">{isHe ? 'אחרי משחק' : 'After Match'}</SelectItem>
-                <SelectItem value="last_month">{isHe ? 'חודש אחרון' : 'Last Month'}</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* Same Position Toggle */}
-          {selectedPlayers.length > 0 && (
-            <label className="flex items-center gap-2 cursor-pointer text-sm text-slate-300">
-              <input
-                type="checkbox"
-                checked={samePositionOnly}
-                onChange={(e) => setSamePositionOnly(e.target.checked)}
-                className="w-4 h-4 rounded bg-slate-800 border-slate-700"
-              />
-              <span>{isHe ? `השווה רק שחקנים מאותה עמדה (${selectedPlayers[0].position})` : `Compare same position only (${selectedPlayers[0].position})`}</span>
-            </label>
+            </button>
           )}
+        </div>
 
-          {/* Selected Players */}
-          {selectedPlayers.length > 0 && (
-            <div className="flex flex-wrap gap-2">
-              {selectedPlayers.map(player => (
-                <Badge
-                  key={player.id}
-                  className="bg-emerald-500/20 text-emerald-400 border-emerald-500/30 flex items-center gap-2 px-3 py-1.5"
-                >
-                  <span>{player.name}</span>
-                  <button
-                    onClick={() => togglePlayer(player.id)}
-                    className="hover:text-emerald-300"
-                  >
-                    <X className="w-3 h-3" />
-                  </button>
-                </Badge>
-              ))}
-            </div>
-          )}
+        {/* Search + position filter */}
+        <div className="flex flex-col md:flex-row gap-2 mb-3">
+          <div className="relative flex-1">
+            <Search className="absolute right-3 top-1/2 -translate-y-1/2 w-4 h-4" style={{ color: '#94A39A' }} />
+            <input
+              placeholder={isHe ? 'חפש שחקן...' : 'Search player...'}
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full outline-none"
+              style={{ boxSizing: 'border-box', background: '#FFFFFF', border: '1px solid rgba(13,26,18,0.10)', borderRadius: 12, padding: '9px 36px 9px 12px', fontSize: 13.5, color: '#14231A' }}
+            />
+          </div>
+          <select
+            value={positionFilter}
+            onChange={(e) => setPositionFilter(e.target.value)}
+            style={{ background: '#FFFFFF', border: '1px solid rgba(13,26,18,0.10)', borderRadius: 12, padding: '9px 12px', fontSize: 13.5, color: '#14231A', cursor: 'pointer' }}
+          >
+            <option value="all">{isHe ? 'כל העמדות' : 'All Positions'}</option>
+            {positions.map(pos => <option key={pos} value={pos}>{pos}</option>)}
+          </select>
+        </div>
 
-          {/* Available Players */}
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
-            {filteredPlayers.slice(0, 12).map(player => (
+        {/* Same position toggle */}
+        {selectedPlayers.length > 0 && (
+          <label className="flex items-center gap-2 cursor-pointer mb-3" style={{ fontSize: 12.5, color: '#5C6B61' }}>
+            <input type="checkbox" checked={samePositionOnly} onChange={(e) => setSamePositionOnly(e.target.checked)} className="w-4 h-4" />
+            <span>{isHe ? `השווה רק שחקנים מאותה עמדה (${selectedPlayers[0].position})` : `Compare same position only (${selectedPlayers[0].position})`}</span>
+          </label>
+        )}
+
+        {/* Chips — selected first, then available */}
+        <div className="flex flex-wrap gap-2">
+          {[...selectedPlayers, ...filteredPlayers].map(player => {
+            const sel = selectedPlayerIds.includes(player.id);
+            const disabled = !sel && selectedPlayerIds.length >= 4;
+            return (
               <button
                 key={player.id}
                 onClick={() => togglePlayer(player.id)}
-                disabled={selectedPlayerIds.length >= 4 && !selectedPlayerIds.includes(player.id)}
-                className={`
-                  p-3 rounded-lg border text-right transition-all
-                  ${selectedPlayerIds.length >= 4 && !selectedPlayerIds.includes(player.id)
-                    ? 'bg-slate-800/30 border-slate-700/30 text-slate-600 cursor-not-allowed'
-                    : 'bg-slate-800 border-slate-700 text-white hover:border-emerald-500/50 hover:bg-slate-700'
-                  }
-                `}
+                disabled={disabled}
+                style={{
+                  borderRadius: 999, padding: '7px 14px', fontSize: 12.5, fontWeight: 600,
+                  cursor: disabled ? 'not-allowed' : 'pointer', fontFamily: 'Assistant,sans-serif',
+                  background: sel ? '#0D1A12' : '#FFFFFF',
+                  color: sel ? '#4ADE80' : disabled ? '#C0C7C2' : '#14231A',
+                  border: `1px solid ${sel ? '#0D1A12' : 'rgba(13,26,18,0.14)'}`,
+                  opacity: disabled ? 0.55 : 1, transition: 'all .15s',
+                  display: 'inline-flex', alignItems: 'center', gap: 6,
+                }}
               >
-                <div className="font-medium text-sm">{player.name}</div>
-                <div className="text-xs text-slate-400 mt-1">{player.position}</div>
+                {player.name} · {player.position}
+                {sel && <X className="w-3 h-3" />}
               </button>
-            ))}
-          </div>
-
-          {filteredPlayers.length === 0 && (
-            <div className="text-center py-8 text-slate-400">
+            );
+          })}
+          {filteredPlayers.length === 0 && selectedPlayers.length === 0 && (
+            <div className="w-full text-center py-6" style={{ color: '#94A39A', fontSize: 13 }}>
               {isHe ? 'לא נמצאו שחקנים זמינים' : 'No players found'}
             </div>
           )}
-        </CardContent>
-      </Card>
+        </div>
+      </div>
 
       {/* Comparison View */}
       {canCompare && (
         <>
+          {/* Duel mode — exactly 2 players */}
+          {selectedPlayers.length === 2 && (
+            <ComparisonDuel
+              playerA={selectedPlayers[0]}
+              playerB={selectedPlayers[1]}
+              ratingA={ratingsByPlayer[selectedPlayers[0].id]}
+              ratingB={ratingsByPlayer[selectedPlayers[1].id]}
+              isHe={isHe}
+            />
+          )}
+
           {/* Summary Cards */}
           <ComparisonSummaryCards players={selectedPlayers} />
 

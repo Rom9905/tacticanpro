@@ -9,8 +9,10 @@ import {
   Target,
   Search,
   Star,
-  Sword
+  Sword,
+  Scale
 } from 'lucide-react';
+import { useIsMobile } from '@/hooks/use-mobile';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -45,6 +47,7 @@ export default function TeamManagement({ initialTab, initialPreselect } = {}) {
   const isHe = langT.lang === 'he';
   const [teams, setTeams] = useState([]);
   const [players, setPlayers] = useState([]);
+  const [ratingsByPlayer, setRatingsByPlayer] = useState({});
   const [trainingPrograms, setTrainingPrograms] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
@@ -53,6 +56,7 @@ export default function TeamManagement({ initialTab, initialPreselect } = {}) {
   const _urlParams = new URLSearchParams(window.location.search);
   const [activeTab, setActiveTab] = useState(initialTab || _urlParams.get('tab') || 'squad');
   const [preselectedPlayerId] = useState(initialPreselect || _urlParams.get('preselect') || null);
+  const isMobile = useIsMobile();
 
   // Forms & Dialogs
   const [showTeamForm, setShowTeamForm] = useState(false);
@@ -75,10 +79,28 @@ export default function TeamManagement({ initialTab, initialPreselect } = {}) {
   const loadPlayers = async (teamId) => {
     const data = await base44.entities.Player.filter({ team_id: teamId });
     setPlayers(data);
-    
+
     // Load training programs for all players
     const programs = await base44.entities.TrainingProgram.filter({ team_id: teamId, status: 'active' });
     setTrainingPrograms(programs);
+
+    // Compute per-player average match rating from MatchAnalysis player_ratings
+    const analyses = await base44.entities.MatchAnalysis.filter({ team_id: teamId }, '-date', 50);
+    const acc = {};
+    analyses.forEach(a => {
+      (a.player_ratings || []).forEach(r => {
+        if (r.did_not_play || !r.rating) return;
+        const pid = r.player_id ||
+          data.find(p => p.name && r.player_name && p.name.toLowerCase() === r.player_name.toLowerCase())?.id;
+        if (!pid) return;
+        (acc[pid] || (acc[pid] = [])).push(r.rating);
+      });
+    });
+    const map = {};
+    Object.entries(acc).forEach(([pid, arr]) => {
+      map[pid] = arr.reduce((s, v) => s + v, 0) / arr.length;
+    });
+    setRatingsByPlayer(map);
   };
 
   useEffect(() => {
@@ -163,7 +185,7 @@ export default function TeamManagement({ initialTab, initialPreselect } = {}) {
   const positions = [...new Set(players.map(p => p.position).filter(Boolean))];
 
   return (
-    <div className="min-h-screen p-4 md:p-6 theme-cream" style={{ backgroundColor: '#F4EFE6' }} dir={dir}>
+    <div className="min-h-screen p-4 md:p-6 theme-cream" style={{ backgroundColor: '#F4EFE6', paddingBottom: isMobile ? 84 : undefined }} dir={dir}>
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-6">
@@ -215,7 +237,7 @@ export default function TeamManagement({ initialTab, initialPreselect } = {}) {
 
             {/* Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="bg-slate-900 border border-slate-800 mb-6">
+              <TabsList className="bg-slate-900 border border-slate-800 mb-6 hidden md:inline-flex">
                 <TabsTrigger 
                   value="squad" 
                   className="data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400"
@@ -289,8 +311,9 @@ export default function TeamManagement({ initialTab, initialPreselect } = {}) {
 
                 {/* Players Grid */}
                 {filteredPlayers.length > 0 ? (
-                  <motion.div 
-                    className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"
+                  <motion.div
+                    className="grid gap-3"
+                    style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(310px, 1fr))' }}
                     initial="hidden"
                     animate="show"
                     variants={{
@@ -308,10 +331,9 @@ export default function TeamManagement({ initialTab, initialPreselect } = {}) {
                       >
                         <PlayerCard
                           player={player}
-                          hasActiveProgram={trainingPrograms.some(p => p.player_id === player.id)}
+                          rating={ratingsByPlayer[player.id] ?? null}
                           onEdit={(p) => { setEditingPlayer(p); setShowPlayerForm(true); }}
                           onDelete={(p) => setDeleteDialog({ open: true, player: p })}
-                          onQuickView={(p) => setQuickViewPlayerId(p.id)}
                         />
                       </motion.div>
                     ))}
@@ -367,6 +389,39 @@ export default function TeamManagement({ initialTab, initialPreselect } = {}) {
                 <GameStyleTab teamId={selectedTeamId} />
               </TabsContent>
             </Tabs>
+
+            {/* Mobile bottom nav */}
+            {isMobile && (
+              <div
+                style={{
+                  position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 50,
+                  background: 'rgba(255,255,255,0.96)', backdropFilter: 'blur(10px)',
+                  borderTop: '1px solid rgba(13,26,18,0.10)', display: 'flex',
+                  padding: '6px 8px calc(8px + env(safe-area-inset-bottom))',
+                }}
+              >
+                {[
+                  { id: 'squad', label: isHe ? 'סגל' : 'Squad', Icon: Users },
+                  { id: 'lineup', label: isHe ? 'הרכב' : 'Lineup', Icon: Target },
+                  { id: 'comparison', label: isHe ? 'השוואה' : 'Compare', Icon: Scale },
+                  { id: 'gamestyle', label: isHe ? 'שיטה' : 'Style', Icon: Sword },
+                ].map(({ id, label, Icon }) => {
+                  const active = activeTab === id;
+                  return (
+                    <button
+                      key={id}
+                      onClick={() => setActiveTab(id)}
+                      style={{ flex: 1, border: 'none', background: 'none', cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2, padding: '6px 2px', fontFamily: 'Assistant,sans-serif' }}
+                    >
+                      <span style={{ width: 34, height: 24, borderRadius: 8, background: active ? 'rgba(74,222,128,0.18)' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'all .2s' }}>
+                        <Icon className="w-4 h-4" style={{ color: active ? '#16A34A' : '#5C6B61' }} />
+                      </span>
+                      <span style={{ fontSize: 10.5, fontWeight: 600, color: active ? '#16A34A' : '#5C6B61' }}>{label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </>
         )}
 

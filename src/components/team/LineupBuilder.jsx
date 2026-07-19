@@ -529,7 +529,51 @@ export default function LineupBuilder({ team, players, onUpdate }) {
           </CardContent>
         </Card>
 
-
+        {/* Power by line */}
+        {(() => {
+          const skillPct = (p) => {
+            const vals = p?.skill_ratings ? Object.values(p.skill_ratings) : [];
+            if (!vals.length) return null;
+            return Math.round((vals.reduce((a, b) => a + b, 0) / vals.length) * 20);
+          };
+          const classify = (pos = '') => {
+            if (pos.includes('שוער') || pos.includes('בלם') || pos.includes('מגן')) return 'defense';
+            if (pos.includes('קשר')) return 'midfield';
+            if (pos.includes('כנף') || pos.includes('חלוץ')) return 'attack';
+            return 'midfield';
+          };
+          const onField = lineup.filter(Boolean);
+          const lines = [
+            { id: 'defense', label: isHe ? 'הגנה' : 'Defense', color: '#2563EB' },
+            { id: 'midfield', label: isHe ? 'קישור' : 'Midfield', color: '#16A34A' },
+            { id: 'attack', label: isHe ? 'התקפה' : 'Attack', color: '#D97706' },
+          ];
+          return (
+            <div className="grid grid-cols-3 gap-3 mt-4">
+              {lines.map(line => {
+                const members = onField.filter(p => classify(p.position) === line.id);
+                const pcts = members.map(skillPct).filter(v => v !== null);
+                const avg = pcts.length ? Math.round(pcts.reduce((a, b) => a + b, 0) / pcts.length) : null;
+                return (
+                  <div key={line.id} className="premium-card" style={{ padding: '12px 14px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                      <span style={{ fontSize: 12.5, fontWeight: 600, color: '#5C6B61' }}>{line.label}</span>
+                      <span style={{ fontFamily: 'Heebo,sans-serif', fontWeight: 800, fontSize: 16, color: avg !== null ? line.color : '#94A39A' }}>
+                        {avg !== null ? `${avg}%` : '—'}
+                      </span>
+                    </div>
+                    <div style={{ height: 6, background: 'rgba(13,26,18,0.07)', borderRadius: 3, overflow: 'hidden' }}>
+                      <div style={{ height: '100%', width: `${avg || 0}%`, background: line.color, borderRadius: 3, transition: 'width .4s ease' }} />
+                    </div>
+                    <div style={{ fontSize: 11, color: '#94A39A', marginTop: 5 }}>
+                      {members.length} {isHe ? 'שחקנים' : 'players'}
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          );
+        })()}
 
         {/* Actions */}
         <div className="flex justify-between items-center mt-4">
