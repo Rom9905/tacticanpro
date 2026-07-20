@@ -245,3 +245,19 @@
 .theme-cream .bg-amber-500\/20 { background-color: rgba(217,119,6,0.10) !important; }
 .theme-cream .text-amber-400 { color: #D97706 !important; }
 .theme-cream .text-purple-400 { color: #7A2A8A !important; }
+
+/* ═══ Status Dashboard "Stadium" ═══ */
+@keyframes sdRingIn { from { stroke-dashoffset: 339; } }
+@keyframes sdGrowW { from { width: 0; } }
+@keyframes sdFadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+@keyframes sdPinDrop { from { opacity: 0; transform: rotateX(-38deg) translateY(-26px); } to { opacity: 1; transform: rotateX(-38deg) translateY(0); } }
+@keyframes sdFlick { 0%, 100% { opacity: 1; } 50% { opacity: .8; } }
+@keyframes sdGlowSweep { 0%, 100% { opacity: .5; } 50% { opacity: 1; } }
+.sd-ring { animation: sdRingIn 1.2s ease-out both; }
+.sd-grow { animation: sdGrowW 1s ease-out both; }
+.sd-fade { animation: sdFadeUp .4s ease-out both; }
+.sd-pin { animation: sdPinDrop .5s ease-out both; transform: rotateX(-38deg); }
+@media (prefers-reduced-motion: reduce) {
+  .sd-ring, .sd-grow, .sd-fade, .sd-pin { animation: none !important; }
+  .sd-pin { transform: rotateX(-38deg); }
+}
