@@ -668,7 +668,7 @@ ${prep.opponent_patterns ? `דפוסים: ${prep.opponent_patterns}` : ''}
 
   return (
     <div style={{ minHeight: isMatchday ? 'calc(100vh - 56px)' : undefined, background: isMatchday ? '#0D1A12' : undefined }} dir="rtl">
-      <div style={{ maxWidth: 1064, margin: '0 auto', padding: isMatchday ? (isMobile ? '14px 14px 40px' : '24px 24px 48px') : '0' }}>
+      <div style={{ maxWidth: '100%', margin: '0 auto', padding: isMatchday ? (isMobile ? '14px 14px 40px' : '24px 24px 48px') : '0' }}>
 
         {/* Back button */}
         <button onClick={onBack} style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 8, fontSize: 13, fontWeight: 600, border: '1px solid rgba(74,222,128,.35)', color: isMatchday ? '#4ADE80' : '#16A34A', background: isMatchday ? 'rgba(74,222,128,.06)' : 'rgba(22,163,74,.06)', cursor: 'pointer', fontFamily: 'Assistant,sans-serif', marginBottom: 14 }}>

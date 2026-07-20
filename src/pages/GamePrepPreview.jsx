@@ -327,7 +327,7 @@ export default function GamePrepPreview() {
 
       {tab === 'tc' && (
         <div style={{ background: '#F4EFE6', minHeight: '100vh', padding: 16 }} dir="rtl">
-          <div style={{ maxWidth: 900, margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 28 }}>
+          <div style={{ maxWidth: '100%', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: 28 }}>
             <div>
               <div style={{ fontSize: 11, fontWeight: 700, color: '#94A39A', marginBottom: 8 }}>נושאי עבודה</div>
               <WorkTopicsList topics={tcTopics} summaries={tcSummaries} onAddTopic={() => {}} onEditTopic={() => {}} onRefresh={() => {}} teamId="t1" />
