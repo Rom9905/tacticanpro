@@ -365,32 +365,31 @@ export default function PlayerComparison({
       {/* Comparison View */}
       {canCompare && (
         <>
-          {/* Duel mode — exactly 2 players */}
-          {selectedPlayers.length === 2 && (
-            <ComparisonDuel
-              playerA={selectedPlayers[0]}
-              playerB={selectedPlayers[1]}
-              ratingA={ratingsByPlayer[selectedPlayers[0].id]}
-              ratingB={ratingsByPlayer[selectedPlayers[1].id]}
-              isHe={isHe}
-            />
+          {selectedPlayers.length === 2 ? (
+            /* ── Duel mode: hero + radar + insights (no duplicated cards/table) ── */
+            <>
+              <ComparisonDuel
+                playerA={selectedPlayers[0]}
+                playerB={selectedPlayers[1]}
+                ratingA={ratingsByPlayer[selectedPlayers[0].id]}
+                ratingB={ratingsByPlayer[selectedPlayers[1].id]}
+                isHe={isHe}
+              />
+              <ComparisonRadarChart players={selectedPlayers} />
+              <ComparisonInsights
+                players={selectedPlayers}
+                teamStyle={teamData}
+                onAddToLineup={onAddToLineup}
+              />
+            </>
+          ) : (
+            /* ── 3–4 players: summary columns + radar + table ── */
+            <>
+              <ComparisonSummaryCards players={selectedPlayers} />
+              <ComparisonRadarChart players={selectedPlayers} />
+              <ComparisonTable players={selectedPlayers} />
+            </>
           )}
-
-          {/* Summary Cards */}
-          <ComparisonSummaryCards players={selectedPlayers} />
-
-          {/* Radar Chart */}
-          <ComparisonRadarChart players={selectedPlayers} />
-
-          {/* Comparison Table */}
-          <ComparisonTable players={selectedPlayers} />
-
-          {/* Insights & Recommendations */}
-          <ComparisonInsights 
-            players={selectedPlayers}
-            teamStyle={teamData}
-            onAddToLineup={onAddToLineup}
-          />
 
           {/* Actions */}
           <div className="flex gap-3">

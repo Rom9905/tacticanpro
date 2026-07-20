@@ -42,20 +42,41 @@ export default function PlayerCard({ player, onEdit, onDelete, rating = null }) 
       className="premium-card premium-card-clickable group"
       style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14 }}
     >
-      {/* Rating ring */}
-      <div style={{ position: 'relative', width: 52, height: 52, flexShrink: 0 }}>
-        <svg width="52" height="52" viewBox="0 0 52 52" style={{ transform: 'rotate(-90deg)' }}>
-          <circle cx="26" cy="26" r="23" fill="none" stroke="rgba(13,26,18,0.08)" strokeWidth="4" />
-          <circle
-            cx="26" cy="26" r="23" fill="none" stroke={rColor} strokeWidth="4" strokeLinecap="round"
-            strokeDasharray="144.5" strokeDashoffset={ringOffset}
-            style={{ animation: 'ringIn 1s ease-out' }}
+      {/* Avatar — photo with rating badge, or rating ring as fallback */}
+      {player.photo_url ? (
+        <div style={{ position: 'relative', width: 52, height: 52, flexShrink: 0 }}>
+          <img
+            src={player.photo_url}
+            alt={player.name}
+            style={{ width: 52, height: 52, borderRadius: 14, objectFit: 'cover', border: '1px solid rgba(13,26,18,0.10)' }}
           />
-        </svg>
-        <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Heebo,sans-serif', fontWeight: 800, fontSize: 16, color: '#14231A' }}>
-          {ratingText}
+          <span
+            style={{
+              position: 'absolute', bottom: -6, insetInlineStart: -6, minWidth: 22, height: 20, padding: '0 5px',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: '#0D1A12', color: hasRating ? ratingColor(rating) : 'rgba(244,239,230,0.55)',
+              borderRadius: 8, fontFamily: 'Heebo,sans-serif', fontWeight: 800, fontSize: 12,
+              border: '2px solid #FFFFFF',
+            }}
+          >
+            {ratingText}
+          </span>
         </div>
-      </div>
+      ) : (
+        <div style={{ position: 'relative', width: 52, height: 52, flexShrink: 0 }}>
+          <svg width="52" height="52" viewBox="0 0 52 52" style={{ transform: 'rotate(-90deg)' }}>
+            <circle cx="26" cy="26" r="23" fill="none" stroke="rgba(13,26,18,0.08)" strokeWidth="4" />
+            <circle
+              cx="26" cy="26" r="23" fill="none" stroke={rColor} strokeWidth="4" strokeLinecap="round"
+              strokeDasharray="144.5" strokeDashoffset={ringOffset}
+              style={{ animation: 'ringIn 1s ease-out' }}
+            />
+          </svg>
+          <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', fontFamily: 'Heebo,sans-serif', fontWeight: 800, fontSize: 16, color: '#14231A' }}>
+            {ratingText}
+          </div>
+        </div>
+      )}
 
       {/* Info */}
       <div style={{ flex: 1, minWidth: 0 }}>
