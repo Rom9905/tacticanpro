@@ -8,7 +8,6 @@ import {
   Users,
   Target,
   Search,
-  Star,
   Sword,
   Scale
 } from 'lucide-react';
@@ -237,35 +236,29 @@ export default function TeamManagement({ initialTab, initialPreselect } = {}) {
 
             {/* Tabs */}
             <Tabs value={activeTab} onValueChange={setActiveTab}>
-              <TabsList className="bg-slate-900 border border-slate-800 mb-6 hidden md:inline-flex">
-                <TabsTrigger 
-                  value="squad" 
-                  className="data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400"
-                >
-                  <Users className="w-4 h-4 ml-2" />
-                  {isHe ? `סגל (${players.length})` : `Squad (${players.length})`}
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="lineup" 
-                  className="data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400"
-                >
-                  <Target className="w-4 h-4 ml-2" />
-                  {isHe ? `הרכב (${starters.length}/11)` : `Lineup (${starters.length}/11)`}
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="comparison" 
-                  className="data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400"
-                >
-                  <Star className="w-4 h-4 ml-2" />
-                  {isHe ? 'השוואת שחקנים' : 'Compare Players'}
-                </TabsTrigger>
-                <TabsTrigger 
-                  value="gamestyle" 
-                  className="data-[state=active]:bg-emerald-500/20 data-[state=active]:text-emerald-400"
-                >
-                  <Sword className="w-4 h-4 ml-2" />
-                  {isHe ? 'שיטת משחק' : 'Game Style'}
-                </TabsTrigger>
+              <TabsList
+                className="mb-6 hidden md:flex h-auto w-full gap-1 p-1"
+                style={{ background: '#FFFFFF', border: '1px solid rgba(13,26,18,0.08)', borderRadius: 14 }}
+              >
+                {[
+                  { id: 'squad', Icon: Users, label: isHe ? `סגל (${players.length})` : `Squad (${players.length})` },
+                  { id: 'lineup', Icon: Target, label: isHe ? `הרכב (${starters.length}/11)` : `Lineup (${starters.length}/11)` },
+                  { id: 'comparison', Icon: Scale, label: isHe ? 'השוואת שחקנים' : 'Compare Players' },
+                  { id: 'gamestyle', Icon: Sword, label: isHe ? 'שיטת משחק' : 'Game Style' },
+                ].map(({ id, Icon, label }) => {
+                  const active = activeTab === id;
+                  return (
+                    <TabsTrigger
+                      key={id}
+                      value={id}
+                      className="flex-1 gap-2 rounded-[10px] py-2 text-[13.5px] font-semibold data-[state=active]:shadow-none"
+                      style={{ background: active ? '#0D1A12' : 'transparent', color: active ? '#4ADE80' : '#5C6B61' }}
+                    >
+                      <Icon className="w-4 h-4" />
+                      {label}
+                    </TabsTrigger>
+                  );
+                })}
               </TabsList>
 
               <TabsContent value="squad">
