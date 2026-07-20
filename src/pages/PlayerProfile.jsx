@@ -326,7 +326,7 @@ export default function PlayerProfile() {
       style={{ backgroundColor: '#F4EFE6' }}
       dir="rtl"
     >
-      <div className="max-w-4xl mx-auto px-4 py-5 pb-16">
+      <div className="max-w-6xl mx-auto px-4 md:px-6 py-5 pb-16">
 
         {/* ── Back + Compare ── */}
         <div className="flex items-center justify-between mb-5">

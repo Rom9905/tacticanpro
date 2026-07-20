@@ -179,6 +179,8 @@ export default function InputTab({ teamId, allEvents, needsSummaryEvents, onRefr
         })}
       </div>
 
+      {/* ═══ TASKS + WEEK (side by side on large screens) ═══ */}
+      <div className="grid lg:grid-cols-2 gap-4 items-start">
       {/* ═══ TASKS CHECKLIST — המשימות שלך ═══ */}
       <motion.div
         initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }}
@@ -351,6 +353,7 @@ export default function InputTab({ teamId, allEvents, needsSummaryEvents, onRefr
           ))}
         </div>
       </motion.div>
+      </div>
 
       {/* ═══ Modals ═══ */}
       <AddEventModal open={showAddTraining} onClose={() => setShowAddTraining(false)}

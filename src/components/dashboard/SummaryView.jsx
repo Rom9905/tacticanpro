@@ -225,7 +225,7 @@ export default function SummaryView({
                   </div>
 
                   {/* Cards */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 p-4 md:p-5">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3 p-4 md:p-5">
                     {INSIGHT_VIEWS.map((v, i) => {
                       const Icon = v.icon;
                       return (
