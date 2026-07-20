@@ -313,7 +313,7 @@ export default function TeamManagement({ initialTab, initialPreselect } = {}) {
                 {filteredPlayers.length > 0 ? (
                   <motion.div
                     className="grid gap-3"
-                    style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(310px, 1fr))' }}
+                    style={{ gridTemplateColumns: 'repeat(auto-fill, minmax(min(310px, 100%), 1fr))' }}
                     initial="hidden"
                     animate="show"
                     variants={{

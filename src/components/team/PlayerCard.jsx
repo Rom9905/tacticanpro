@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Edit2, Trash2, Star, TrendingUp, TrendingDown, Minus } from 'lucide-react';
 import { createPageUrl } from '@/utils';
 import { useLang } from '@/lib/LanguageContext';
@@ -23,6 +23,7 @@ const trendInfo = (status) => {
 export default function PlayerCard({ player, onEdit, onDelete, rating = null }) {
   const { t: langT } = useLang();
   const isHe = langT.lang === 'he';
+  const [imgError, setImgError] = useState(false);
   const tVal = (map, val) => (isHe ? val : tr(map, val));
 
   const hasRating = typeof rating === 'number' && !isNaN(rating);
@@ -43,12 +44,15 @@ export default function PlayerCard({ player, onEdit, onDelete, rating = null }) 
       style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', gap: 14 }}
     >
       {/* Avatar — photo with rating badge, or rating ring as fallback */}
-      {player.photo_url ? (
+      {player.photo_url && !imgError ? (
         <div style={{ position: 'relative', width: 52, height: 52, flexShrink: 0 }}>
           <img
             src={player.photo_url}
             alt={player.name}
-            style={{ width: 52, height: 52, borderRadius: 14, objectFit: 'cover', border: '1px solid rgba(13,26,18,0.10)' }}
+            loading="lazy"
+            decoding="async"
+            onError={() => setImgError(true)}
+            style={{ width: 52, height: 52, borderRadius: 14, objectFit: 'cover', border: '1px solid rgba(13,26,18,0.10)', background: '#EDE8DF', display: 'block' }}
           />
           <span
             style={{
