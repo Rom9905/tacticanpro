@@ -543,7 +543,7 @@ export default function MatchFileAnalysis() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: C.bgApp }} dir="rtl">
-      <div className="max-w-3xl mx-auto px-4 py-6">
+      <div className="w-full px-4 lg:px-8 py-6">
         <div className="mb-4">
           <PageHero icon={FileText} title="ניתוח קובץ משחק" subtitle="העלה דוח, תמונה או סטטיסטיקות — וקבל ניתוח מקצועי מלא" />
         </div>

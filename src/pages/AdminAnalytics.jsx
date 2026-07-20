@@ -170,7 +170,7 @@ export default function AdminAnalytics() {
 
   return (
     <div className="min-h-screen" style={{ backgroundColor: '#F4EFE6' }} dir="rtl">
-      <div className="max-w-6xl mx-auto px-4 py-6">
+      <div className="w-full px-4 lg:px-8 py-6">
 
         {/* Header */}
         <div className="flex items-center gap-3 mb-6">

@@ -432,7 +432,7 @@ export default function MatchAnalysis() {
   return (
     <div className="min-h-screen theme-cream" style={{ backgroundColor: MA.bgPage, padding: '28px 16px', fontFamily: MA.body, color: MA.textPrimary }} dir={dir}>
       <style>{matchAnalysisStyles}</style>
-      <div style={{ maxWidth: 1080, margin: '0 auto' }}>
+      <div style={{ maxWidth: '100%', margin: '0 auto' }}>
         <div style={{ background: MA.bgContainer, borderRadius: 20, overflow: 'hidden', boxShadow: MA.containerShadow }}>
           <MatchAnalysisHero
             stats={seasonStats}

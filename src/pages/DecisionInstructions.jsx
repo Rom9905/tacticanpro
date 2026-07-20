@@ -18,7 +18,7 @@ import {
 export default function DecisionInstructionsPage() {
   return (
     <div className="min-h-screen bg-slate-950 p-6">
-      <div className="max-w-4xl mx-auto">
+      <div className="w-full">
         {/* Header */}
         <div className="mb-8">
           <Link to={createPageUrl('DecisionAnalysis')}>

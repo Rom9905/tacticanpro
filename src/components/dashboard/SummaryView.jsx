@@ -117,29 +117,55 @@ export default function SummaryView({
 
   return (
     <div className="space-y-4 pb-20 md:pb-0" dir={dir}>
-      {/* ── Tab Bar (Desktop) — right below header, dark active tab ── */}
-      <div className="hidden md:flex items-center gap-1 rounded-xl p-1" style={{ backgroundColor: 'rgba(13,26,18,.04)' }}>
-        {TABS.map(t => {
-          const Icon = t.icon;
-          const active = tab === t.id;
-          return (
+      {/* ── Tab Bar (Desktop) — sticky, always visible; includes back when in a sub-view ── */}
+      <div className="hidden md:block sticky top-16 z-30 -mt-2" style={{ backgroundColor: '#F6F4EE' }}>
+        <div className="flex items-center gap-2 py-2">
+          {insightView && (
             <button
-              key={t.id}
-              onClick={() => switchTab(t.id)}
-              className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-all"
-              style={{
-                backgroundColor: active ? '#0D1A12' : 'transparent',
-                color: active ? '#4ADE80' : '#5C6B61',
-              }}
-              onMouseEnter={e => { if (!active) e.currentTarget.style.backgroundColor = 'rgba(13,26,18,.05)'; }}
-              onMouseLeave={e => { if (!active) e.currentTarget.style.backgroundColor = 'transparent'; }}
+              onClick={() => setInsightView(null)}
+              className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-semibold flex-shrink-0 transition-colors"
+              style={{ backgroundColor: '#FFFFFF', border: '1px solid rgba(13,26,18,0.10)', color: '#5C6B61' }}
             >
-              <Icon className="w-3.5 h-3.5" />
-              {t.label}
+              <ChevronRight className="w-4 h-4" /> {db.backToInsights}
             </button>
-          );
-        })}
+          )}
+          <div className="flex items-center gap-1 rounded-xl p-1" style={{ backgroundColor: 'rgba(13,26,18,.04)' }}>
+            {TABS.map(t => {
+              const Icon = t.icon;
+              const active = tab === t.id;
+              return (
+                <button
+                  key={t.id}
+                  onClick={() => switchTab(t.id)}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-semibold transition-all"
+                  style={{
+                    backgroundColor: active ? '#0D1A12' : 'transparent',
+                    color: active ? '#4ADE80' : '#5C6B61',
+                  }}
+                  onMouseEnter={e => { if (!active) e.currentTarget.style.backgroundColor = 'rgba(13,26,18,.05)'; }}
+                  onMouseLeave={e => { if (!active) e.currentTarget.style.backgroundColor = 'transparent'; }}
+                >
+                  <Icon className="w-3.5 h-3.5" />
+                  {t.label}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
+
+      {/* ── Mobile: sticky back button when in a sub-view (tabs live in the bottom nav) ── */}
+      {insightView && (
+        <div className="md:hidden sticky top-16 z-30 -mt-2 py-2" style={{ backgroundColor: '#F6F4EE' }}>
+          <button
+            onClick={() => setInsightView(null)}
+            className="flex items-center gap-1 px-3 py-2 rounded-lg text-sm font-semibold"
+            style={{ backgroundColor: '#FFFFFF', border: '1px solid rgba(13,26,18,0.10)', color: '#5C6B61' }}
+          >
+            <ChevronRight className="w-4 h-4" /> {db.backToInsights}
+          </button>
+        </div>
+      )}
 
       {/* ── Bottom Nav (Mobile) ── */}
       <nav className="md:hidden fixed bottom-0 left-0 right-0 z-40 flex items-center justify-around"
@@ -288,14 +314,7 @@ export default function SummaryView({
               )}
               {insightView && activeInsight && (
                 <div>
-                  <button
-                    onClick={() => setInsightView(null)}
-                    className="flex items-center gap-1 text-xs mb-3"
-                    style={{ color: '#7A6B57' }}
-                  >
-                    <ChevronRight className="w-3.5 h-3.5" /> {db.backToInsights}
-                  </button>
-                  {insightView === 'team' 
+                  {insightView === 'team'
                     ? <TeamManagementPage initialTab={urlTab} initialPreselect={urlPreselect} />
                     : <activeInsight.Component />
                   }

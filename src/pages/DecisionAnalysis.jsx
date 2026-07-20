@@ -462,7 +462,7 @@ export default function DecisionAnalysisPage() {
   if (!selectedTeamId) {
     return (
       <div className="min-h-screen bg-slate-950 p-6">
-        <div className="max-w-7xl mx-auto">
+        <div className="w-full">
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-white mb-2">ניתוח קבלת החלטות</h1>
             <p className="text-slate-400">בחר קבוצה כדי להתחיל</p>
@@ -475,7 +475,7 @@ export default function DecisionAnalysisPage() {
 
   return (
     <div className="min-h-screen p-6 theme-cream" style={{ backgroundColor: '#F4EFE6' }}>
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full">
         <div className="mb-6">
           <PageHero
             icon={Brain}

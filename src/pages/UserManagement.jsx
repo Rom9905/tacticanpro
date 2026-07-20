@@ -68,7 +68,7 @@ export default function UserManagement() {
       <InfoPageHeader showLogin={false} />
 
       <main className="flex-1 px-6 py-12">
-        <div style={{ maxWidth: 1000, margin: '0 auto' }}>
+        <div style={{ maxWidth: '100%', margin: '0 auto' }}>
           {/* Header */}
           <div className="flex items-center gap-3 mb-2">
             <ShieldCheck style={{ width: 28, height: 28, color: '#22C55E' }} />

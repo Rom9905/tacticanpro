@@ -298,7 +298,7 @@ export default function GamePrepPreview() {
 
       {tab === 'matchpage' && (
         <div style={{ backgroundColor: MA.bgPage, padding: '28px 16px', fontFamily: MA.body, color: MA.textPrimary }} dir="rtl">
-          <div style={{ maxWidth: 1080, margin: '0 auto' }}>
+          <div style={{ maxWidth: '100%', margin: '0 auto' }}>
             <div style={{ background: MA.bgContainer, borderRadius: 20, overflow: 'hidden', boxShadow: MA.containerShadow }}>
               <MatchAnalysisHero
                 stats={pageStats} form={pageForm} view="list"

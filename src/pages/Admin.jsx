@@ -77,7 +77,7 @@ export default function Admin() {
 
   return (
     <div className="min-h-screen p-6" style={{ backgroundColor: '#0D1A12' }} dir="rtl">
-      <div className="max-w-4xl mx-auto">
+      <div className="w-full">
         <div className="flex items-center gap-3 mb-8">
           <Shield className="w-8 h-8 text-emerald-500" />
           <h1 className="text-3xl font-bold text-white">ניהול משתמשים</h1>

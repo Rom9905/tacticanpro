@@ -1022,7 +1022,7 @@ export default function TacticalBoard() {
       className={`${isFullscreen ? 'fixed inset-0 z-50 bg-slate-950' : 'min-h-screen bg-gradient-to-b from-slate-950 via-slate-900 to-slate-950 p-4 md:p-6'}`}
       ref={containerRef}
     >
-      <div className={isFullscreen ? 'h-full' : 'max-w-7xl mx-auto'}>
+      <div className={isFullscreen ? 'h-full' : 'w-full'}>
         {/* Header - hide in fullscreen */}
         {!isFullscreen && (
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
@@ -1036,7 +1036,7 @@ export default function TacticalBoard() {
 
         {/* Tools Panel - Above board when not fullscreen */}
         {!isFullscreen && (
-          <div className="mb-4 max-w-6xl mx-auto">
+          <div className="mb-4 w-full">
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
               {/* Main Tools */}
               <div className="space-y-3">
@@ -1164,7 +1164,7 @@ export default function TacticalBoard() {
         {/* Main Content */}
         <div className="relative">
           {/* Canvas - Full Width */}
-          <div className={isFullscreen ? 'h-screen w-screen' : 'w-full max-w-6xl mx-auto'}>
+          <div className={isFullscreen ? 'h-screen w-screen' : 'w-full'}>
             <Card className={`${isFullscreen ? 'h-full rounded-none border-0' : 'bg-slate-900/50 border-slate-800'} overflow-hidden`}>
               <CardContent className="p-0 relative h-full" style={{ pointerEvents: 'auto' }}>
                 <div
