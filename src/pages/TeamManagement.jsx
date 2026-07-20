@@ -185,7 +185,7 @@ export default function TeamManagement({ initialTab, initialPreselect } = {}) {
 
   return (
     <div className="min-h-screen p-4 md:p-6 theme-cream" style={{ backgroundColor: '#F4EFE6', paddingBottom: isMobile ? 84 : undefined }} dir={dir}>
-      <div className="max-w-[1400px] mx-auto">
+      <div className="w-full">
         {/* Header */}
         <div className="mb-6">
           <PageHero

@@ -187,7 +187,7 @@ export default function Home() {
   if (loading) return (
     <div className="min-h-screen" style={{ backgroundColor: '#F6F4EE' }} dir="rtl">
       <div style={{ height: '64px', backgroundColor: '#0D1A12' }} />
-      <div className="pt-5 px-4 md:px-6 lg:px-8 max-w-[1400px] mx-auto">
+      <div className="pt-5 px-4 md:px-6 lg:px-8 w-full">
         <DashboardSkeleton />
       </div>
     </div>
@@ -253,7 +253,7 @@ export default function Home() {
 
       {/* Quick links row — admin only (match analysis moved to header) */}
       {user?.role === 'admin' && (
-        <div className="px-4 lg:px-8 pt-20 max-w-[1400px] mx-auto flex flex-wrap gap-2">
+        <div className="px-4 lg:px-8 pt-20 w-full flex flex-wrap gap-2">
           <a
             href="/user-management"
             className="flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-semibold w-fit"
@@ -274,7 +274,7 @@ export default function Home() {
       )}
 
       {/* Main content */}
-      <div className={`${user?.role === 'admin' ? 'pt-2' : 'pt-20'} px-4 md:px-6 lg:px-8 pb-10 max-w-[1400px] mx-auto`}>
+      <div className={`${user?.role === 'admin' ? 'pt-2' : 'pt-20'} px-4 md:px-6 lg:px-8 pb-10 w-full`}>
         {/* Player completion alert */}
         {showPlayerAlert && (
           <div className="mb-4 rounded-xl overflow-hidden" style={{ backgroundColor: '#FAF7F2', border: '1.5px solid rgba(217,119,6,0.25)' }}>

@@ -146,7 +146,7 @@ export default function TrainingCenter() {
         onSelectTeam={selectTeam}
         teamId={selectedTeamId}
       />
-      <div className="pt-14 pb-10 max-w-[1400px] mx-auto px-4 md:px-6 lg:px-8">
+      <div className="pt-14 pb-10 w-full px-4 md:px-6 lg:px-8">
         {/* ── Hero ── */}
         <div style={{
           marginTop: 20, position: 'relative', overflow: 'visible',
