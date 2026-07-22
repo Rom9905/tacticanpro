@@ -1,7 +1,12 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 import { SYSTEM_PROMPT } from "./systemPrompt.ts";
 
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-flash-lite-latest:generateContent";
+
+// Per-user daily cap on LLM calls. Admins are exempt.
+const DAILY_LLM_CAP = 200;
+const ADMIN_EMAIL = "romfranko99@gmail.com";
 
 const CORS = {
   "Access-Control-Allow-Origin": "*",
@@ -21,9 +26,60 @@ serve(async (req) => {
   }
 
   try {
+    // ── Require a valid authenticated user. Without this the endpoint is an
+    //    open proxy to the shared Gemini key — anyone could drain the budget.
+    const authHeader = req.headers.get("Authorization");
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const anonKey = Deno.env.get("SUPABASE_ANON_KEY");
+    const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+    if (!supabaseUrl || !anonKey || !serviceKey) {
+      return jsonResponse({ error: "Server not configured" }, 500);
+    }
+    if (!authHeader) {
+      return jsonResponse({ error: "Unauthorized" }, 401);
+    }
+
+    const anonClient = createClient(supabaseUrl, anonKey, {
+      global: { headers: { Authorization: authHeader } },
+    });
+    const { data: { user } } = await anonClient.auth.getUser();
+    if (!user) {
+      return jsonResponse({ error: "Unauthorized" }, 401);
+    }
+
     const { prompt, response_json_schema } = await req.json();
     if (!prompt || typeof prompt !== "string") {
       return jsonResponse({ error: "prompt is required" }, 400);
+    }
+
+    // ── Enforce a per-user daily cap (service role; the table denies all
+    //    client access via RLS). Admins are exempt. Fail CLOSED on error.
+    const isAdmin = user.email === ADMIN_EMAIL;
+    if (!isAdmin) {
+      const service = createClient(supabaseUrl, serviceKey);
+      const today = new Date().toISOString().slice(0, 10);
+      const { data: usage, error: usageErr } = await service
+        .from("llm_usage_daily")
+        .select("count")
+        .eq("user_id", user.id)
+        .eq("usage_date", today)
+        .maybeSingle();
+      if (usageErr) {
+        return jsonResponse({ error: "Usage check failed", error_code: "usage_unavailable" }, 503);
+      }
+      const used = usage?.count ?? 0;
+      if (used >= DAILY_LLM_CAP) {
+        return jsonResponse({ error: "Daily limit reached", error_code: "quota_exceeded" }, 429);
+      }
+      const { error: upErr } = await service
+        .from("llm_usage_daily")
+        .upsert(
+          { user_id: user.id, usage_date: today, count: used + 1, updated_at: new Date().toISOString() },
+          { onConflict: "user_id,usage_date" },
+        );
+      if (upErr) {
+        return jsonResponse({ error: "Usage update failed", error_code: "usage_unavailable" }, 503);
+      }
     }
 
     const apiKey = Deno.env.get("GEMINI_API_KEY");

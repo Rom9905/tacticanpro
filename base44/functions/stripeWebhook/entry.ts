@@ -15,12 +15,18 @@ Deno.serve(async (req) => {
     const signature = req.headers.get('stripe-signature');
     const webhookSecret = Deno.env.get('STRIPE_WEBHOOK_SECRET');
 
-    let event;
-    if (webhookSecret && signature) {
-      event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
-    } else {
-      event = JSON.parse(body);
+    // Never trust an unsigned body. A missing secret or signature is a hard
+    // failure — otherwise anyone could POST a fake "payment completed" event
+    // and grant themselves (or revoke someone else's) paid subscription.
+    if (!webhookSecret) {
+      console.error('STRIPE_WEBHOOK_SECRET is not configured');
+      return Response.json({ error: 'Webhook not configured' }, { status: 500 });
     }
+    if (!signature) {
+      return Response.json({ error: 'Missing stripe-signature header' }, { status: 400 });
+    }
+
+    const event = await stripe.webhooks.constructEventAsync(body, signature, webhookSecret);
 
     const base44 = createClientFromRequest(req);
 
