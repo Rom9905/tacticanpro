@@ -10,8 +10,11 @@ Deno.serve(async (req) => {
     const { match_analysis_id } = body;
     if (!match_analysis_id) return Response.json({ error: 'Missing match_analysis_id' }, { status: 400 });
 
-    // Load match analysis
-    const analysis = await base44.entities.MatchAnalysis.get(match_analysis_id);
+    // Load match analysis via the user-scoped client so RLS enforces
+    // ownership — .get() may bypass row scoping and expose another
+    // tenant's analysis by id (IDOR).
+    const owned = await base44.entities.MatchAnalysis.filter({ id: match_analysis_id });
+    const analysis = owned && owned[0];
     if (!analysis) return Response.json({ error: 'Match analysis not found' }, { status: 404 });
 
     // Load professional summary if linked

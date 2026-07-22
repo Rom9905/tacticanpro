@@ -262,12 +262,38 @@ serve(async (req) => {
   }
 
   try {
+    // ── Require an authenticated user. Without this the LLM + file fetch
+    //    are open to anyone (budget drain + SSRF).
+    const SUPABASE_URL = Deno.env.get("SUPABASE_URL");
+    const ANON_KEY = Deno.env.get("SUPABASE_ANON_KEY");
+    const authHeader = req.headers.get("Authorization");
+    if (!SUPABASE_URL || !ANON_KEY) {
+      return new Response(JSON.stringify({ error: "Server not configured" }), { status: 500, headers: CORS_HEADERS });
+    }
+    if (!authHeader) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: CORS_HEADERS });
+    }
+    const authedClient = createClient(SUPABASE_URL, ANON_KEY, { global: { headers: { Authorization: authHeader } } });
+    const { data: { user: authUser } } = await authedClient.auth.getUser();
+    if (!authUser) {
+      return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: CORS_HEADERS });
+    }
+
     const { mode, file_url, file_content, our_team_name, opponent_name, question } = await req.json();
     const apiKey = Deno.env.get("GEMINI_API_KEY");
     if (!apiKey) {
       return new Response(JSON.stringify({ error: "GEMINI_API_KEY not configured" }), {
         status: 500, headers: CORS_HEADERS,
       });
+    }
+
+    // ── SSRF guard: only fetch files from our own Supabase storage host.
+    if (file_url) {
+      let host = "";
+      try { host = new URL(file_url).host; } catch { /* invalid */ }
+      if (host !== new URL(SUPABASE_URL).host) {
+        return new Response(JSON.stringify({ error: "Invalid file_url" }), { status: 400, headers: CORS_HEADERS });
+      }
     }
 
     // Server-side daily quota. Blocked → 200 with a limit_error the UI can read.

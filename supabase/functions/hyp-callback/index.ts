@@ -111,6 +111,20 @@ Deno.serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
     );
 
+    // ── Replay protection: claim this transaction id atomically. If it was
+    //    already processed, do not re-activate — return the existing result.
+    const { error: claimError } = await admin
+      .from('hyp_processed_transactions')
+      .insert({ transaction_id: transactionId, user_id: userId, billing_key: billingKey, amount: billing.amount });
+    if (claimError) {
+      // Primary-key conflict → already handled. Idempotent success.
+      if ((claimError as { code?: string }).code === '23505') {
+        return json({ ok: true, plan: billing.dbPlan, transaction_id: transactionId, replay: true });
+      }
+      console.error('Transaction claim failed:', claimError);
+      return json({ ok: false, error: 'שגיאה בעיבוד התשלום — פנה לתמיכה עם מספר עסקה ' + transactionId }, 500);
+    }
+
     const now = new Date();
     const endDate = billing.rolling ? monthlyEndDate(now) : seasonEndDate(now);
 

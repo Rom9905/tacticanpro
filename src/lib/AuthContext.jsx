@@ -54,9 +54,9 @@ export const AuthProvider = ({ children }) => {
         id: authUser.id,
         email: authUser.email,
         full_name: profile?.full_name || authUser.user_metadata?.full_name || '',
-        role: profile?.role || 'admin',
-        access_status: profile?.access_status || 'paid',
-        is_approved: profile?.is_approved ?? true,
+        role: profile?.role || 'user',
+        access_status: profile?.access_status || 'no_access',
+        is_approved: profile?.is_approved ?? false,
         setup_complete: profile?.setup_complete ?? false,
         setup_team_id: profile?.setup_team_id || null,
       };
@@ -69,9 +69,9 @@ export const AuthProvider = ({ children }) => {
         id: authUser.id,
         email: authUser.email,
         full_name: authUser.user_metadata?.full_name || '',
-        role: 'admin',
-        access_status: 'paid',
-        is_approved: true,
+        role: 'user',
+        access_status: 'no_access',
+        is_approved: false,
         setup_complete: false,
       });
       setIsAuthenticated(true);

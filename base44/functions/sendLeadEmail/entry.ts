@@ -11,7 +11,14 @@ Deno.serve(async (req) => {
     } catch {}
 
     const body = await req.json();
-    const { name, phone, plan } = body;
+
+    // Sanitize: strip control chars (header/body injection) and cap length.
+    const clean = (v: unknown, max: number) =>
+      String(v ?? '').replace(/[\r\n\t\x00-\x1f\x7f]/g, ' ').trim().slice(0, max);
+
+    const name = clean(body.name, 120);
+    const phone = clean(body.phone, 40);
+    const plan = clean(body.plan, 40) || 'לא צוין';
 
     if (!name || !phone) {
       return Response.json({ error: 'חסרים פרטים' }, { status: 400 });
@@ -19,8 +26,8 @@ Deno.serve(async (req) => {
 
     await base44.asServiceRole.integrations.Core.SendEmail({
       to: 'taactican@gmail.com',
-      subject: `ליד חדש — ${name} (מסלול ${plan || 'לא צוין'})`,
-      body: `שם: ${name}\nטלפון: ${phone}\nמסלול: ${plan || 'לא צוין'}\nאימייל משתמש: ${userEmail}`
+      subject: `ליד חדש — ${name} (מסלול ${plan})`,
+      body: `שם: ${name}\nטלפון: ${phone}\nמסלול: ${plan}\nאימייל משתמש: ${userEmail}`
     });
 
     return Response.json({ success: true });

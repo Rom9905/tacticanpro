@@ -80,3 +80,57 @@ CREATE TABLE IF NOT EXISTS public.llm_usage_daily (
 );
 
 ALTER TABLE public.llm_usage_daily ENABLE ROW LEVEL SECURITY;
+
+-- ────────────────────────────────────────────────────────────
+-- 2b. Processed payment transactions (replay protection for hyp-callback).
+-- The callback records each HYP transaction id here; a repeated id is
+-- rejected so a verified success can't be replayed to extend/re-grant a
+-- subscription. Service-role only (RLS on, no policies).
+-- ────────────────────────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS public.hyp_processed_transactions (
+  transaction_id TEXT PRIMARY KEY,
+  user_id        UUID,
+  billing_key    TEXT,
+  amount         INTEGER,
+  created_at     TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+ALTER TABLE public.hyp_processed_transactions ENABLE ROW LEVEL SECURITY;
+
+-- ────────────────────────────────────────────────────────────
+-- 3. User-created drills default to PRIVATE.
+-- is_public defaulted to true, so every drill a coach created
+-- leaked to all other coaches via the "public drills" SELECT policy.
+-- New rows are private unless the coach explicitly shares them.
+-- ────────────────────────────────────────────────────────────
+ALTER TABLE public.drill_library ALTER COLUMN is_public SET DEFAULT false;
+
+-- ────────────────────────────────────────────────────────────
+-- 4. Add WITH CHECK to every user-isolation UPDATE policy.
+-- The original policies only had USING (which row you may touch)
+-- but no WITH CHECK (what the row may become), so a user could
+-- UPDATE their own row and set user_id to someone else's id,
+-- donating/orphaning the record into another tenant.
+-- ────────────────────────────────────────────────────────────
+DO $$
+DECLARE
+  tbl TEXT;
+BEGIN
+  FOR tbl IN
+    SELECT unnest(ARRAY[
+      'teams', 'players', 'game_schedules', 'match_analyses',
+      'professional_summaries', 'tactical_goals', 'key_match_situations',
+      'training_programs', 'training_session_evaluations', 'training_actions',
+      'tactical_boards', 'lineup_templates', 'game_preps', 'conversations',
+      'player_decision_profiles', 'match_decision_summaries',
+      'training_program_reviews', 'program_outcomes', 'analytics_events',
+      'drill_library'
+    ])
+  LOOP
+    EXECUTE format('DROP POLICY IF EXISTS "User isolation update on %1$s" ON public.%1$s;', tbl);
+    EXECUTE format(
+      'CREATE POLICY "User isolation update on %1$s" ON public.%1$s FOR UPDATE USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);',
+      tbl
+    );
+  END LOOP;
+END $$;

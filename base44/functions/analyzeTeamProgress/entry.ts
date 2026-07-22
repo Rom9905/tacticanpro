@@ -19,6 +19,13 @@ Deno.serve(async (req) => {
     const { teamId } = body;
     if (!teamId) return Response.json({ error: 'Missing teamId' }, { status: 400 });
 
+    // Confirm the caller owns this team via the user-scoped client (RLS)
+    // before any asServiceRole write can touch its goals.
+    const ownedTeams = await base44.entities.Team.filter({ id: teamId });
+    if (!ownedTeams || ownedTeams.length === 0) {
+      return Response.json({ error: 'Forbidden' }, { status: 403 });
+    }
+
     // Load recent summaries (last 20)
     const summaries = await base44.entities.ProfessionalSummary.filter(
       { team_id: teamId }, '-event_date', 20

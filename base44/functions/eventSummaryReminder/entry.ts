@@ -2,6 +2,13 @@ import { createClientFromRequest } from 'npm:@base44/sdk@0.8.6';
 
 Deno.serve(async (req) => {
   try {
+    // Only the scheduler may invoke this mass-email job. Without this gate
+    // anyone could hit the URL and spam every coach.
+    const cronSecret = Deno.env.get('CRON_SECRET');
+    if (!cronSecret || req.headers.get('x-cron-secret') !== cronSecret) {
+      return Response.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
     const base44 = createClientFromRequest(req);
 
     // This function is called as a scheduled task (service role)

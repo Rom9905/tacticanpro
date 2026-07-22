@@ -208,8 +208,8 @@ const auth = {
       email: user.email,
       full_name: profile?.full_name || user.user_metadata?.full_name || '',
       role: profile?.role || 'user',
-      access_status: profile?.access_status || 'paid',
-      is_approved: profile?.is_approved ?? true,
+      access_status: profile?.access_status || 'no_access',
+      is_approved: profile?.is_approved ?? false,
       setup_complete: profile?.setup_complete ?? false,
       setup_team_id: profile?.setup_team_id || null,
     };
