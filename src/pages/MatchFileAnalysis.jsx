@@ -126,9 +126,26 @@ const CHAPTER_SECTIONS = [
   { key: 'training', label: 'נושאי עבודה' },
 ];
 
-const TeamPicker = React.memo(function TeamPicker({ originalTeamNames, onContinue }) {
+const TeamPicker = React.memo(function TeamPicker({ originalTeamNames, activeTeamName, onContinue }) {
   const [ourTeam, setOurTeam] = useState('');
   const [opponent, setOpponent] = useState('');
+
+  // Default "my team" to the team selected in the top bar. Match it against
+  // the two names found in the file (case/space-insensitive) and, if found,
+  // pre-select it and set the opponent to the other team.
+  useEffect(() => {
+    if (!activeTeamName) return;
+    const norm = (s) => String(s || '').trim().toLowerCase();
+    const target = norm(activeTeamName);
+    const match = norm(originalTeamNames.team_a) === target ? originalTeamNames.team_a
+      : norm(originalTeamNames.team_b) === target ? originalTeamNames.team_b
+      : '';
+    if (!match) return;
+    setOurTeam(match);
+    const other = match === originalTeamNames.team_a ? originalTeamNames.team_b : originalTeamNames.team_a;
+    if (other) setOpponent((prev) => prev || other);
+  }, [activeTeamName, originalTeamNames.team_a, originalTeamNames.team_b]);
+
   const handleTeamChange = (selected) => {
     setOurTeam(selected);
     const other = selected === originalTeamNames.team_a ? originalTeamNames.team_b
@@ -270,6 +287,7 @@ export default function MatchFileAnalysis() {
   const [expandedSections, setExpandedSections] = useState({});
   const [identifiedTeams, setIdentifiedTeams] = useState({ ourTeam: '', opponent: '' });
   const [originalTeamNames, setOriginalTeamNames] = useState({ team_a: '', team_b: '' });
+  const [activeTeamName, setActiveTeamName] = useState('');
   const [addedIssues, setAddedIssues] = useState(new Set());
   const [saving, setSaving] = useState(false);
   const [saveDone, setSaveDone] = useState(false);
@@ -278,6 +296,23 @@ export default function MatchFileAnalysis() {
   const [usage, setUsage] = useState({ uploadsToday: 0, analysesToday: 0 });
   const fileInputRef = useRef();
   const sectionRefs = useRef({});
+
+  // Resolve the name of the team selected in the top bar so the picker can
+  // default to it.
+  useEffect(() => {
+    let cancelled = false;
+    if (!selectedTeamId) { setActiveTeamName(''); return; }
+    (async () => {
+      try {
+        const userTeams = await base44.entities.Team.list();
+        const activeTeam = userTeams.find(t => t.id === selectedTeamId);
+        if (!cancelled) setActiveTeamName(activeTeam?.name || '');
+      } catch (e) {
+        console.error('Failed to resolve active team name:', e);
+      }
+    })();
+    return () => { cancelled = true; };
+  }, [selectedTeamId]);
 
   const handleFile = useCallback((f) => {
     if (!f) return;
@@ -617,7 +652,7 @@ export default function MatchFileAnalysis() {
         )}
 
         {/* PICK TEAMS */}
-        {step === 'pick_teams' && <TeamPicker originalTeamNames={originalTeamNames} onContinue={startFullAnalysis} />}
+        {step === 'pick_teams' && <TeamPicker originalTeamNames={originalTeamNames} activeTeamName={activeTeamName} onContinue={startFullAnalysis} />}
 
         {/* ANALYZING */}
         {step === 'analyzing' && (
