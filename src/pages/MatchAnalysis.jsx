@@ -19,7 +19,6 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import TeamSelector from '../components/team/TeamSelector';
 import HowItWorksButton from '../components/HowItWorksButton';
 import MatchReportCard from '../components/analysis/MatchReportCard';
 import MatchAnalysisHero from '../components/analysis/MatchAnalysisHero';
@@ -48,7 +47,9 @@ export default function MatchAnalysis() {
   const { t, dir } = useLang();
   const isHe = t.lang === 'he';
   const [teams, setTeams] = useState([]);
-  const [selectedTeamId, setSelectedTeamId] = useState(null);
+  // The active team is driven entirely by the global top-bar selector —
+  // this screen no longer has its own team dropdown.
+  const selectedTeamId = topBarTeamId;
   const [analyses, setAnalyses] = useState([]);
   const [loading, setLoading] = useState(true);
   const [selectedAnalysis, setSelectedAnalysis] = useState(null);
@@ -63,12 +64,6 @@ export default function MatchAnalysis() {
   const loadTeams = async () => {
     const data = await base44.entities.Team.list();
     setTeams(data);
-    if (data.length > 0) {
-      // Default to the team selected in the top bar; fall back to the first
-      // team only if that selection isn't available.
-      const preferred = data.find(tm => tm.id === topBarTeamId);
-      setSelectedTeamId(preferred ? preferred.id : data[0].id);
-    }
   };
 
   const loadAnalyses = async (teamId) => {
@@ -445,7 +440,6 @@ export default function MatchAnalysis() {
             view={view}
             onViewChange={setView}
             onNewAnalysis={() => setShowNewAnalysis(true)}
-            teamSelector={<TeamSelector teams={teams} selectedTeamId={selectedTeamId} onSelect={setSelectedTeamId} />}
             titleExtra={<HowItWorksButton page="MatchAnalysis" />}
             isHe={isHe}
           />
