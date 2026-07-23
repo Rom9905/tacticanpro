@@ -3,6 +3,7 @@ import { base44, setActiveAITeam } from '@/api/base44Client';
 import { motion } from 'framer-motion';
 import { useLang } from '@/lib/LanguageContext';
 import { useSubscriptionGuard } from '@/components/useSubscriptionGuard';
+import { useTeam } from '@/components/TeamContext';
 import {
   Plus,
   BarChart3,
@@ -43,6 +44,7 @@ const outcomeOf = (a) => {
 
 export default function MatchAnalysis() {
   const hasPlan = useSubscriptionGuard();
+  const { selectedTeamId: topBarTeamId } = useTeam();
   const { t, dir } = useLang();
   const isHe = t.lang === 'he';
   const [teams, setTeams] = useState([]);
@@ -62,7 +64,10 @@ export default function MatchAnalysis() {
     const data = await base44.entities.Team.list();
     setTeams(data);
     if (data.length > 0) {
-      setSelectedTeamId(data[0].id);
+      // Default to the team selected in the top bar; fall back to the first
+      // team only if that selection isn't available.
+      const preferred = data.find(tm => tm.id === topBarTeamId);
+      setSelectedTeamId(preferred ? preferred.id : data[0].id);
     }
   };
 
