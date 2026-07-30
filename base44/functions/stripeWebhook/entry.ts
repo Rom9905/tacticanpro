@@ -37,7 +37,11 @@ Deno.serve(async (req) => {
       // Get the price ID from line items
       const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
       const priceId = lineItems.data[0]?.price?.id;
-      const planName = PRICE_TO_PLAN[priceId] || 'starter';
+      const planName = PRICE_TO_PLAN[priceId];
+      if (!planName) {
+        console.error(`Unknown Stripe price ID: ${priceId}. Skipping subscription update.`);
+        return new Response(JSON.stringify({ received: true, warning: 'unknown_price_id' }), { status: 200 });
+      }
 
       if (customerEmail) {
         // Find the user and update their subscription_plan
