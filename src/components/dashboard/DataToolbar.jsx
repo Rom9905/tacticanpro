@@ -55,7 +55,7 @@ export default function DataToolbar({
       bg: 'rgba(185,122,42,0.09)',
       border: 'rgba(185,122,42,0.22)',
       onClick: () => {
-        const ev = needsSummaryEvents.find(e => JSON.parse(e.notes || '{}')?.type === 'training');
+        const ev = needsSummaryEvents.find(e => { try { return JSON.parse(e.notes || '{}')?.type === 'training'; } catch { return false; } });
         if (ev) setSummaryEvent(ev);
         else setSummaryEvent(needsSummaryEvents[0] || null);
       },
@@ -68,7 +68,7 @@ export default function DataToolbar({
       bg: 'rgba(185,64,64,0.09)',
       border: 'rgba(185,64,64,0.22)',
       onClick: () => {
-        const ev = needsSummaryEvents.find(e => JSON.parse(e.notes || '{}')?.type !== 'training');
+        const ev = needsSummaryEvents.find(e => { try { return JSON.parse(e.notes || '{}')?.type !== 'training'; } catch { return true; } });
         if (ev) setSummaryEvent(ev);
         else setSummaryEvent(needsSummaryEvents[0] || null);
       },
