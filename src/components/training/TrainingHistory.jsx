@@ -30,7 +30,7 @@ export default function TrainingHistory({ outcomes = [], reviews = [] }) {
         <CardContent className="space-y-3">
           {outcomes.map((outcome) => {
             const review = reviews.find(r => r.id === outcome.review_id);
-            const colors = outcomeColors[outcome.outcome_status];
+            const colors = outcomeColors[outcome.outcome_status] || outcomeColors['לא יעיל'];
             const Icon = colors.icon;
 
             return (
