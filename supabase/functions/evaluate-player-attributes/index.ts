@@ -197,6 +197,7 @@ ${attributeNames.map(a => `${a}: ${playerContext.current_ratings[a] ?? "לא מ�
       const oldVal = currentRatings[attr];
       if (oldVal == null) continue;
 
+      if (typeof adj.change !== 'number' || !Number.isFinite(adj.change)) continue;
       const change = Math.max(-1, Math.min(1, adj.change));
       const newVal = Math.max(1, Math.min(5, oldVal + change));
       if (newVal === oldVal) continue;
