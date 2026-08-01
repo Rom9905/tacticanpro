@@ -15,6 +15,7 @@ import {
   Menu,
   X,
   Plus,
+  CreditCard,
 } from 'lucide-react';
 import AddEventModal from '@/components/calendar/AddEventModal';
 import SiteFooter from '@/components/SiteFooter';
@@ -253,6 +254,13 @@ function LayoutInner({ children, currentPageName }) {
               <div className="mb-3">
                 <p className="text-xs truncate text-slate-400">{user.full_name || user.email}</p>
               </div>
+              <Link
+                to="/subscription"
+                className="w-full flex items-center gap-2 py-1.5 text-slate-500 hover:text-slate-300 transition-colors"
+              >
+                <CreditCard className="w-4 h-4" />
+                <span className="text-xs">ניהול מנוי</span>
+              </Link>
               <Button
                 variant="ghost"
                 size="sm"
@@ -320,6 +328,14 @@ function LayoutInner({ children, currentPageName }) {
                   <div className="mb-3">
                     <p className="text-sm text-slate-400">{user.full_name || user.email}</p>
                   </div>
+                  <Link
+                    to="/subscription"
+                    onClick={() => setMobileOpen(false)}
+                    className="flex items-center gap-2 py-2 text-slate-500 hover:text-slate-300 transition-colors"
+                  >
+                    <CreditCard className="w-4 h-4" />
+                    <span className="text-sm">ניהול מנוי</span>
+                  </Link>
                   <Button variant="ghost" size="sm" onClick={() => base44.auth.logout()} className="gap-2 text-slate-500 hover:text-slate-300">
                     <LogOut className="w-4 h-4" />יציאה
                   </Button>
