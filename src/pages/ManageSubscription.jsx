@@ -21,9 +21,15 @@ export default function ManageSubscription() {
 
   const loadSubscription = async () => {
     setLoading(true);
+    // Explicit user filter: the admin RLS policy can see ALL rows, so relying
+    // on RLS alone would return multiple rows and break maybeSingle().
+    const { data: { session } } = await supabase.auth.getSession();
+    const uid = session?.user?.id;
+    if (!uid) { setSub(null); setLoading(false); return; }
     const { data } = await supabase
       .from('subscriptions')
       .select('status, plan, start_date, end_date, hk_id, cancelled_at')
+      .eq('user_id', uid)
       .maybeSingle();
     setSub(data || null);
     setLoading(false);

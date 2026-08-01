@@ -18,18 +18,23 @@ const HYP_BASE = 'https://pay.hyp.co.il/p/';
 const PRICE_PER_MONTH = 150; // season price per month
 const MONTHLY_PRICE = 199; // open-ended monthly plan
 
-// The season runs until June 1st (exclusive). If we're already past June 1,
-// the upcoming season is the one that ends next year. Mirrors hyp-callback.
-function seasonEndDate(now: Date): Date {
-  const year = now.getUTCMonth() >= 5 ? now.getUTCFullYear() + 1 : now.getUTCFullYear();
-  return new Date(Date.UTC(year, 5, 1)); // June 1
+// Current year/month in Israel time. Customers see prices computed in their
+// local (Israel) timezone — the server must count months the same way, or a
+// purchase made around midnight on the 1st charges more than was displayed.
+function israelYearMonth(now: Date): { year: number; month: number } {
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Jerusalem', year: 'numeric', month: 'numeric' })
+      .formatToParts(now).map((p) => [p.type, p.value]),
+  );
+  return { year: Number(parts.year), month: Number(parts.month) - 1 }; // 0-based month
 }
 
-// Whole months from `now` until June 1. A partial current month rounds UP to a
-// full month, so a coach joining mid-month still pays/commits for that month.
+// Whole months from now (Israel time) until June 1 (month 5, exclusive).
+// A partial current month rounds UP to a full month.
 function monthsUntilSeasonEnd(now: Date): number {
-  const end = seasonEndDate(now);
-  const months = (end.getUTCFullYear() - now.getUTCFullYear()) * 12 + (end.getUTCMonth() - now.getUTCMonth());
+  const { year, month } = israelYearMonth(now);
+  const endYear = month >= 5 ? year + 1 : year;
+  const months = (endYear - year) * 12 + (5 - month);
   return Math.max(1, months);
 }
 

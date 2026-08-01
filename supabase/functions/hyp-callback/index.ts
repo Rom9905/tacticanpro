@@ -29,10 +29,16 @@ const BILLING: Record<string, { amount: number; dbPlan: 'monthly' | 'annual'; ro
   annual: { amount: 1800, dbPlan: 'annual', rolling: false }, // legacy alias
 };
 
-// Season pass ("annual") is valid until June 1st. If we're already past June 1,
-// the pass covers the season ending next year.
+// Season pass ("annual") is valid until June 1st. The season year is decided
+// in Israel time (mirrors hyp-payment) so a purchase near midnight on the
+// month boundary lands in the same season the user was shown.
 function seasonEndDate(now: Date): Date {
-  const year = now.getMonth() >= 5 ? now.getFullYear() + 1 : now.getFullYear(); // month 5 = June
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Jerusalem', year: 'numeric', month: 'numeric' })
+      .formatToParts(now).map((p) => [p.type, p.value]),
+  );
+  const month = Number(parts.month) - 1; // 0-based; month 5 = June
+  const year = month >= 5 ? Number(parts.year) + 1 : Number(parts.year);
   return new Date(Date.UTC(year, 5, 1)); // June 1
 }
 
