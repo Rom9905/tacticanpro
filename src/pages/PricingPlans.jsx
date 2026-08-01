@@ -52,9 +52,9 @@ const MONTHLY_FEATURES = [
 
 const ANNUAL_FEATURES = [
   'כל מה שבמסלול החודשי',
-  'חיסכון של 588₪ בשנה',
-  'תשלום חודשי נוח של 150₪',
-  'התחייבות ל-12 חודשים',
+  'תשלום חודשי מוזל של 150₪ (במקום 199₪)',
+  'חיסכון של 49₪ בכל חודש',
+  'פעיל עד סיום העונה · תחילת יוני (לא כולל)',
 ];
 
 export default function PricingPlans() {
@@ -171,7 +171,7 @@ export default function PricingPlans() {
                 הכי משתלם
               </div>
 
-              <h3 style={{ fontWeight: 700, fontSize: 20, color: '#FAF7F0', marginBottom: 4 }}>שנתי</h3>
+              <h3 style={{ fontWeight: 700, fontSize: 20, color: '#FAF7F0', marginBottom: 4 }}>עונתי</h3>
 
               <div className="flex items-baseline gap-2" style={{ marginBottom: 4 }}>
                 <span style={{ fontFamily: 'Heebo, sans-serif', fontWeight: 900, fontSize: 56, color: '#4ADE80', lineHeight: 1 }}>150₪</span>
@@ -180,7 +180,7 @@ export default function PricingPlans() {
               <p style={{ fontSize: 14, color: 'rgba(232, 245, 236, 0.5)', marginBottom: 4, fontFamily: 'Assistant, sans-serif' }}>
                 במקום <span style={{ textDecoration: 'line-through' }}>199₪</span>
               </p>
-              <p style={{ fontSize: 15, color: 'rgba(232, 245, 236, 0.6)', marginBottom: 20, fontFamily: 'Assistant, sans-serif' }}>חסכו 588₪ בשנה</p>
+              <p style={{ fontSize: 15, color: 'rgba(232, 245, 236, 0.6)', marginBottom: 20, fontFamily: 'Assistant, sans-serif' }}>חיסכון של 49₪ בכל חודש · פעיל עד תחילת יוני</p>
 
               <ul style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 32, padding: 0, listStyle: 'none' }}>
                 {ANNUAL_FEATURES.map((f, i) => (
@@ -192,7 +192,7 @@ export default function PricingPlans() {
               </ul>
 
               <button
-                onClick={() => handleCTA('שנתי')}
+                onClick={() => handleCTA('עונתי')}
                 className="pricing-cta-solid w-full font-bold rounded-full"
                 style={{ backgroundColor: '#4ADE80', color: '#0D1A12', height: 52, fontSize: 16, fontFamily: 'Heebo, sans-serif', border: 'none', cursor: 'pointer' }}
               >
