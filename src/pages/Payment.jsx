@@ -31,20 +31,35 @@ const MONTHLY_FEATURES = [
   'ביטול בכל עת',
 ];
 
-const SEASON_FEATURES = [
-  'כל מה שבמסלול החודשי',
-  'רק 150₪ לחודש — המחיר המשתלם ביותר',
-  'בחירה בין תשלום חודשי לתשלום מלא מראש',
-  'תשלום מלא מראש: 1,800₪ עד תום העונה',
-  'התחייבות לעונה — ניתן לבטל לפי התקנון',
-];
+const SEASON_PRICE_PER_MONTH = 150;
+
+// Whole months from today until June 1st (exclusive). A partial current month
+// rounds UP to a full month. Mirrors the server (hyp-payment) — this copy is
+// for display only; the charged amount is always computed server-side.
+function monthsUntilSeasonEnd(now = new Date()) {
+  const year = now.getMonth() >= 5 ? now.getFullYear() + 1 : now.getFullYear();
+  const end = new Date(year, 5, 1); // June 1
+  const months = (end.getFullYear() - now.getFullYear()) * 12 + (end.getMonth() - now.getMonth());
+  return Math.max(1, months);
+}
 
 export default function Payment() {
   const { user } = useAuth();
   const [loadingPlan, setLoadingPlan] = useState(null);
   const [error, setError] = useState(null);
-  const [seasonMode, setSeasonMode] = useState('monthly'); // 'monthly' (150/mo) | 'full' (1800)
+  const [seasonMode, setSeasonMode] = useState('monthly'); // 'monthly' (150/mo) | 'full' (150×months)
   const [termsAccepted, setTermsAccepted] = useState(false);
+
+  // Season pricing scales with the months left until June 1st.
+  const seasonMonths = monthsUntilSeasonEnd();
+  const seasonFullPrice = SEASON_PRICE_PER_MONTH * seasonMonths;
+  const SEASON_FEATURES = [
+    'כל מה שבמסלול החודשי',
+    'רק 150₪ לחודש — המחיר המשתלם ביותר',
+    'בחירה בין תשלום חודשי לתשלום מלא מראש',
+    `תשלום מלא מראש: ${seasonFullPrice.toLocaleString('he-IL')}₪ (${seasonMonths} חודשים עד תום העונה)`,
+    'התחייבות עד תום העונה — ניתן לבטל לפי התקנון',
+  ];
 
   const startPayment = async (plan) => {
     if (!termsAccepted) {
@@ -153,7 +168,7 @@ export default function Payment() {
               <h3 style={{ fontWeight: 700, fontSize: 20, color: '#FAF7F0', marginBottom: 4 }}>עונתי</h3>
               <p style={{ fontSize: 15, color: 'rgba(232,245,236,0.6)', marginBottom: 16 }}>כל העונה במחיר המשתלם ביותר</p>
 
-              {/* Billing mode toggle: monthly 150 vs full 1,800 upfront */}
+              {/* Billing mode toggle: monthly 150/mo vs full upfront (150 × months left) */}
               <div style={{ display: 'flex', gap: 6, backgroundColor: 'rgba(255,255,255,0.05)', borderRadius: 12, padding: 4, marginBottom: 16 }}>
                 {[
                   { key: 'monthly', label: 'תשלום חודשי' },
@@ -179,17 +194,17 @@ export default function Payment() {
                     <span style={{ fontSize: 16, color: 'rgba(232,245,236,0.6)' }}>/ לחודש</span>
                   </div>
                   <p style={{ fontSize: 14, color: 'rgba(232,245,236,0.5)', marginBottom: 20 }}>
-                    במקום <span style={{ textDecoration: 'line-through' }}>199₪</span> · חיוב חודשי מתחדש של 150₪
+                    במקום <span style={{ textDecoration: 'line-through' }}>199₪</span> · {seasonMonths} חיובים חודשיים של 150₪ עד תום העונה
                   </p>
                 </>
               ) : (
                 <>
                   <div className="flex items-baseline gap-2" style={{ marginBottom: 4 }}>
-                    <span style={{ fontFamily: 'Heebo, sans-serif', fontWeight: 900, fontSize: 56, color: '#4ADE80', lineHeight: 1 }}>1,800₪</span>
+                    <span style={{ fontFamily: 'Heebo, sans-serif', fontWeight: 900, fontSize: 56, color: '#4ADE80', lineHeight: 1 }}>{seasonFullPrice.toLocaleString('he-IL')}₪</span>
                     <span style={{ fontSize: 16, color: 'rgba(232,245,236,0.6)' }}>מראש</span>
                   </div>
                   <p style={{ fontSize: 14, color: 'rgba(232,245,236,0.5)', marginBottom: 20 }}>
-                    תשלום אחד · שווה ערך ל-150₪ לחודש · תקף עד תום העונה
+                    תשלום אחד · {seasonMonths} חודשים × 150₪ · תקף עד תום העונה
                   </p>
                 </>
               )}

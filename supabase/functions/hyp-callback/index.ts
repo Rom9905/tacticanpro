@@ -16,13 +16,16 @@ const corsHeaders = {
 
 const HYP_BASE = 'https://pay.hyp.co.il/p/';
 
-// Billing keys (carried in the Order field) → expected amount, the DB plan the
-// subscriptions table stores (CHECK allows only monthly|annual), and whether the
-// coverage rolls monthly (HK recurring) or runs to the end of the season.
+// Billing keys (carried in the Order field) → the DB plan the subscriptions
+// table stores (CHECK allows only monthly|annual) and whether the coverage rolls
+// monthly (HK recurring) or runs to the end of the season.
+// `amount` is only a FALLBACK for legacy orders created before the exact amount
+// was embedded in the Order; current orders carry their signed season-adjusted
+// amount and that value is authoritative.
 const BILLING: Record<string, { amount: number; dbPlan: 'monthly' | 'annual'; rolling: boolean }> = {
   monthly: { amount: 199, dbPlan: 'monthly', rolling: true },
   season_monthly: { amount: 150, dbPlan: 'annual', rolling: true },
-  season_full: { amount: 1800, dbPlan: 'annual', rolling: false },
+  season_full: { amount: 1800, dbPlan: 'annual', rolling: false }, // legacy fallback (old flat price)
   annual: { amount: 1800, dbPlan: 'annual', rolling: false }, // legacy alias
 };
 
@@ -91,17 +94,27 @@ Deno.serve(async (req) => {
       return json({ ok: false, error: 'אימות התשלום נכשל — פנה לתמיכה' }, 400);
     }
 
-    // ── Parse Order: userId|billingKey|timestamp ──
-    const [userId, billingKey] = order.split('|');
+    // ── Parse Order: userId|billingKey|timestamp|signedAmount ──
+    // The signed amount is the season-adjusted sum computed at payment time
+    // (150₪ × monthsRemaining for the full pass). It rides inside the Order,
+    // which HYP echoes back and includes in the signature we just verified.
+    const [userId, billingKey, , signedAmountRaw] = order.split('|');
     const billing = BILLING[billingKey];
     if (!userId || !billing) {
       console.error('Bad Order field:', order);
       return json({ ok: false, error: 'הזמנה לא מזוהה — פנה לתמיכה עם מספר עסקה ' + transactionId }, 400);
     }
 
-    // Amount sanity check against server-side pricing
-    if (Math.round(parseFloat(amount)) !== billing.amount) {
-      console.error(`Amount mismatch: got ${amount}, expected ${billing.amount} for ${billingKey}`);
+    // Expected amount: the signed amount from the Order (falls back to the
+    // static price for any legacy order created before amounts were embedded).
+    const expectedAmount = signedAmountRaw ? Math.round(parseFloat(signedAmountRaw)) : billing.amount;
+    if (!Number.isFinite(expectedAmount) || expectedAmount <= 0) {
+      console.error('Bad signed amount in Order:', order);
+      return json({ ok: false, error: 'הזמנה לא תקינה — פנה לתמיכה' }, 400);
+    }
+    // The amount HYP actually charged must match the signed expected amount.
+    if (Math.round(parseFloat(amount)) !== expectedAmount) {
+      console.error(`Amount mismatch: got ${amount}, expected ${expectedAmount} for ${billingKey}`);
       return json({ ok: false, error: 'סכום לא תואם — פנה לתמיכה' }, 400);
     }
 
@@ -115,7 +128,7 @@ Deno.serve(async (req) => {
     //    already processed, do not re-activate — return the existing result.
     const { error: claimError } = await admin
       .from('hyp_processed_transactions')
-      .insert({ transaction_id: transactionId, user_id: userId, billing_key: billingKey, amount: billing.amount });
+      .insert({ transaction_id: transactionId, user_id: userId, billing_key: billingKey, amount: expectedAmount });
     if (claimError) {
       // Primary-key conflict → already handled. Idempotent success.
       if ((claimError as { code?: string }).code === '23505') {

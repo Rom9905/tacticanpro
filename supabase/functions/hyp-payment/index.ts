@@ -15,12 +15,43 @@ const corsHeaders = {
 const HYP_BASE = 'https://pay.hyp.co.il/p/';
 
 // Server-side source of truth for pricing — the client never sends amounts.
-// The season pass can be paid either monthly (150₪ recurring) or in full (1,800₪).
-const PLANS: Record<string, { amount: number; info: string; hk: boolean }> = {
-  monthly: { amount: 199, info: 'TacticanPro - מנוי חודשי מתחדש', hk: true },
-  season_monthly: { amount: 150, info: 'TacticanPro - מנוי עונתי (תשלום חודשי)', hk: true },
-  season_full: { amount: 1800, info: 'TacticanPro - מנוי עונתי (תשלום מלא)', hk: false },
-};
+const PRICE_PER_MONTH = 150; // season price per month
+const MONTHLY_PRICE = 199; // open-ended monthly plan
+
+// The season runs until June 1st (exclusive). If we're already past June 1,
+// the upcoming season is the one that ends next year. Mirrors hyp-callback.
+function seasonEndDate(now: Date): Date {
+  const year = now.getUTCMonth() >= 5 ? now.getUTCFullYear() + 1 : now.getUTCFullYear();
+  return new Date(Date.UTC(year, 5, 1)); // June 1
+}
+
+// Whole months from `now` until June 1. A partial current month rounds UP to a
+// full month, so a coach joining mid-month still pays/commits for that month.
+function monthsUntilSeasonEnd(now: Date): number {
+  const end = seasonEndDate(now);
+  const months = (end.getUTCFullYear() - now.getUTCFullYear()) * 12 + (end.getUTCMonth() - now.getUTCMonth());
+  return Math.max(1, months);
+}
+
+// Build the plan definition for the current moment. Season amounts scale by the
+// number of months left until the end of the season:
+//   season_full    → one payment of 150₪ × monthsRemaining
+//   season_monthly → 150₪/month recurring, limited to monthsRemaining charges (Tash)
+function planFor(plan: string, now: Date):
+  | { amount: number; info: string; hk: boolean; tash: number; months: number }
+  | null {
+  const n = monthsUntilSeasonEnd(now);
+  switch (plan) {
+    case 'monthly':
+      return { amount: MONTHLY_PRICE, info: 'TacticanPro - מנוי חודשי מתחדש', hk: true, tash: 999, months: 0 };
+    case 'season_monthly':
+      return { amount: PRICE_PER_MONTH, info: `TacticanPro - מנוי עונתי (תשלום חודשי, ${n} חודשים)`, hk: true, tash: n, months: n };
+    case 'season_full':
+      return { amount: PRICE_PER_MONTH * n, info: `TacticanPro - מנוי עונתי (תשלום מלא, ${n} חודשים)`, hk: false, tash: 0, months: n };
+    default:
+      return null;
+  }
+}
 
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
@@ -46,13 +77,14 @@ Deno.serve(async (req) => {
     }
 
     const { plan } = await req.json().catch(() => ({}));
-    const planDef = PLANS[plan];
+    const planDef = planFor(plan, new Date());
     if (!planDef) {
       return json({ error: 'מסלול לא תקין' }, 400);
     }
 
-    // Order carries user + plan so the callback knows what to activate.
-    const order = `${user.id}|${plan}|${Date.now()}`;
+    // Order carries user + plan + the signed amount so the callback can verify
+    // the exact (season-adjusted) sum HYP charged, without recomputing it.
+    const order = `${user.id}|${plan}|${Date.now()}|${planDef.amount}`;
 
     const payParams = new URLSearchParams({
       action: 'APISign',
@@ -78,9 +110,12 @@ Deno.serve(async (req) => {
       tmp: '3',
     });
     if (planDef.hk) {
-      // הוראת קבע — monthly recurring charge (requires HK enabled on the terminal)
+      // הוראת קבע — recurring charge (requires HK enabled on the terminal).
+      // Tash caps the number of charges: 999 = open-ended (monthly plan),
+      // or exactly monthsRemaining for the season plan so it stops at June.
       payParams.set('HK', 'True');
       payParams.set('freq', 'monthly');
+      payParams.set('Tash', String(planDef.tash));
       payParams.set('OnlyOnApprove', 'True');
     }
 
