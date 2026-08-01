@@ -20,6 +20,7 @@ import SubscriptionBlocked from '@/pages/SubscriptionBlocked';
 import Login from '@/pages/Login';
 import Payment from '@/pages/Payment';
 import PaymentSuccess from '@/pages/PaymentSuccess';
+import ManageSubscription from '@/pages/ManageSubscription';
 import GamePrepPreview from '@/pages/GamePrepPreview';
 
 const { Pages, Layout, mainPage } = pagesConfig;
@@ -76,6 +77,7 @@ const AuthenticatedApp = () => {
         <Route path="/admin" element={<Admin />} />
         <Route path="/payment" element={<Payment />} />
         <Route path="/payment-success" element={<PaymentSuccess />} />
+        <Route path="/subscription" element={<ManageSubscription />} />
         {/* Legal pages must stay reachable without an active subscription —
             they're linked from the payment terms checkbox. */}
         <Route path="/terms" element={<Terms />} />
@@ -116,6 +118,7 @@ const AuthenticatedApp = () => {
       <Route path="/pricing-plans" element={<PricingPlans />} />
       <Route path="/payment" element={<Payment />} />
       <Route path="/payment-success" element={<PaymentSuccess />} />
+      <Route path="/subscription" element={<ManageSubscription />} />
       <Route path="/terms" element={<Terms />} />
       <Route path="/cancellation-policy" element={<CancellationPolicy />} />
       <Route path="/accessibility" element={<AccessibilityStatement />} />

@@ -112,6 +112,11 @@ export default function PaymentSuccess() {
                 }}>
                   כניסה למערכת
                 </Link>
+                <p style={{ fontSize: 13, marginTop: 18, marginBottom: 0 }}>
+                  <Link to="/subscription" style={{ color: 'rgba(232,245,236,0.5)', textDecoration: 'underline' }}>
+                    ניהול המנוי וביטול — בכל עת, מכאן
+                  </Link>
+                </p>
               </>
             )}
 

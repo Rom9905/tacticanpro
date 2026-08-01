@@ -141,6 +141,10 @@ Deno.serve(async (req) => {
     const now = new Date();
     const endDate = billing.rolling ? monthlyEndDate(now) : seasonEndDate(now);
 
+    // HYP returns the standing-order agreement id (HKId) on HK purchases.
+    // We store it so the user can self-cancel later (HKStatus NewStat=1).
+    const hkId = hypParams['HKId'] || hypParams['HkId'] || null;
+
     const { error: upsertError } = await admin
       .from('subscriptions')
       .upsert({
@@ -149,6 +153,8 @@ Deno.serve(async (req) => {
         plan: billing.dbPlan,
         start_date: now.toISOString(),
         end_date: endDate.toISOString(),
+        hk_id: hkId,
+        cancelled_at: null, // a fresh purchase always clears any past cancellation
       }, { onConflict: 'user_id' });
 
     if (upsertError) {
