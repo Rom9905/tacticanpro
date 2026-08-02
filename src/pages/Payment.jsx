@@ -33,14 +33,20 @@ const MONTHLY_FEATURES = [
 
 const SEASON_PRICE_PER_MONTH = 150;
 
-// Whole months from today until June 1st (exclusive). A partial current month
-// rounds UP to a full month. Mirrors the server (hyp-payment) — this copy is
-// for display only; the charged amount is always computed server-side.
+// Whole months from today until June 1st (exclusive), computed in Israel time
+// so the display matches the server-charged amount regardless of the visitor's
+// device timezone. A partial current month rounds UP to a full month.
+// Mirrors hyp-payment — this copy is for display only; the charged amount is
+// always computed server-side.
 function monthsUntilSeasonEnd(now = new Date()) {
-  const year = now.getMonth() >= 5 ? now.getFullYear() + 1 : now.getFullYear();
-  const end = new Date(year, 5, 1); // June 1
-  const months = (end.getFullYear() - now.getFullYear()) * 12 + (end.getMonth() - now.getMonth());
-  return Math.max(1, months);
+  const parts = Object.fromEntries(
+    new Intl.DateTimeFormat('en-US', { timeZone: 'Asia/Jerusalem', year: 'numeric', month: 'numeric' })
+      .formatToParts(now).map((p) => [p.type, p.value]),
+  );
+  const month = Number(parts.month) - 1; // 0-based; month 5 = June
+  const year = Number(parts.year);
+  const endYear = month >= 5 ? year + 1 : year;
+  return Math.max(1, (endYear - year) * 12 + (5 - month));
 }
 
 export default function Payment() {
@@ -58,7 +64,7 @@ export default function Payment() {
     'רק 150₪ לחודש — המחיר המשתלם ביותר',
     'בחירה בין תשלום חודשי לתשלום מלא מראש',
     `תשלום מלא מראש: ${seasonFullPrice.toLocaleString('he-IL')}₪ (${seasonMonths} חודשים עד תום העונה)`,
-    'התחייבות עד תום העונה — ניתן לבטל לפי התקנון',
+    'ביטול בכל עת מעמוד ניהול המנוי',
   ];
 
   const startPayment = async (plan) => {

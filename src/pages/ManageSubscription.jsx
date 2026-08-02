@@ -143,7 +143,7 @@ export default function ManageSubscription() {
                     <p className="flex items-start gap-2" style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: '#E8F5EC' }}>
                       <CheckCircle2 style={{ width: 17, height: 17, color: '#4ADE80', flexShrink: 0, marginTop: 2 }} />
                       <span>
-                        המנוי בוטל בהצלחה. לא יבוצעו חיובים נוספים, והגישה תישאר פעילה עד {endDateStr}.
+                        המנוי בוטל בהצלחה. לא יבוצעו חיובים נוספים, והגישה תישאר פעילה {endDateStr ? `עד ${endDateStr}` : 'עד תום התקופה ששולמה'}.
                         {result.manual && ' אם המנוי שלך בתשלום חודשי, נעצור את הוראת הקבע ידנית ונאשר לך במייל תוך יום עסקים.'}
                       </span>
                     </p>
