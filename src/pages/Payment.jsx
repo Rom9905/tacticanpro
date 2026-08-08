@@ -186,7 +186,7 @@ export default function Payment() {
               <button onClick={() => startPayment('monthly')} disabled={!!loadingPlan}
                 className="payment-cta-outline w-full font-bold rounded-full flex items-center justify-center gap-2"
                 style={{ backgroundColor: 'transparent', border: '1.5px solid #4ADE80', color: '#4ADE80', height: 52, fontSize: 16, fontFamily: 'Heebo, sans-serif', cursor: loadingPlan ? 'wait' : 'pointer', opacity: (!termsAccepted || (loadingPlan && loadingPlan !== 'monthly')) ? 0.55 : 1 }}>
-                {loadingPlan === 'monthly' ? <><Loader2 className="w-4 h-4 animate-spin" /> מעביר לתשלום...</> : (trialEligible ? 'התחילו 7 ימים חינם' : 'לתשלום מאובטח')}
+                {loadingPlan === 'monthly' ? <><Loader2 className="w-4 h-4 animate-spin" /> מעביר לתשלום...</> : (trialEligible ? 'התחל את 7 ימי הניסיון שלך' : 'לתשלום מאובטח')}
               </button>
             </div>
 
@@ -257,7 +257,7 @@ export default function Payment() {
                   <button onClick={() => startPayment(seasonPlan)} disabled={!!loadingPlan}
                     className="payment-cta-solid w-full font-bold rounded-full flex items-center justify-center gap-2"
                     style={{ backgroundColor: '#4ADE80', color: '#0D1A12', height: 52, fontSize: 16, fontFamily: 'Heebo, sans-serif', border: 'none', cursor: loadingPlan ? 'wait' : 'pointer', opacity: (!termsAccepted || (loadingPlan && loadingPlan !== seasonPlan)) ? 0.55 : 1 }}>
-                    {loadingPlan === seasonPlan ? <><Loader2 className="w-4 h-4 animate-spin" /> מעביר לתשלום...</> : (trialEligible ? 'התחילו 7 ימים חינם' : 'לתשלום מאובטח')}
+                    {loadingPlan === seasonPlan ? <><Loader2 className="w-4 h-4 animate-spin" /> מעביר לתשלום...</> : (trialEligible ? 'התחל את 7 ימי הניסיון שלך' : 'לתשלום מאובטח')}
                   </button>
                 );
               })()}
