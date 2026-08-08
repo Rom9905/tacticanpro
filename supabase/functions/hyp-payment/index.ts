@@ -81,7 +81,7 @@ Deno.serve(async (req) => {
       return json({ error: 'לא מחובר — יש להתחבר כדי לרכוש מנוי' }, 401);
     }
 
-    const { plan, tmp } = await req.json().catch(() => ({}));
+    const { plan } = await req.json().catch(() => ({}));
     const planDef = planFor(plan, new Date());
     if (!planDef) {
       return json({ error: 'מסלול לא תקין' }, 400);
@@ -138,9 +138,7 @@ Deno.serve(async (req) => {
       Sign: 'True',
       // Template 3: no address/city/zip fields (tested empirically) —
       // still collects first/last name + email, which the invoice needs.
-      // An explicit tmp (1-15) in the request overrides it — lets us preview
-      // HYP's other page designs via /payment?tmp=N without redeploying.
-      tmp: /^([1-9]|1[0-5])$/.test(String(tmp)) ? String(tmp) : '3',
+      tmp: '3',
     });
     if (trial) {
       // Trial: verify + hold the transaction without charging (Postpone).

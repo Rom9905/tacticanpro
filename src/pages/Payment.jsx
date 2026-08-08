@@ -104,8 +104,7 @@ export default function Payment() {
           'Content-Type': 'application/json',
           Authorization: `Bearer ${session.access_token}`,
         },
-        // ?tmp=N (1-15) previews a different HYP page template — testing only
-        body: JSON.stringify({ plan, tmp: new URLSearchParams(window.location.search).get('tmp') }),
+        body: JSON.stringify({ plan }),
       });
       const data = await res.json();
       if (!res.ok || !data.url) {
