@@ -75,7 +75,11 @@ Deno.serve(async (req) => {
     if (!transactionId || ccode === undefined) {
       return json({ ok: false, error: 'חסרים נתוני תשלום' }, 400);
     }
-    if (ccode !== '0') {
+    // Trial orders are Postpone transactions: HYP returns CCode=800 ("held,
+    // awaiting finalization"), NOT 0. We never commit the held transaction —
+    // the card is only verified, and billing happens later via the saved token.
+    const trialOrder = order.split('|')[4] === 'trial';
+    if (ccode !== '0' && !(trialOrder && ccode === '800')) {
       // Payment failed or was cancelled at HYP — nothing to activate
       return json({ ok: false, error: `התשלום לא הושלם (קוד ${ccode})`, ccode }, 200);
     }
@@ -155,6 +159,9 @@ Deno.serve(async (req) => {
         Masof: masof,
         PassP: passp,
         TransId: transactionId,
+        // The trial transaction is held (CCode=800), not a completed charge —
+        // allowFalse lets HYP return the token for non-completed transactions.
+        allowFalse: 'True',
       });
       const tokenRes = await fetch(`${HYP_BASE}?${tokenParams.toString()}`);
       const tokenText = await tokenRes.text();
