@@ -81,11 +81,18 @@ export const AuthProvider = ({ children }) => {
     try {
       const { data: sub } = await supabase
         .from('subscriptions')
-        .select('status')
+        .select('status, end_date')
         .eq('user_id', authUser.id)
         .maybeSingle();
 
-      setSubscriptionStatus(sub?.status || 'inactive');
+      // A trial that passed its end_date no longer grants access (covers a
+      // trial cancelled before its first charge — the cron never touches it,
+      // so the stored status stays 'trial' forever). Active subscriptions are
+      // deliberately NOT expired client-side: their renewals extend end_date
+      // server-side, and the biller/HK flow is the authority on lapse.
+      const expiredTrial = sub?.status === 'trial'
+        && sub?.end_date && new Date(sub.end_date) < new Date();
+      setSubscriptionStatus(expiredTrial ? 'inactive' : (sub?.status || 'inactive'));
     } catch (e) {
       console.error('Subscription check failed:', e);
       setSubscriptionStatus('inactive');

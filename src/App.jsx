@@ -69,9 +69,10 @@ const AuthenticatedApp = () => {
     );
   }
 
-  // Subscription check — admin always passes, others need active subscription
+  // Subscription check — admin always passes, others need an active
+  // subscription or a running 7-day free trial
   const isAdmin = user?.email === 'romfranko99@gmail.com';
-  if (!isAdmin && subscriptionStatus !== 'active') {
+  if (!isAdmin && subscriptionStatus !== 'active' && subscriptionStatus !== 'trial') {
     return (
       <Routes>
         <Route path="/admin" element={<Admin />} />

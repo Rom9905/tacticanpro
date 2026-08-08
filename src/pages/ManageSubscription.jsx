@@ -28,7 +28,7 @@ export default function ManageSubscription() {
     if (!uid) { setSub(null); setLoading(false); return; }
     const { data } = await supabase
       .from('subscriptions')
-      .select('status, plan, start_date, end_date, hk_id, cancelled_at')
+      .select('status, plan, start_date, end_date, hk_id, cancelled_at, next_charge_at')
       .eq('user_id', uid)
       .maybeSingle();
     setSub(data || null);
@@ -66,9 +66,11 @@ export default function ManageSubscription() {
   };
 
   const endDateStr = sub?.end_date ? new Date(sub.end_date).toLocaleDateString('he-IL') : null;
-  const isActive = sub?.status === 'active';
+  const isTrial = sub?.status === 'trial';
+  const isActive = sub?.status === 'active' || isTrial;
   const isCancelled = !!sub?.cancelled_at;
-  const isRecurring = !!sub?.hk_id; // recurring standing order we can stop automatically
+  const isRecurring = !!sub?.hk_id || !!sub?.next_charge_at; // charges we can stop automatically
+  const firstChargeStr = isTrial && sub?.next_charge_at ? new Date(sub.next_charge_at).toLocaleDateString('he-IL') : null;
 
   return (
     <div dir="rtl" className="min-h-screen flex flex-col" style={{ backgroundColor: '#0D1A12', color: '#E8F5EC', fontFamily: 'Assistant, sans-serif' }}>
@@ -118,6 +120,13 @@ export default function ManageSubscription() {
                     <CreditCard style={{ width: 18, height: 18, color: '#4ADE80', flexShrink: 0 }} />
                     <span style={{ fontSize: 16, color: '#FAF7F0', fontWeight: 600 }}>
                       {PLAN_LABELS[sub.plan] || 'מנוי'}
+                      {isTrial && !isCancelled && (
+                        <span style={{
+                          marginRight: 10, fontSize: 12, fontWeight: 700, color: '#4ADE80',
+                          background: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.35)',
+                          borderRadius: 9999, padding: '3px 10px',
+                        }}>תקופת ניסיון חינם</span>
+                      )}
                       {isCancelled && (
                         <span style={{
                           marginRight: 10, fontSize: 12, fontWeight: 700, color: '#F3B95F',
@@ -131,7 +140,11 @@ export default function ManageSubscription() {
                     <div className="flex items-center gap-3">
                       <CalendarDays style={{ width: 18, height: 18, color: '#4ADE80', flexShrink: 0 }} />
                       <span style={{ fontSize: 15, color: 'rgba(232,245,236,0.75)' }}>
-                        {isCancelled ? `הגישה פעילה עד ${endDateStr}` : `בתוקף עד ${endDateStr}`}
+                        {isCancelled
+                          ? `הגישה פעילה עד ${endDateStr}`
+                          : firstChargeStr
+                            ? `החיוב הראשון ב-${firstChargeStr} — עד אז חינם`
+                            : `בתוקף עד ${endDateStr}`}
                       </span>
                     </div>
                   )}
@@ -143,7 +156,9 @@ export default function ManageSubscription() {
                     <p className="flex items-start gap-2" style={{ margin: 0, fontSize: 14, lineHeight: 1.6, color: '#E8F5EC' }}>
                       <CheckCircle2 style={{ width: 17, height: 17, color: '#4ADE80', flexShrink: 0, marginTop: 2 }} />
                       <span>
-                        המנוי בוטל בהצלחה. לא יבוצעו חיובים נוספים, והגישה תישאר פעילה {endDateStr ? `עד ${endDateStr}` : 'עד תום התקופה ששולמה'}.
+                        {isTrial
+                          ? <>תקופת הניסיון בוטלה — לא תחויבו כלל. הגישה תישאר פעילה {endDateStr ? `עד ${endDateStr}` : 'עד תום ימי הניסיון'}.</>
+                          : <>המנוי בוטל בהצלחה. לא יבוצעו חיובים נוספים, והגישה תישאר פעילה {endDateStr ? `עד ${endDateStr}` : 'עד תום התקופה ששולמה'}.</>}
                         {result.manual && ' אם המנוי שלך בתשלום חודשי, נעצור את הוראת הקבע ידנית ונאשר לך במייל תוך יום עסקים.'}
                       </span>
                     </p>
@@ -163,9 +178,11 @@ export default function ManageSubscription() {
                       <p className="flex items-start gap-2" style={{ margin: '0 0 14px 0', fontSize: 14, lineHeight: 1.65, color: '#E8F5EC' }}>
                         <AlertTriangle style={{ width: 17, height: 17, color: '#F3B95F', flexShrink: 0, marginTop: 2 }} />
                         <span>
-                          {isRecurring
-                            ? 'הביטול יעצור את החיובים הבאים. החודש הנוכחי ששולם — נשאר שלך, והגישה תישאר פעילה עד סופו. להמשיך?'
-                            : 'הביטול יימנע חידוש של המנוי לעונה הבאה. הגישה תישאר פעילה עד תום התקופה ששולמה. להמשיך?'}
+                          {isTrial
+                            ? 'הביטול יעצור את המנוי לפני החיוב הראשון — לא תחויבו כלל. הגישה תישאר פעילה עד תום 7 ימי הניסיון. להמשיך?'
+                            : isRecurring
+                              ? 'הביטול יעצור את החיובים הבאים. החודש הנוכחי ששולם — נשאר שלך, והגישה תישאר פעילה עד סופו. להמשיך?'
+                              : 'הביטול יימנע חידוש של המנוי לעונה הבאה. הגישה תישאר פעילה עד תום התקופה ששולמה. להמשיך?'}
                         </span>
                       </p>
                       <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>

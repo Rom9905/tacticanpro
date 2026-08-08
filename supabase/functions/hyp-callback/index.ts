@@ -100,11 +100,12 @@ Deno.serve(async (req) => {
       return json({ ok: false, error: 'אימות התשלום נכשל — פנה לתמיכה' }, 400);
     }
 
-    // ── Parse Order: userId|billingKey|timestamp|signedAmount ──
+    // ── Parse Order: userId|billingKey|timestamp|signedAmount[|trial] ──
     // The signed amount is the season-adjusted sum computed at payment time
     // (150₪ × monthsRemaining for the full pass). It rides inside the Order,
     // which HYP echoes back and includes in the signature we just verified.
-    const [userId, billingKey, , signedAmountRaw] = order.split('|');
+    const [userId, billingKey, , signedAmountRaw, trialFlag] = order.split('|');
+    const isTrial = trialFlag === 'trial';
     const billing = BILLING[billingKey];
     if (!userId || !billing) {
       console.error('Bad Order field:', order);
@@ -145,6 +146,60 @@ Deno.serve(async (req) => {
     }
 
     const now = new Date();
+
+    if (isTrial) {
+      // ── 7-day free trial: no money moved (Postpone transaction). Pull the
+      //    card token from HYP so the cron biller can charge it at trial end.
+      const tokenParams = new URLSearchParams({
+        action: 'getToken',
+        Masof: masof,
+        PassP: passp,
+        TransId: transactionId,
+      });
+      const tokenRes = await fetch(`${HYP_BASE}?${tokenParams.toString()}`);
+      const tokenText = await tokenRes.text();
+      const tokenOut = new URLSearchParams(tokenText);
+      const cardToken = tokenOut.get('Token');
+      const cardTokef = tokenOut.get('Tokef');
+      if (!cardToken || !cardTokef) {
+        console.error('HYP getToken failed:', tokenText.slice(0, 300));
+        return json({ ok: false, error: 'שמירת אמצעי התשלום נכשלה — פנה לתמיכה עם מספר עסקה ' + transactionId }, 500);
+      }
+
+      const trialEnd = new Date(now);
+      trialEnd.setDate(trialEnd.getDate() + 7);
+      // Access lasts a bit past the charge moment so an hourly cron / retry
+      // never locks out a paying user mid-day.
+      const accessEnd = new Date(trialEnd);
+      accessEnd.setDate(accessEnd.getDate() + 2);
+
+      const { error: trialUpsertError } = await admin
+        .from('subscriptions')
+        .upsert({
+          user_id: userId,
+          status: 'trial',
+          plan: billing.dbPlan,
+          billing_key: billingKey,
+          start_date: now.toISOString(),
+          end_date: accessEnd.toISOString(),
+          trial_started_at: now.toISOString(),
+          next_charge_at: trialEnd.toISOString(),
+          card_token: cardToken,
+          card_tokef: cardTokef,
+          charge_attempts: 0,
+          hk_id: null,
+          cancelled_at: null,
+        }, { onConflict: 'user_id' });
+
+      if (trialUpsertError) {
+        console.error('Trial upsert failed:', trialUpsertError);
+        return json({ ok: false, error: 'האימות הצליח אך פתיחת תקופת הניסיון נכשלה — פנה לתמיכה עם מספר עסקה ' + transactionId }, 500);
+      }
+
+      console.log(`Trial started: user=${userId} billing=${billingKey} tx=${transactionId} first charge=${trialEnd.toISOString()}`);
+      return json({ ok: true, trial: true, plan: billing.dbPlan, trial_end: trialEnd.toISOString(), transaction_id: transactionId });
+    }
+
     const endDate = billing.rolling ? monthlyEndDate(now) : seasonEndDate(now);
 
     // HYP returns the standing-order agreement id (HKId) on HK purchases.
@@ -157,6 +212,7 @@ Deno.serve(async (req) => {
         user_id: userId,
         status: 'active',
         plan: billing.dbPlan,
+        billing_key: billingKey,
         start_date: now.toISOString(),
         end_date: endDate.toISOString(),
         hk_id: hkId,

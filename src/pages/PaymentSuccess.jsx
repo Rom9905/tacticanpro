@@ -90,12 +90,19 @@ export default function PaymentSuccess() {
               <>
                 <CheckCircle2 className="w-16 h-16 mx-auto mb-5" style={{ color: '#4ADE80' }} />
                 <h1 style={{ fontFamily: 'Heebo, sans-serif', fontSize: 28, fontWeight: 900, color: '#FAF7F0', marginBottom: 8 }}>
-                  התשלום התקבל — המנוי פעיל!
+                  {details?.trial ? 'תקופת הניסיון החלה!' : 'התשלום התקבל — המנוי פעיל!'}
                 </h1>
                 <p style={{ fontSize: 16, color: 'rgba(232,245,236,0.75)', marginBottom: 6 }}>
-                  {PLAN_LABELS[details?.plan] || 'המנוי'} שלך הופעל בהצלחה
+                  {details?.trial
+                    ? `${PLAN_LABELS[details?.plan] || 'המנוי'} שלך פעיל — 7 הימים הראשונים חינם`
+                    : `${PLAN_LABELS[details?.plan] || 'המנוי'} שלך הופעל בהצלחה`}
                 </p>
-                {details?.end_date && (
+                {details?.trial && details?.trial_end && (
+                  <p style={{ fontSize: 14, color: 'rgba(232,245,236,0.5)', marginBottom: 4 }}>
+                    לא חויבתם היום — החיוב הראשון יתבצע ב-{new Date(details.trial_end).toLocaleDateString('he-IL')}. ניתן לבטל עד אז ללא עלות.
+                  </p>
+                )}
+                {!details?.trial && details?.end_date && (
                   <p style={{ fontSize: 14, color: 'rgba(232,245,236,0.5)', marginBottom: 4 }}>
                     בתוקף עד {new Date(details.end_date).toLocaleDateString('he-IL')}
                   </p>

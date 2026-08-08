@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Check, Loader2, ShieldCheck } from 'lucide-react';
 import InfoPageHeader from '@/components/InfoPageHeader';
@@ -55,6 +55,24 @@ export default function Payment() {
   const [error, setError] = useState(null);
   const [seasonMode, setSeasonMode] = useState('monthly'); // 'monthly' (150/mo) | 'full' (150×months)
   const [termsAccepted, setTermsAccepted] = useState(false);
+  const [trialEligible, setTrialEligible] = useState(false);
+
+  // First-time subscribers get a 7-day free trial: the card is only verified
+  // now and the first charge happens at trial end. Mirrors the server-side
+  // eligibility check in hyp-payment (which is the authority).
+  useEffect(() => {
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      const uid = session?.user?.id;
+      if (!uid) return;
+      const { data: sub } = await supabase
+        .from('subscriptions')
+        .select('status, trial_started_at')
+        .eq('user_id', uid)
+        .maybeSingle();
+      setTrialEligible(!sub?.trial_started_at && sub?.status !== 'active' && sub?.status !== 'trial');
+    })();
+  }, []);
 
   // Season pricing scales with the months left until June 1st.
   const seasonMonths = monthsUntilSeasonEnd();
@@ -122,6 +140,17 @@ export default function Payment() {
           <p style={{ fontSize: 18, color: 'rgba(232,245,236,0.6)', textAlign: 'center', marginBottom: 12 }}>
             תשלום מאובטח דרך HYP · גישה מיידית לאחר התשלום
           </p>
+          {trialEligible && (
+            <div style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 12,
+              backgroundColor: 'rgba(74,222,128,0.12)', border: '1px solid rgba(74,222,128,0.4)',
+              borderRadius: 9999, padding: '10px 22px',
+            }}>
+              <span style={{ fontFamily: 'Heebo, sans-serif', fontWeight: 700, fontSize: 15, color: '#4ADE80' }}>
+                🎁 7 ימים ראשונים חינם — הכרטיס רק נשמר, החיוב הראשון רק בתום תקופת הניסיון
+              </span>
+            </div>
+          )}
           {user?.email && (
             <p style={{ fontSize: 14, color: '#4ADE80', textAlign: 'center', marginBottom: 40 }}>
               המנוי יופעל עבור {user.email}
@@ -157,7 +186,7 @@ export default function Payment() {
               <button onClick={() => startPayment('monthly')} disabled={!!loadingPlan}
                 className="payment-cta-outline w-full font-bold rounded-full flex items-center justify-center gap-2"
                 style={{ backgroundColor: 'transparent', border: '1.5px solid #4ADE80', color: '#4ADE80', height: 52, fontSize: 16, fontFamily: 'Heebo, sans-serif', cursor: loadingPlan ? 'wait' : 'pointer', opacity: (!termsAccepted || (loadingPlan && loadingPlan !== 'monthly')) ? 0.55 : 1 }}>
-                {loadingPlan === 'monthly' ? <><Loader2 className="w-4 h-4 animate-spin" /> מעביר לתשלום...</> : 'לתשלום מאובטח'}
+                {loadingPlan === 'monthly' ? <><Loader2 className="w-4 h-4 animate-spin" /> מעביר לתשלום...</> : (trialEligible ? 'התחילו 7 ימים חינם' : 'לתשלום מאובטח')}
               </button>
             </div>
 
@@ -228,7 +257,7 @@ export default function Payment() {
                   <button onClick={() => startPayment(seasonPlan)} disabled={!!loadingPlan}
                     className="payment-cta-solid w-full font-bold rounded-full flex items-center justify-center gap-2"
                     style={{ backgroundColor: '#4ADE80', color: '#0D1A12', height: 52, fontSize: 16, fontFamily: 'Heebo, sans-serif', border: 'none', cursor: loadingPlan ? 'wait' : 'pointer', opacity: (!termsAccepted || (loadingPlan && loadingPlan !== seasonPlan)) ? 0.55 : 1 }}>
-                    {loadingPlan === seasonPlan ? <><Loader2 className="w-4 h-4 animate-spin" /> מעביר לתשלום...</> : 'לתשלום מאובטח'}
+                    {loadingPlan === seasonPlan ? <><Loader2 className="w-4 h-4 animate-spin" /> מעביר לתשלום...</> : (trialEligible ? 'התחילו 7 ימים חינם' : 'לתשלום מאובטח')}
                   </button>
                 );
               })()}

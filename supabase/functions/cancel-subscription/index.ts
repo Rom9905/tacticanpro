@@ -51,7 +51,7 @@ Deno.serve(async (req) => {
 
     const { data: sub, error: subError } = await admin
       .from('subscriptions')
-      .select('status, plan, end_date, hk_id, cancelled_at')
+      .select('status, plan, end_date, hk_id, cancelled_at, card_token')
       .eq('user_id', user.id)
       .maybeSingle();
 
@@ -59,7 +59,7 @@ Deno.serve(async (req) => {
       console.error('Subscription lookup failed:', subError);
       return json({ ok: false, error: 'שגיאה בשליפת המנוי — נסה שוב' }, 500);
     }
-    if (!sub || sub.status !== 'active') {
+    if (!sub || (sub.status !== 'active' && sub.status !== 'trial')) {
       return json({ ok: false, error: 'לא נמצא מנוי פעיל לביטול' }, 400);
     }
     if (sub.cancelled_at) {
@@ -85,6 +85,9 @@ Deno.serve(async (req) => {
         console.error('HYP HKStatus stop failed:', stopRes.status, stopText.slice(0, 300));
         return json({ ok: false, error: 'עצירת החיוב מול חברת הסליקה נכשלה — פנה לתמיכה' }, 502);
       }
+    } else if (sub.card_token) {
+      // Token-billed subscription (trial flow): all charges are made by our
+      // cron — clearing next_charge_at below stops billing. No HYP call needed.
     } else {
       // No hk_id stored: either an upfront season pass (no HK exists) or a
       // legacy recurring subscription (HK exists but id unknown → manual stop).
@@ -93,7 +96,7 @@ Deno.serve(async (req) => {
 
     const { error: updateError } = await admin
       .from('subscriptions')
-      .update({ cancelled_at: new Date().toISOString() })
+      .update({ cancelled_at: new Date().toISOString(), next_charge_at: null })
       .eq('user_id', user.id);
 
     if (updateError) {

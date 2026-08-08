@@ -87,9 +87,24 @@ Deno.serve(async (req) => {
       return json({ error: 'מסלול לא תקין' }, 400);
     }
 
+    // 7-day free trial: first-time subscribers get their card verified (HYP
+    // Postpone — no charge) and saved as a token; the cron biller charges it
+    // when the trial ends. One trial per user, and never on top of an active
+    // subscription. RLS lets the authed client read only the user's own row.
+    const { data: existingSub } = await supabase
+      .from('subscriptions')
+      .select('status, trial_started_at')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    const trial = !existingSub?.trial_started_at
+      && existingSub?.status !== 'active'
+      && existingSub?.status !== 'trial';
+
     // Order carries user + plan + the signed amount so the callback can verify
     // the exact (season-adjusted) sum HYP charged, without recomputing it.
-    const order = `${user.id}|${plan}|${Date.now()}|${planDef.amount}`;
+    // A trailing 'trial' flag tells the callback to open a trial instead of
+    // activating immediately.
+    const order = `${user.id}|${plan}|${Date.now()}|${planDef.amount}${trial ? '|trial' : ''}`;
 
     const payParams = new URLSearchParams({
       action: 'APISign',
@@ -114,7 +129,12 @@ Deno.serve(async (req) => {
       // still collects first/last name + email, which the invoice needs.
       tmp: '3',
     });
-    if (planDef.hk) {
+    if (trial) {
+      // Trial: verify + hold the transaction without charging (Postpone).
+      // No HK — after the trial, all charges run server-side via the saved
+      // token (charge-due-subscriptions), including monthly renewals.
+      payParams.set('Postpone', 'True');
+    } else if (planDef.hk) {
       // הוראת קבע — recurring charge (requires HK enabled on the terminal).
       // Tash caps the number of charges: 999 = open-ended (monthly plan),
       // or exactly monthsRemaining for the season plan so it stops at June.
@@ -133,7 +153,7 @@ Deno.serve(async (req) => {
     }
 
     const url = `${HYP_BASE}?action=pay&${signedQuery}`;
-    return json({ url });
+    return json({ url, trial });
   } catch (e) {
     console.error('hyp-payment error:', e);
     return json({ error: 'שגיאה פנימית' }, 500);
