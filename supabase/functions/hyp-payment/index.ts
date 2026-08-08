@@ -106,6 +106,17 @@ Deno.serve(async (req) => {
     // activating immediately.
     const order = `${user.id}|${plan}|${Date.now()}|${planDef.amount}${trial ? '|trial' : ''}`;
 
+    // On a trial, HYP's hosted page is the last thing the customer sees before
+    // entering a card — its button text can't be customized, so the trial terms
+    // go into the transaction description (Info), which the page displays.
+    let info = planDef.info;
+    if (trial) {
+      const firstCharge = new Date();
+      firstCharge.setDate(firstCharge.getDate() + 7);
+      const firstChargeStr = new Intl.DateTimeFormat('he-IL', { timeZone: 'Asia/Jerusalem', day: 'numeric', month: 'numeric', year: 'numeric' }).format(firstCharge);
+      info = `${planDef.info} - 7 ימי ניסיון חינם, ללא חיוב היום. החיוב הראשון: ${firstChargeStr}`;
+    }
+
     const payParams = new URLSearchParams({
       action: 'APISign',
       What: 'SIGN',
@@ -114,7 +125,7 @@ Deno.serve(async (req) => {
       Masof: masof,
       Action: 'pay',
       Amount: String(planDef.amount),
-      Info: planDef.info,
+      Info: info,
       Order: order,
       UTF8: 'True',
       UTF8out: 'True',
