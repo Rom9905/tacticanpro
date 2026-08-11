@@ -102,9 +102,13 @@ Deno.serve(async (req) => {
 
     // Order carries user + plan + the signed amount so the callback can verify
     // the exact (season-adjusted) sum HYP charged, without recomputing it.
-    // A trailing 'trial' flag tells the callback to open a trial instead of
-    // activating immediately.
-    const order = `${user.id}|${plan}|${Date.now()}|${planDef.amount}${trial ? '|trial' : ''}`;
+    // A trailing 'T' flag tells the callback to open a trial instead of
+    // activating immediately. Kept deliberately COMPACT (~50 chars): the uuid
+    // is stripped of dashes and the plan/timestamp are shortened, so the field
+    // survives any length limit HYP may apply to Order — a truncated Order
+    // silently loses the trailing trial flag and amount.
+    const PLAN_CODES: Record<string, string> = { monthly: 'm', season_monthly: 'sm', season_full: 'sf' };
+    const order = `${user.id.replace(/-/g, '')}|${PLAN_CODES[plan]}|${Date.now().toString(36)}|${planDef.amount}${trial ? '|T' : ''}`;
 
     // On a trial, HYP's hosted page is the last thing the customer sees before
     // entering a card — its button text can't be customized, so the trial terms

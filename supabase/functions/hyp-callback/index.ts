@@ -75,12 +75,30 @@ Deno.serve(async (req) => {
     if (!transactionId || ccode === undefined) {
       return json({ ok: false, error: 'חסרים נתוני תשלום' }, 400);
     }
+
+    // ── Parse Order early: userId|plan|timestamp|signedAmount[|trialFlag] ──
+    // Two formats coexist: legacy (dashed uuid, full plan name, 'trial' flag)
+    // and compact (32-hex uuid, m/sm/sf plan code, 'T' flag) — compact exists
+    // because a long Order risks truncation by HYP, which silently drops the
+    // trailing flag. Detection is tolerant of both.
+    const orderParts = order.split('|');
+    let userId = orderParts[0] || '';
+    if (/^[0-9a-fA-F]{32}$/.test(userId)) {
+      userId = `${userId.slice(0, 8)}-${userId.slice(8, 12)}-${userId.slice(12, 16)}-${userId.slice(16, 20)}-${userId.slice(20)}`;
+    }
+    const PLAN_CODES: Record<string, string> = { m: 'monthly', sm: 'season_monthly', sf: 'season_full' };
+    const billingKey = PLAN_CODES[orderParts[1]] || orderParts[1];
+    const signedAmountRaw = orderParts[3];
+    const trialFlag = orderParts[4];
+    const isTrial = trialFlag === 'T' || trialFlag === 'trial';
+
     // Trial orders are Postpone transactions: HYP returns CCode=800 ("held,
     // awaiting finalization"), NOT 0. We never commit the held transaction —
     // the card is only verified, and billing happens later via the saved token.
-    const trialOrder = order.split('|')[4] === 'trial';
-    if (ccode !== '0' && !(trialOrder && ccode === '800')) {
-      // Payment failed or was cancelled at HYP — nothing to activate
+    if (ccode !== '0' && !(isTrial && ccode === '800')) {
+      // Payment failed or was cancelled at HYP — nothing to activate. The raw
+      // Order is logged so a mangled/truncated field is diagnosable.
+      console.error(`Payment not completed: ccode=${ccode} trial=${isTrial} order="${order}" tx=${transactionId}`);
       return json({ ok: false, error: `התשלום לא הושלם (קוד ${ccode})`, ccode }, 200);
     }
 
@@ -104,12 +122,9 @@ Deno.serve(async (req) => {
       return json({ ok: false, error: 'אימות התשלום נכשל — פנה לתמיכה' }, 400);
     }
 
-    // ── Parse Order: userId|billingKey|timestamp|signedAmount[|trial] ──
     // The signed amount is the season-adjusted sum computed at payment time
     // (150₪ × monthsRemaining for the full pass). It rides inside the Order,
     // which HYP echoes back and includes in the signature we just verified.
-    const [userId, billingKey, , signedAmountRaw, trialFlag] = order.split('|');
-    const isTrial = trialFlag === 'trial';
     const billing = BILLING[billingKey];
     if (!userId || !billing) {
       console.error('Bad Order field:', order);
