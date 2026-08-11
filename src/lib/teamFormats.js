@@ -224,6 +224,13 @@ export function lineupSizeFor(teamOrKey) {
   return getFormat(teamOrKey).lineupSize;
 }
 
+// Smallest squad the app considers a usable team: a full lineup plus four
+// subs. Setup and every squad-size gate must read this same number — a gate
+// stricter than the wizard's minimum traps the coach in the setup screen.
+export function minSquadFor(teamOrKey) {
+  return lineupSizeFor(teamOrKey) + 4;
+}
+
 export function layoutFor(teamOrKey, formation) {
   const fmt = getFormat(teamOrKey);
   return fmt.layouts[formation] || fmt.layouts[fmt.defaultFormation];

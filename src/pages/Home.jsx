@@ -6,6 +6,7 @@ import { TrendingUp, TrendingDown, Activity, AlertCircle, User, ShieldCheck } fr
 import { updateDeadlinesForGame } from '@/components/schedule/DeadlineCalculator';
 import { trackEvent } from '@/hooks/useAnalytics';
 import LandingPage from '@/components/LandingPage';
+import { minSquadFor } from '@/lib/teamFormats';
 import SetupWizard from '@/components/setup/SetupWizard';
 import DashboardSkeleton from '@/components/dashboard/DashboardSkeleton';
 import DashboardTopBar from '@/components/dashboard/DashboardTopBar';
@@ -53,7 +54,12 @@ export default function Home() {
         const teamId = selectedTeamId || teamsData[0].id;
         if (!selectedTeamId) selectTeam(teamsData[0].id);
         const players = await base44.entities.Player.filter({ team_id: teamId });
-        if (players.length < 15) { setSetupRequired(true); setLoading(false); return; }
+        // Squad-size gate must match the wizard's own minimum (SetupWizard:
+        // lineup + 4 subs), which scales with the team format. A flat 15 locked
+        // 7v7/9v9 coaches out of the app forever: the wizard let them finish
+        // with 11, then this check bounced them straight back into it.
+        const team = teamsData.find(t => t.id === teamId) || teamsData[0];
+        if (players.length < minSquadFor(team)) { setSetupRequired(true); setLoading(false); return; }
         setSetupRequired(false);
         setLoading(false);
         // Load dashboard immediately for the resolved team

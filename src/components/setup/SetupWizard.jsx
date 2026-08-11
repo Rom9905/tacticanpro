@@ -11,7 +11,7 @@ import {
 import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/components/ui/select';
-import { FORMATS, FORMAT_KEYS, formationsFor, getFormat, lineupSizeFor } from '@/lib/teamFormats';
+import { FORMATS, FORMAT_KEYS, formationsFor, getFormat, minSquadFor } from '@/lib/teamFormats';
 import { MiniPitch } from '@/components/team/TeamForm';
 
 const POSITIONS = ['שוער', 'בלם', 'מגן ימין', 'מגן שמאל', 'קשר הגנתי', 'קשר מרכזי', 'קשר התקפי', 'כנף ימין', 'כנף שמאל', 'חלוץ'];
@@ -43,7 +43,7 @@ export default function SetupWizard({ onComplete, allowBackToHome }) {
 
   // Squad minimum follows the format: full lineup + 4 subs
   // (11v11 keeps the original 15).
-  const minPlayers = lineupSizeFor(format) + 4;
+  const minPlayers = minSquadFor(format);
 
 
 
