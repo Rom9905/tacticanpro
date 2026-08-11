@@ -127,9 +127,17 @@ Deno.serve(async (req) => {
     const verifyRes = await fetch(`${HYP_BASE}?${verifyParams.toString()}`);
     const verifyText = await verifyRes.text();
     const verifyCode = new URLSearchParams(verifyText).get('CCode');
-    if (verifyCode !== '0') {
+    if (verifyCode !== '0' && !(isTrial && ccode === '800')) {
       console.error('HYP VERIFY failed:', verifyText.slice(0, 300));
       return json({ ok: false, error: 'אימות התשלום נכשל — פנה לתמיכה' }, 400);
+    }
+    if (verifyCode !== '0') {
+      // Postponed (CCode=800) trial transaction: APISign VERIFY is documented
+      // for COMPLETED transactions and fails on held ones. Authenticity is
+      // proven by getToken below instead — only a transaction that really
+      // exists on OUR terminal can yield a card token, and a forged trial
+      // moves no money (nothing is charged, one trial per user ever).
+      console.warn(`VERIFY non-zero for held trial tx ${transactionId} — relying on getToken proof:`, verifyText.slice(0, 200));
     }
 
     // The signed amount is the season-adjusted sum computed at payment time
