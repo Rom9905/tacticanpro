@@ -1,8 +1,12 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import { Mail, Phone } from 'lucide-react';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function SiteFooter() {
+  const { isAuthenticated, subscriptionStatus } = useAuth();
+  // Mirrors InfoPageHeader: subscribers manage instead of buy.
+  const hasSubscription = isAuthenticated && (subscriptionStatus === 'active' || subscriptionStatus === 'trial');
   return (
     <footer style={{ backgroundColor: '#0D1A12', borderTop: '1px solid rgba(74,222,128,0.15)' }} dir="rtl">
       <div style={{ maxWidth: '1100px', margin: '0 auto', padding: '48px 24px' }}>
@@ -49,7 +53,9 @@ export default function SiteFooter() {
             <h4 style={{ fontFamily: 'Heebo, sans-serif', fontWeight: 600, fontSize: 13, color: 'rgba(232, 245, 236, 0.6)', marginBottom: 12, margin: '0 0 12px 0' }}>קישורים</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               {[
-                { to: '/pricing-plans', label: 'תמחור' },
+                hasSubscription
+                  ? { to: '/subscription', label: 'ניהול מנוי' }
+                  : { to: '/pricing-plans', label: 'תמחור' },
                 { to: '/terms', label: 'תקנון' },
                 { to: '/cancellation-policy', label: 'מדיניות ביטולים' },
                 { to: '/accessibility', label: 'הצהרת נגישות' },

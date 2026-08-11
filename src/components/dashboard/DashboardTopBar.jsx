@@ -6,9 +6,13 @@ import { base44 } from '@/api/base44Client';
 import AddEventModal from '@/components/calendar/AddEventModal';
 import TeamForm from '@/components/team/TeamForm';
 import { useLang } from '@/lib/LanguageContext';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function DashboardTopBar({ user, teams, selectedTeamId, onSelectTeam, onNewTeam, teamId, onTeamDeleted }) {
   const { t, dir } = useLang();
+  // Subscribers get "manage subscription" where prospects get "pricing".
+  const { subscriptionStatus } = useAuth();
+  const hasSubscription = subscriptionStatus === 'active' || subscriptionStatus === 'trial';
   const [teamOpen, setTeamOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [addOpen2, setAddOpen2] = useState(false);
@@ -160,11 +164,11 @@ export default function DashboardTopBar({ user, teams, selectedTeamId, onSelectT
           )}
         </div>
 
-        {/* Pricing + Logout — white 70% → 100% */}
-        <Link to="/pricing-plans" className="flex-shrink-0 p-1.5 rounded-lg transition-all" style={{ color: 'rgba(255,255,255,.7)' }}
+        {/* Subscription (pricing for non-subscribers) + Logout — white 70% → 100% */}
+        <Link to={hasSubscription ? '/subscription' : '/pricing-plans'} className="flex-shrink-0 p-1.5 rounded-lg transition-all" style={{ color: 'rgba(255,255,255,.7)' }}
           onMouseEnter={e => e.currentTarget.style.color = '#fff'}
           onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,.7)'}
-          title="תמחור"
+          title={hasSubscription ? 'ניהול מנוי' : 'תמחור'}
         >
           <CreditCard className="w-4 h-4" />
         </Link>

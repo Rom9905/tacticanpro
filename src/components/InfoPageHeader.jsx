@@ -4,7 +4,11 @@ import { LogOut } from 'lucide-react';
 import { useAuth } from '@/lib/AuthContext';
 
 export default function InfoPageHeader({ showLogin = true, variant = 'light' }) {
-  const { user, isAuthenticated, logout, navigateToLogin } = useAuth();
+  const { user, isAuthenticated, logout, navigateToLogin, subscriptionStatus } = useAuth();
+
+  // A subscriber has nothing to buy — the pricing link becomes the way to
+  // manage (and cancel) what they already have.
+  const hasSubscription = isAuthenticated && (subscriptionStatus === 'active' || subscriptionStatus === 'trial');
 
   const handleLogin = () => {
     navigateToLogin();
@@ -32,10 +36,11 @@ export default function InfoPageHeader({ showLogin = true, variant = 'light' }) 
           </span>
         </Link>
         <div className="flex items-center gap-4">
-          <Link to="/pricing-plans" style={{ fontSize: 14, color: mutedColor, transition: 'color 200ms ease-out', textDecoration: 'none' }}
+          <Link to={hasSubscription ? '/subscription' : '/pricing-plans'}
+                style={{ fontSize: 14, color: mutedColor, transition: 'color 200ms ease-out', textDecoration: 'none' }}
                 onMouseEnter={e => e.currentTarget.style.color = '#4ADE80'}
                 onMouseLeave={e => e.currentTarget.style.color = mutedColor}>
-            תמחור
+            {hasSubscription ? 'ניהול מנוי' : 'תמחור'}
           </Link>
           {showLogin && (
             isAuthenticated && user ? (
