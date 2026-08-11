@@ -76,21 +76,31 @@ Deno.serve(async (req) => {
       return json({ ok: false, error: 'חסרים נתוני תשלום' }, 400);
     }
 
-    // ── Parse Order early: userId|plan|timestamp|signedAmount[|trialFlag] ──
-    // Two formats coexist: legacy (dashed uuid, full plan name, 'trial' flag)
-    // and compact (32-hex uuid, m/sm/sf plan code, 'T' flag) — compact exists
-    // because a long Order risks truncation by HYP, which silently drops the
-    // trailing flag. Detection is tolerant of both.
-    const orderParts = order.split('|');
-    let userId = orderParts[0] || '';
-    if (/^[0-9a-fA-F]{32}$/.test(userId)) {
-      userId = `${userId.slice(0, 8)}-${userId.slice(8, 12)}-${userId.slice(12, 16)}-${userId.slice(16, 20)}-${userId.slice(20)}`;
+    // ── Parse Order early ──
+    // HYP strips non-alphanumeric characters when echoing Order back (pipes
+    // vanish), so the current format is pure alphanumeric with FIXED-WIDTH
+    // parts (see hyp-payment): uuid32 + plan char + trial flag + ts36(9) +
+    // amount digits. The legacy pipe format is still parsed as a fallback in
+    // case a pipe-preserving path (e.g. a server notification) delivers it.
+    const PLAN_CODES: Record<string, string> = { m: 'monthly', s: 'season_monthly', f: 'season_full' };
+    let userId = '';
+    let billingKey = '';
+    let signedAmountRaw = '';
+    let isTrial = false;
+    const fixedWidth = order.match(/^([0-9a-fA-F]{32})([msf])([TN])([0-9a-z]{9})(\d+)$/);
+    if (fixedWidth) {
+      const u = fixedWidth[1];
+      userId = `${u.slice(0, 8)}-${u.slice(8, 12)}-${u.slice(12, 16)}-${u.slice(16, 20)}-${u.slice(20)}`;
+      billingKey = PLAN_CODES[fixedWidth[2]];
+      isTrial = fixedWidth[3] === 'T';
+      signedAmountRaw = fixedWidth[5];
+    } else {
+      const orderParts = order.split('|');
+      userId = orderParts[0] || '';
+      billingKey = orderParts[1] || '';
+      signedAmountRaw = orderParts[3] || '';
+      isTrial = orderParts[4] === 'trial' || orderParts[4] === 'T';
     }
-    const PLAN_CODES: Record<string, string> = { m: 'monthly', sm: 'season_monthly', sf: 'season_full' };
-    const billingKey = PLAN_CODES[orderParts[1]] || orderParts[1];
-    const signedAmountRaw = orderParts[3];
-    const trialFlag = orderParts[4];
-    const isTrial = trialFlag === 'T' || trialFlag === 'trial';
 
     // Trial orders are Postpone transactions: HYP returns CCode=800 ("held,
     // awaiting finalization"), NOT 0. We never commit the held transaction —
