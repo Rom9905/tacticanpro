@@ -23,6 +23,9 @@ const corsHeaders = {
 
 const HYP_BASE = 'https://pay.hyp.co.il/p/';
 
+// Length of the free trial, in days — must match hyp-callback.
+const TRIAL_DAYS = 7;
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: corsHeaders });
 
@@ -51,7 +54,7 @@ Deno.serve(async (req) => {
 
     const { data: sub, error: subError } = await admin
       .from('subscriptions')
-      .select('status, plan, end_date, hk_id, cancelled_at, card_token')
+      .select('status, plan, end_date, hk_id, cancelled_at, card_token, next_charge_at, trial_started_at')
       .eq('user_id', user.id)
       .maybeSingle();
 
@@ -94,9 +97,25 @@ Deno.serve(async (req) => {
       manual = true;
     }
 
+    // A cancelled trial ends when the 7 free days do — never later. end_date
+    // normally carries two grace days past next_charge_at so an hourly cron or
+    // a retry can't lock out a paying user mid-day; with the charge cancelled
+    // there is nothing to wait for, and those days would be free extra trial.
+    // The trial's own 7 days are the authority (next_charge_at is only a
+    // fallback — it is cleared on cancellation, so it cannot be relied on if
+    // this ever runs twice).
+    const trialEnd = sub.status !== 'trial'
+      ? null
+      : sub.trial_started_at
+        ? new Date(new Date(sub.trial_started_at).getTime() + TRIAL_DAYS * 86400_000)
+        : sub.next_charge_at ? new Date(sub.next_charge_at) : null;
+    const endDate = trialEnd && (!sub.end_date || trialEnd < new Date(sub.end_date))
+      ? trialEnd.toISOString()
+      : sub.end_date;
+
     const { error: updateError } = await admin
       .from('subscriptions')
-      .update({ cancelled_at: new Date().toISOString(), next_charge_at: null })
+      .update({ cancelled_at: new Date().toISOString(), next_charge_at: null, end_date: endDate })
       .eq('user_id', user.id);
 
     if (updateError) {
@@ -104,8 +123,8 @@ Deno.serve(async (req) => {
       return json({ ok: false, error: 'החיוב נעצר אך רישום הביטול נכשל — פנה לתמיכה' }, 500);
     }
 
-    console.log(`Subscription cancelled: user=${user.id} plan=${sub.plan} hk=${sub.hk_id || 'none'} manual=${manual}`);
-    return json({ ok: true, end_date: sub.end_date, manual });
+    console.log(`Subscription cancelled: user=${user.id} plan=${sub.plan} status=${sub.status} hk=${sub.hk_id || 'none'} manual=${manual} access_until=${endDate}`);
+    return json({ ok: true, end_date: endDate, trial: sub.status === 'trial', manual });
   } catch (e) {
     console.error('cancel-subscription error:', e);
     return json({ ok: false, error: 'שגיאה פנימית' }, 500);
