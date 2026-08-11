@@ -7,12 +7,16 @@ import AddEventModal from '@/components/calendar/AddEventModal';
 import TeamForm from '@/components/team/TeamForm';
 import { useLang } from '@/lib/LanguageContext';
 import { useAuth } from '@/lib/AuthContext';
+import { isAdminUser } from '@/lib/isAdmin';
 
 export default function DashboardTopBar({ user, teams, selectedTeamId, onSelectTeam, onNewTeam, teamId, onTeamDeleted }) {
   const { t, dir } = useLang();
   // Subscribers get "manage subscription" where prospects get "pricing".
   const { subscriptionStatus } = useAuth();
   const hasSubscription = subscriptionStatus === 'active' || subscriptionStatus === 'trial';
+  // One team per account — only admins manage several. The database enforces
+  // this too (enforce_one_team_per_user trigger); this just hides the action.
+  const canAddTeam = isAdminUser(user) || (teams?.length || 0) === 0;
   const [teamOpen, setTeamOpen] = useState(false);
   const [addOpen, setAddOpen] = useState(false);
   const [addOpen2, setAddOpen2] = useState(false);
@@ -115,13 +119,15 @@ export default function DashboardTopBar({ user, teams, selectedTeamId, onSelectT
                     </button>
                   </div>
                 ))}
-                <div style={{ borderTop: '1px solid rgba(13,26,18,.08)' }}>
-                  <button onClick={() => { onNewTeam(); setTeamOpen(false); }}
-                    className={`w-full ${dir === 'rtl' ? 'text-right' : 'text-left'} px-4 py-2.5 text-sm flex items-center gap-2 transition-all hover:bg-slate-50`}
-                    style={{ color: '#16A34A' }}>
-                    <Plus className="w-3.5 h-3.5" /> {t.nav.newTeam}
-                  </button>
-                </div>
+                {canAddTeam && (
+                  <div style={{ borderTop: '1px solid rgba(13,26,18,.08)' }}>
+                    <button onClick={() => { onNewTeam(); setTeamOpen(false); }}
+                      className={`w-full ${dir === 'rtl' ? 'text-right' : 'text-left'} px-4 py-2.5 text-sm flex items-center gap-2 transition-all hover:bg-slate-50`}
+                      style={{ color: '#16A34A' }}>
+                      <Plus className="w-3.5 h-3.5" /> {t.nav.newTeam}
+                    </button>
+                  </div>
+                )}
               </div>
             )}
           </div>

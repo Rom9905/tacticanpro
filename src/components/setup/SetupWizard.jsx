@@ -20,6 +20,7 @@ const PLAYING_STYLES = ['התקפי', 'מאוזן', 'הגנתי', 'החזקת כ
 
 export default function SetupWizard({ onComplete, allowBackToHome }) {
   const [saving, setSaving] = useState(false);
+  const [saveError, setSaveError] = useState(null);
 
   // Step 1
   const [teamName, setTeamName] = useState('');
@@ -64,6 +65,7 @@ export default function SetupWizard({ onComplete, allowBackToHome }) {
 
   const handleFinish = async () => {
     setSaving(true);
+    setSaveError(null);
     try {
       // Create team
       const team = await base44.entities.Team.create({
@@ -93,6 +95,12 @@ export default function SetupWizard({ onComplete, allowBackToHome }) {
       onComplete(team.id);
     } catch (e) {
       console.error(e);
+      // The database caps non-admin accounts at one team; surface that as a
+      // plain sentence instead of leaving the wizard silently stuck.
+      const limitHit = String(e?.message || '').includes('TEAM_LIMIT_REACHED');
+      setSaveError(limitHit
+        ? 'לחשבון שלך כבר יש קבוצה. כל חשבון יכול לנהל קבוצה אחת.'
+        : 'שמירת הקבוצה נכשלה. נסה שוב, ואם זה חוזר — פנה לתמיכה.');
     }
     setSaving(false);
   };
@@ -314,6 +322,12 @@ export default function SetupWizard({ onComplete, allowBackToHome }) {
                 )}
               </Button>
             </div>
+
+            {saveError && (
+              <p className="mt-4 text-sm text-center rounded-lg px-4 py-3 bg-red-500/10 border border-red-500/30 text-red-300" role="alert">
+                {saveError}
+              </p>
+            )}
           </CardContent>
         </Card>
       </div>
