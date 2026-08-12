@@ -101,6 +101,10 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = async () => {
+    // Drop per-account UI state so the next account signing in on this
+    // browser doesn't inherit a team id it doesn't own (mirrors
+    // base44.auth.logout — both paths are used).
+    try { localStorage.removeItem('selectedTeamId'); } catch { /* private mode */ }
     await supabase.auth.signOut();
     setUser(null);
     setIsAuthenticated(false);

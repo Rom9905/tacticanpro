@@ -51,14 +51,20 @@ export default function Home() {
         const teamsData = await base44.entities.Team.list();
         setTeams(teamsData);
         if (teamsData.length === 0) { setSetupRequired(true); setLoading(false); return; }
-        const teamId = selectedTeamId || teamsData[0].id;
-        if (!selectedTeamId) selectTeam(teamsData[0].id);
+        // selectedTeamId lives in localStorage, so it outlives both the team
+        // it names and the account that chose it — switching accounts in the
+        // same browser leaves another user's team id behind. Querying that id
+        // returns nothing (RLS) and the coach lands in the setup wizard with
+        // their real squad hidden, so only honour an id this account owns.
+        const storedTeam = teamsData.find(t => t.id === selectedTeamId);
+        const team = storedTeam || teamsData[0];
+        const teamId = team.id;
+        if (!storedTeam) selectTeam(teamId);
         const players = await base44.entities.Player.filter({ team_id: teamId });
         // Squad-size gate must match the wizard's own minimum (SetupWizard:
         // lineup + 4 subs), which scales with the team format. A flat 15 locked
         // 7v7/9v9 coaches out of the app forever: the wizard let them finish
         // with 11, then this check bounced them straight back into it.
-        const team = teamsData.find(t => t.id === teamId) || teamsData[0];
         if (players.length < minSquadFor(team)) { setSetupRequired(true); setLoading(false); return; }
         setSetupRequired(false);
         setLoading(false);

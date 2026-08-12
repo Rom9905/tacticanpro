@@ -231,6 +231,10 @@ const auth = {
   },
 
   async logout() {
+    // The selected team is per-account state kept in localStorage; leaving it
+    // behind hands the next account to sign in on this browser a team id it
+    // does not own.
+    try { localStorage.removeItem('selectedTeamId'); } catch { /* private mode */ }
     await supabase.auth.signOut();
   },
 
