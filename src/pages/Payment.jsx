@@ -112,6 +112,17 @@ export default function Payment() {
         setLoadingPlan(null);
         return;
       }
+      // The server is the authority on trial eligibility. If the button
+      // promised a free trial but the server minted an immediate-charge URL
+      // (eligibility changed since this page loaded — e.g. a trial was started
+      // in another tab), redirecting would charge the user today against the
+      // button's promise. Stop, sync the UI, and let them choose again.
+      if (trialEligible && data.trial === false) {
+        setTrialEligible(false);
+        setError('סטטוס תקופת הניסיון שלך התעדכן — התשלום יהיה מיידי. בדוק את הפרטים ונסה שוב.');
+        setLoadingPlan(null);
+        return;
+      }
       window.location.href = data.url; // → HYP secure payment page
     } catch {
       setError('שגיאת תקשורת — בדוק את החיבור ונסה שוב');

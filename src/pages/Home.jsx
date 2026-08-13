@@ -29,6 +29,12 @@ export default function Home() {
   const { selectedTeamId, selectTeam } = useTeam();
   const [dashboardData, setDashboardData] = useState(null);
   const [setupRequired, setSetupRequired] = useState(false);
+  // When the squad fell below the format minimum but a team already exists,
+  // the wizard must run in complete-the-squad mode: the DB caps non-admins at
+  // one team, so a fresh Team.create would be rejected and the coach would be
+  // stuck in the wizard with no way forward.
+  const [incompleteTeam, setIncompleteTeam] = useState(null);
+  const [existingPlayersCount, setExistingPlayersCount] = useState(0);
   const [showNewTeamWizard, setShowNewTeamWizard] = useState(false);
   const [upcomingGames, setUpcomingGames] = useState([]);
   const [allEvents, setAllEvents] = useState([]);
@@ -65,7 +71,13 @@ export default function Home() {
         // lineup + 4 subs), which scales with the team format. A flat 15 locked
         // 7v7/9v9 coaches out of the app forever: the wizard let them finish
         // with 11, then this check bounced them straight back into it.
-        if (players.length < minSquadFor(team)) { setSetupRequired(true); setLoading(false); return; }
+        if (players.length < minSquadFor(team)) {
+          setIncompleteTeam(team);
+          setExistingPlayersCount(players.length);
+          setSetupRequired(true);
+          setLoading(false);
+          return;
+        }
         setSetupRequired(false);
         setLoading(false);
         // Load dashboard immediately for the resolved team
@@ -92,6 +104,8 @@ export default function Home() {
     selectTeam(teamId);
     setSetupRequired(false);
     setShowNewTeamWizard(false);
+    setIncompleteTeam(null);
+    setExistingPlayersCount(0);
   };
 
   const loadDashboard = async (teamId = selectedTeamId, currentUser = user) => {
@@ -214,7 +228,14 @@ export default function Home() {
   );
 
   if (setupRequired) {
-    return <SetupWizard onComplete={handleSetupComplete} allowBackToHome={false} />;
+    return (
+      <SetupWizard
+        onComplete={handleSetupComplete}
+        allowBackToHome={false}
+        existingTeam={incompleteTeam}
+        existingPlayersCount={existingPlayersCount}
+      />
+    );
   }
 
   if (showNewTeamWizard) {

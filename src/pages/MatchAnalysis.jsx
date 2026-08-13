@@ -90,7 +90,8 @@ export default function MatchAnalysis() {
         _summaryOnly: true,
         _summary: s,
         team_id: s.team_id,
-        opponent: s.event_label?.replace('מול ', '') || 'לא ידוע',
+        // Legacy rows may carry an English "vs X" label (old summary modal).
+        opponent: s.event_label?.replace(/^(מול|vs)\s+/, '') || 'לא ידוע',
         date: s.event_date,
         result: s.result_our != null ? { our_score: s.result_our, opponent_score: s.result_opponent } : null,
       }));

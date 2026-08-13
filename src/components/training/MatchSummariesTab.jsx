@@ -83,7 +83,8 @@ export default function MatchSummariesTab({ summaries, topics, onRefresh, teamId
           const isOpen = expanded === summary.id;
           const rk = resultKey(summary);
           const r = rk ? RESULT_MAP[rk] : null;
-          const opponent = summary.event_label?.replace('מול ', '') || 'יריב';
+          // Legacy rows may carry an English "vs X" label (old summary modal).
+          const opponent = summary.event_label?.replace(/^(מול|vs)\s+/, '') || 'יריב';
           const hasIssues = !!(summary.issues_found || '').trim();
           const existingTopic = findExistingTopic(summary);
           const d = summary.event_date ? new Date(summary.event_date).toLocaleDateString('he-IL', { day: '2-digit', month: 'short' }) : '';

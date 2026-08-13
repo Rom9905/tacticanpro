@@ -185,6 +185,62 @@ Deno.serve(async (req) => {
     const now = new Date();
 
     if (isTrial) {
+      // ── Re-check trial eligibility against the DB. The T flag in the Order
+      //    only proves the URL was minted while the user was ELIGIBLE — old
+      //    signed URLs stay usable at HYP, so without this check a user could
+      //    mint several trial URLs, cancel before day 7, and replay the next
+      //    URL for a fresh trial, forever. One trial per user means the
+      //    callback must enforce it too, not just hyp-payment.
+      const { data: existingSub } = await admin
+        .from('subscriptions')
+        .select('status, trial_started_at')
+        .eq('user_id', userId)
+        .maybeSingle();
+      // On rejection the claim row must be released — otherwise a retry of the
+      // same (rejected) transaction would short-circuit at the replay guard
+      // and falsely report success.
+      const rejectTrial = async (logMsg: string, userError: string) => {
+        console.error(logMsg);
+        await admin.from('hyp_processed_transactions').delete().eq('transaction_id', transactionId);
+        return json({ ok: false, error: userError }, 400);
+      };
+
+      if (existingSub?.trial_started_at || existingSub?.status === 'active' || existingSub?.status === 'trial') {
+        return await rejectTrial(
+          `Trial re-grant blocked: user=${userId} status=${existingSub?.status} trial_started_at=${existingSub?.trial_started_at} tx=${transactionId}`,
+          'תקופת הניסיון כבר נוצלה בחשבון זה — ניתן לרכוש מנוי בעמוד התשלום',
+        );
+      }
+
+      // The Order must be one WE minted, for THIS user, as a trial. VERIFY is
+      // unavailable for held transactions, and the Order string alone is
+      // attacker-writable — without this check a real held transaction could
+      // be re-pointed at another account's subscription row.
+      const { data: minted } = await admin
+        .from('hyp_minted_orders')
+        .select('user_id, trial')
+        .eq('order_id', order)
+        .maybeSingle();
+      if (!minted || minted.user_id !== userId || !minted.trial) {
+        return await rejectTrial(
+          `Unminted/mismatched trial order: user=${userId} minted_user=${minted?.user_id ?? 'none'} tx=${transactionId}`,
+          'הזמנה לא מזוהה — פנה לתמיכה עם מספר עסקה ' + transactionId,
+        );
+      }
+
+      // A trial pay URL is minted for immediate use; the held (Postpone)
+      // transaction moves no money either way. Anything older than a day is a
+      // replayed link, not a live purchase — refuse it as a second safety net.
+      if (fixedWidth) {
+        const mintedAt = parseInt(fixedWidth[4], 36);
+        if (!Number.isFinite(mintedAt) || now.getTime() - mintedAt > 24 * 3600_000) {
+          return await rejectTrial(
+            `Stale trial order refused: user=${userId} minted=${mintedAt} tx=${transactionId}`,
+            'קישור התשלום פג תוקף — יש להתחיל את הרכישה מחדש מעמוד התשלום',
+          );
+        }
+      }
+
       // ── 7-day free trial: no money moved (Postpone transaction). Pull the
       //    card token from HYP so the cron biller can charge it at trial end.
       const tokenParams = new URLSearchParams({
@@ -202,7 +258,11 @@ Deno.serve(async (req) => {
       const cardToken = tokenOut.get('Token');
       const cardTokef = tokenOut.get('Tokef');
       if (!cardToken || !cardTokef) {
+        // Release the claim: this is a transient HYP failure, and a retry of
+        // the same transaction must be able to run activation again instead
+        // of short-circuiting at the replay guard with a false success.
         console.error('HYP getToken failed:', tokenText.slice(0, 300));
+        await admin.from('hyp_processed_transactions').delete().eq('transaction_id', transactionId);
         return json({ ok: false, error: 'שמירת אמצעי התשלום נכשלה — פנה לתמיכה עם מספר עסקה ' + transactionId }, 500);
       }
 
@@ -227,12 +287,18 @@ Deno.serve(async (req) => {
           card_token: cardToken,
           card_tokef: cardTokef,
           charge_attempts: 0,
+          // The sum the customer authorized today — the trial-end charge uses
+          // it verbatim for season_full instead of re-pricing at charge time
+          // (a trial crossing June 1st would otherwise re-count the season).
+          trial_authorized_amount: expectedAmount,
           hk_id: null,
           cancelled_at: null,
         }, { onConflict: 'user_id' });
 
       if (trialUpsertError) {
+        // Release the claim so a retry can re-attempt activation (see above).
         console.error('Trial upsert failed:', trialUpsertError);
+        await admin.from('hyp_processed_transactions').delete().eq('transaction_id', transactionId);
         return json({ ok: false, error: 'האימות הצליח אך פתיחת תקופת הניסיון נכשלה — פנה לתמיכה עם מספר עסקה ' + transactionId }, 500);
       }
 
@@ -257,10 +323,20 @@ Deno.serve(async (req) => {
         end_date: endDate.toISOString(),
         hk_id: hkId,
         cancelled_at: null, // a fresh purchase always clears any past cancellation
+        // Billing for this purchase is HK (or one-time) — a leftover token
+        // schedule from a still-running trial or a failed-charge retry window
+        // would make the cron charge the old token ON TOP of the new billing.
+        card_token: null,
+        card_tokef: null,
+        next_charge_at: null,
+        charge_attempts: 0,
       }, { onConflict: 'user_id' });
 
     if (upsertError) {
+      // Money WAS taken here — release the claim so a retry of the same
+      // transaction re-runs activation instead of returning a false success.
       console.error('Subscription upsert failed:', upsertError);
+      await admin.from('hyp_processed_transactions').delete().eq('transaction_id', transactionId);
       return json({ ok: false, error: 'התשלום התקבל אך עדכון המנוי נכשל — פנה לתמיכה עם מספר עסקה ' + transactionId }, 500);
     }
 

@@ -114,6 +114,23 @@ Deno.serve(async (req) => {
     const ts36 = Date.now().toString(36).padStart(9, '0');
     const order = `${user.id.replace(/-/g, '')}${PLAN_CODES[plan]}${trial ? 'T' : 'N'}${ts36}${planDef.amount}`;
 
+    // Record the minted Order server-side. Trial callbacks can't rely on
+    // APISign VERIFY (it fails for held/Postpone transactions), so hyp-callback
+    // instead requires the Order to exist here and match the user — otherwise
+    // a forged Order string could re-point a real held transaction at another
+    // account's subscription row.
+    const adminClient = createClient(
+      Deno.env.get('SUPABASE_URL')!,
+      Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!,
+    );
+    const { error: mintError } = await adminClient
+      .from('hyp_minted_orders')
+      .insert({ order_id: order, user_id: user.id, plan, trial, amount: planDef.amount });
+    if (mintError) {
+      console.error('Order mint record failed:', mintError);
+      return json({ error: 'שגיאה ביצירת עמוד התשלום — נסה שוב' }, 500);
+    }
+
     // On a trial, HYP's hosted page is the last thing the customer sees before
     // entering a card — its button text can't be customized, so the trial terms
     // go into the transaction description (Info), which the page displays.

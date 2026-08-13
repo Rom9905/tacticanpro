@@ -217,7 +217,7 @@ export default function LandingPage() {
                 <div>
                   <p className="text-white font-semibold text-sm mb-1">המלצת מערכת</p>
                   <p className="text-slate-300 text-sm leading-relaxed">
-                    תרגיל קבוצתי: <span className="text-emerald-400 font-medium">Build-Up Under Pressure 4v4</span> – אימון יציאה מלחץ עם קצב גבוה. 3 סטים × 8 דקות. מיקוד: קבלת החלטות מהירה בשליש האחורי.
+                    תרגיל קבוצתי: <span className="text-emerald-400 font-medium">בנייה תחת לחץ 4 נגד 4</span> – אימון יציאה מלחץ עם קצב גבוה. 3 סטים × 8 דקות. מיקוד: קבלת החלטות מהירה בשליש האחורי.
                   </p>
                 </div>
               </div>
@@ -282,7 +282,7 @@ export default function LandingPage() {
               className="bg-slate-900 border border-emerald-500/30 rounded-xl p-6">
               <p className="text-emerald-400 font-bold text-sm mb-5 uppercase tracking-wide">עם TacticanPRO</p>
               <div className="space-y-4">
-                {['ניתוח → המלצה → משימה → מעקב', 'תרגיל ממוקד בדיוק לבעיה שזוהתה', 'כל מה שבניית מושך קדימה', 'ניתוח, שחקנים, אימון, טקטיקה – יחד'].map((t, i) => (
+                {['ניתוח → המלצה → משימה → מעקב', 'תרגיל ממוקד בדיוק לבעיה שזוהתה', 'כל מה שבנית נשמר וממשיך איתך', 'ניתוח, שחקנים, אימון, טקטיקה – יחד'].map((t, i) => (
                   <div key={i} className="flex items-center gap-3">
                     <div className="w-5 h-5 rounded-full bg-emerald-500/20 flex items-center justify-center shrink-0">
                       <span className="text-emerald-400 text-xs">✓</span>
@@ -331,7 +331,7 @@ export default function LandingPage() {
               {
                 emoji: '🚀',
                 title: 'מאמן צעיר שרוצה לבלוט',
-                desc: 'מנהל תהליך מסודר, מביא מסמכי ניתוח, מתקדם עם שחקנים – זה הדרך להוכיח שאתה שונה.'
+                desc: 'מנהל תהליך מסודר, מביא מסמכי ניתוח, מתקדם עם שחקנים – זו הדרך להוכיח שאתה שונה.'
               },
               {
                 emoji: '🏟️',
@@ -355,26 +355,26 @@ export default function LandingPage() {
         <div className="max-w-3xl mx-auto text-center">
           <motion.div variants={fadeUp} initial="hidden" whileInView="visible" viewport={{ once: true }}>
             <p className="text-emerald-400 font-semibold text-sm uppercase tracking-widest mb-3">תוכניות</p>
-            <h2 className="text-3xl font-bold mb-4">התחל בחינם. שדרג כשאתה מוכן.</h2>
-            <p className="text-slate-400 mb-12">כל הפיצ'רים פתוחים בניסיון. ללא כרטיס אשראי.</p>
+            <h2 className="text-3xl font-bold mb-4">7 ימי ניסיון חינם. בטלו בכל עת.</h2>
+            <p className="text-slate-400 mb-12">כל הפיצ'רים פתוחים בתקופת הניסיון — הכרטיס רק נשמר, החיוב הראשון בתום 7 הימים.</p>
           </motion.div>
 
           <div className="grid md:grid-cols-2 gap-6">
             {[
               {
-                name: 'ניסיון',
-                price: 'חינם',
-                period: 'לתמיד',
-                features: ['קבוצה אחת', 'עד 20 שחקנים', 'ניתוח משחקים', 'לוח טקטי'],
-                cta: 'התחל עכשיו',
+                name: 'חודשי',
+                price: '199₪',
+                period: 'לחודש',
+                features: ['גישה מלאה לכל הכלים', 'ניתוח משחקים ותובנות חכמות', 'מרכז אימונים והכנה למשחק', 'ביטול בכל עת'],
+                cta: 'התחל 7 ימי ניסיון',
                 highlighted: false
               },
               {
-                name: 'מקצועי',
-                price: '₪99',
+                name: 'עונתי',
+                price: '150₪',
                 period: 'לחודש',
-                features: ['קבוצות ללא הגבלה', 'שחקנים ללא הגבלה', 'תוכניות אישיות לשחקנים', 'דוחות מתקדמים', 'תמיכה עדיפות'],
-                cta: 'התחל ניסיון חינם',
+                features: ['כל מה שבמסלול החודשי', 'המחיר המשתלם ביותר', 'תשלום חודשי או מלא מראש', 'תקף עד תום העונה'],
+                cta: 'התחל 7 ימי ניסיון',
                 highlighted: true
               }
             ].map((plan, i) => (

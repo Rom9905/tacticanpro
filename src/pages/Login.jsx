@@ -4,6 +4,20 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
 
+// Supabase auth errors arrive in English; anything we don't recognize falls
+// back to a generic Hebrew message instead of leaking English to the user.
+function translateAuthError(message) {
+  const msg = String(message || '');
+  if (msg === 'Invalid login credentials') return 'אימייל או סיסמה שגויים';
+  if (msg.includes('Email not confirmed')) return 'האימייל לא אומת עדיין. בדוק את תיבת הדואר שלך.';
+  if (msg.includes('User already registered')) return 'כתובת האימייל כבר רשומה במערכת. נסה להתחבר.';
+  if (msg.includes('Password should be at least')) return 'הסיסמה חייבת להכיל לפחות 6 תווים';
+  if (msg.includes('rate limit') || msg.includes('For security purposes')) return 'בוצעו יותר מדי ניסיונות — המתן רגע ונסה שוב';
+  if (msg.includes('is invalid') && msg.includes('email')) return 'כתובת האימייל אינה תקינה';
+  if (msg.includes('network') || msg.includes('fetch')) return 'שגיאת תקשורת — בדוק את החיבור ונסה שוב';
+  return 'אירעה שגיאה — נסה שוב בעוד רגע';
+}
+
 export default function Login() {
   const [mode, setMode] = useState('login'); // 'login' | 'register' | 'forgot'
   const [email, setEmail] = useState('');
@@ -19,10 +33,7 @@ export default function Login() {
     setError('');
     const { error } = await supabase.auth.signInWithPassword({ email, password });
     if (error) {
-      const msg = error.message;
-      if (msg === 'Invalid login credentials') setError('אימייל או סיסמה שגויים');
-      else if (msg.includes('Email not confirmed')) setError('האימייל לא אומת עדיין. בדוק את תיבת הדואר שלך.');
-      else setError(msg);
+      setError(translateAuthError(error.message));
     } else {
       window.location.href = '/';
     }
@@ -47,7 +58,7 @@ export default function Login() {
       }
     });
     if (error) {
-      setError(error.message);
+      setError(translateAuthError(error.message));
     } else if (data?.user?.identities?.length === 0) {
       setError('כתובת האימייל כבר רשומה במערכת. נסה להתחבר.');
     } else if (data?.session) {
@@ -66,7 +77,7 @@ export default function Login() {
       provider: 'google',
       options: { redirectTo: window.location.origin }
     });
-    if (error) setError(error.message);
+    if (error) setError(translateAuthError(error.message));
     setLoading(false);
   };
 
@@ -78,7 +89,7 @@ export default function Login() {
       redirectTo: `${window.location.origin}/reset-password`,
     });
     if (error) {
-      setError(error.message);
+      setError(translateAuthError(error.message));
     } else {
       setMessage('נשלח אימייל לאיפוס סיסמה. בדוק את תיבת הדואר.');
     }

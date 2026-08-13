@@ -10,7 +10,7 @@ import { formationsFor, matchDurationFor } from '@/lib/teamFormats';
 const TACTICAL_TOPICS_HE = [
   'לחץ גבוה', 'בנייה מהגנה', 'מעברים התקפיים', 'מעברים הגנתיים',
   'תיאום הגנתי', 'מצבים נייחים', 'שחקן נגד שחקן', 'שליטה במרכז',
-  'הגנה ארגונית', 'בנייה מהלחץ', 'יציאה מלחץ', 'משחק אורכי', 'כדורים גבוהים'
+  'הגנה ארגונית', 'בנייה תחת לחץ', 'יציאה מלחץ', 'משחק אורכי', 'כדורים גבוהים'
 ];
 
 const TACTICAL_TOPICS_EN = [
@@ -82,7 +82,7 @@ export default function ProfessionalSummaryModal({ open, onClose, event, onSaved
 
   // Opponent formations follow the team's format (a 9v9 opponent plays 9v9).
   const FORMATIONS = formationsFor(team);
-  const ATTACK_STYLES = ['לחץ גבוה', 'בנייה מהגנה', 'כדורים ארוכים', 'קטנגות', 'התקפה מהירה', 'כדורים גבוהים', 'התקפה מהצדדים'];
+  const ATTACK_STYLES = ['לחץ גבוה', 'בנייה מהגנה', 'כדורים ארוכים', 'משחק קצר (קטנות)', 'התקפה מהירה', 'כדורים גבוהים', 'התקפה מהצדדים'];
 
   useEffect(() => {
     if (open) {
@@ -107,7 +107,9 @@ export default function ProfessionalSummaryModal({ open, onClose, event, onSaved
       event_id: event.id,
       event_type: isTraining ? 'training' : 'match',
       event_date: d.toISOString().split('T')[0],
-      event_label: isTraining ? `Training — ${d.toLocaleDateString('he-IL')}` : `vs ${event.opponent}`,
+      // "מול X" is the canonical label — MatchAnalysis/MatchSummariesTab parse
+      // the opponent back out of it with replace('מול ', '').
+      event_label: isTraining ? `אימון — ${d.toLocaleDateString('he-IL')}` : `מול ${event.opponent}`,
       // Match length follows the team's format: 2x25 (7v7), 2x30 (9v9), 2x45 (11v11).
       duration_minutes: isTraining ? (event.parsedNotes?.duration || 90) : matchDurationFor(team).total,
       topic: topic || '',
@@ -221,8 +223,8 @@ export default function ProfessionalSummaryModal({ open, onClose, event, onSaved
   if (!open) return null;
 
   const eventLabel = isTraining
-    ? `Training — ${new Date(event?.game_date || Date.now()).toLocaleDateString('he-IL')}`
-    : `vs ${event?.opponent || ''}`;
+    ? `אימון — ${new Date(event?.game_date || Date.now()).toLocaleDateString('he-IL')}`
+    : `מול ${event?.opponent || ''}`;
 
   return (
     <div className="fixed inset-0 z-[100] flex items-center justify-center"

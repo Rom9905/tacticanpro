@@ -62,7 +62,10 @@ Deno.serve(async (req) => {
       console.error('Subscription lookup failed:', subError);
       return json({ ok: false, error: 'שגיאה בשליפת המנוי — נסה שוב' }, 500);
     }
-    if (!sub || (sub.status !== 'active' && sub.status !== 'trial')) {
+    // past_due is cancellable too: billing already gave up on the card, but
+    // the user must still be able to formally cancel so their saved token is
+    // never charged again if they later update the card.
+    if (!sub || (sub.status !== 'active' && sub.status !== 'trial' && sub.status !== 'past_due')) {
       return json({ ok: false, error: 'לא נמצא מנוי פעיל לביטול' }, 400);
     }
     if (sub.cancelled_at) {

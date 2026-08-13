@@ -18,21 +18,31 @@ const POSITIONS = ['שוער', 'בלם', 'מגן ימין', 'מגן שמאל', '
 const PLAYING_STYLES = ['התקפי', 'מאוזן', 'הגנתי', 'החזקת כדור', 'קונטרה'];
 
 
-export default function SetupWizard({ onComplete, allowBackToHome }) {
+// existingTeam + existingPlayersCount switch the wizard into "complete the
+// squad" mode: the account already owns a team (the DB caps non-admins at one,
+// so creating another is impossible) but its squad fell below the format
+// minimum — e.g. players were deleted in TeamManagement. In this mode the
+// wizard updates the existing team and only ADDS the missing players.
+export default function SetupWizard({ onComplete, allowBackToHome, existingTeam = null, existingPlayersCount = 0 }) {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
 
   // Step 1
-  const [teamName, setTeamName] = useState('');
-  const [ageGroup, setAgeGroup] = useState('');
-  const [format, setFormat] = useState('11v11');
-  const [league, setLeague] = useState('');
-  const [playingStyle, setPlayingStyle] = useState('מאוזן');
-  const [formation, setFormation] = useState('4-4-2');
-  const [tacticalFocus, setTacticalFocus] = useState('');
-  const [players, setPlayers] = useState(
-    Array.from({ length: 15 }, (_, i) => ({ name: '', position: 'כנף ימין', number: i + 1 }))
-  );
+  const [teamName, setTeamName] = useState(existingTeam?.name || '');
+  const [ageGroup, setAgeGroup] = useState(existingTeam?.age_group || '');
+  const [format, setFormat] = useState(existingTeam?.format || '11v11');
+  const [league, setLeague] = useState(existingTeam?.league || '');
+  const [playingStyle, setPlayingStyle] = useState(existingTeam?.playing_style || 'מאוזן');
+  const [formation, setFormation] = useState(existingTeam?.formation || '4-4-2');
+  const [tacticalFocus, setTacticalFocus] = useState(existingTeam?.tactical_focus || '');
+  const [players, setPlayers] = useState(() => {
+    // In complete-mode, offer just enough rows to reach the minimum; shirt
+    // numbers continue after the players that already exist.
+    const rows = existingTeam
+      ? Math.max(minSquadFor(existingTeam.format || '11v11') - existingPlayersCount, 3)
+      : 15;
+    return Array.from({ length: rows }, (_, i) => ({ name: '', position: 'כנף ימין', number: existingPlayersCount + i + 1 }));
+  });
 
   // Switching format invalidates a formation from another format.
   const handleFormatChange = (key) => {
@@ -61,14 +71,16 @@ export default function SetupWizard({ onComplete, allowBackToHome }) {
   };
 
   const filledPlayers = players.filter(p => p.name.trim());
-  const canProceed = teamName.trim() && ageGroup && filledPlayers.length >= minPlayers;
+  // Players already on the roster count toward the minimum — the wizard only
+  // needs to fill the gap.
+  const totalPlayers = existingPlayersCount + filledPlayers.length;
+  const canProceed = teamName.trim() && ageGroup && totalPlayers >= minPlayers;
 
   const handleFinish = async () => {
     setSaving(true);
     setSaveError(null);
     try {
-      // Create team
-      const team = await base44.entities.Team.create({
+      const teamFields = {
         name: teamName,
         age_group: ageGroup,
         format,
@@ -76,7 +88,12 @@ export default function SetupWizard({ onComplete, allowBackToHome }) {
         playing_style: playingStyle,
         formation,
         ...(format === '11v11' && tacticalFocus.trim() ? { tactical_focus: tacticalFocus.trim() } : {}),
-      });
+      };
+      // Complete-mode updates the team the account already owns; creating a
+      // second one would be rejected by the DB's one-team-per-user trigger.
+      const team = existingTeam
+        ? await base44.entities.Team.update(existingTeam.id, teamFields)
+        : await base44.entities.Team.create(teamFields);
 
       // Create players
       await Promise.all(
@@ -116,7 +133,9 @@ export default function SetupWizard({ onComplete, allowBackToHome }) {
             </div>
             <span className="text-2xl font-bold text-white">TACTICAN<span className="text-emerald-500">PRO</span></span>
           </div>
-          <p className="text-slate-400 text-sm">הוסף קבוצה ושחקנים</p>
+          <p className="text-slate-400 text-sm">
+            {existingTeam ? 'לקבוצה שלך חסרים שחקנים — השלם את הסגל כדי להמשיך' : 'הוסף קבוצה ושחקנים'}
+          </p>
         </div>
 
 
@@ -130,7 +149,11 @@ export default function SetupWizard({ onComplete, allowBackToHome }) {
                     <Users className="w-5 h-5 text-emerald-400" />
                     הקבוצה והסגל
                   </h2>
-                  <p className="text-slate-400 text-sm mb-5">מינימום {minPlayers} שחקנים כדי להמשיך</p>
+                  <p className="text-slate-400 text-sm mb-5">
+                    {existingTeam && existingPlayersCount > 0
+                      ? `יש ${existingPlayersCount} שחקנים בסגל — צריך לפחות ${minPlayers} כדי להמשיך`
+                      : `מינימום ${minPlayers} שחקנים כדי להמשיך`}
+                  </p>
 
                   <div className="grid grid-cols-2 gap-3 mb-5">
                     <div>
@@ -246,8 +269,10 @@ export default function SetupWizard({ onComplete, allowBackToHome }) {
 
                   <div className="flex items-center justify-between mb-3">
                     <label className="text-xs text-slate-400">
-                      שחקנים ({filledPlayers.length} מוזנים, צריך לפחות {minPlayers})
-                      {filledPlayers.length >= minPlayers && <span className="text-emerald-400 mr-1">✓</span>}
+                      {existingPlayersCount > 0
+                        ? `שחקנים חדשים (${filledPlayers.length} מוזנים, סה"כ ${totalPlayers} מתוך ${minPlayers} לפחות)`
+                        : `שחקנים (${filledPlayers.length} מוזנים, צריך לפחות ${minPlayers})`}
+                      {totalPlayers >= minPlayers && <span className="text-emerald-400 mr-1">✓</span>}
                     </label>
                     <Button size="sm" variant="ghost" onClick={addPlayer} className="text-emerald-400 hover:text-emerald-300 text-xs">
                       <Plus className="w-3.5 h-3.5 ml-1" />הוסף שחקן

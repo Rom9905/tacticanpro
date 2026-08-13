@@ -18,6 +18,7 @@ import UserManagement from '@/pages/UserManagement';
 import Admin from '@/pages/Admin';
 import SubscriptionBlocked from '@/pages/SubscriptionBlocked';
 import Login from '@/pages/Login';
+import ResetPassword from '@/pages/ResetPassword';
 import Payment from '@/pages/Payment';
 import PaymentSuccess from '@/pages/PaymentSuccess';
 import ManageSubscription from '@/pages/ManageSubscription';
@@ -60,6 +61,9 @@ const AuthenticatedApp = () => {
     return (
       <Routes>
         <Route path="/login" element={<Login />} />
+        {/* Recovery-email landing page — must exist before login, the token
+            exchange happens while this page is mounted. */}
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/terms" element={<Terms />} />
         <Route path="/cancellation-policy" element={<CancellationPolicy />} />
         <Route path="/accessibility" element={<AccessibilityStatement />} />
@@ -76,6 +80,7 @@ const AuthenticatedApp = () => {
     return (
       <Routes>
         <Route path="/admin" element={<Admin />} />
+        <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/payment" element={<Payment />} />
         <Route path="/payment-success" element={<PaymentSuccess />} />
         <Route path="/subscription" element={<ManageSubscription />} />
@@ -93,6 +98,7 @@ const AuthenticatedApp = () => {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/reset-password" element={<ResetPassword />} />
       <Route path="/admin" element={<Admin />} />
       <Route path="/" element={
         <LayoutWrapper currentPageName={mainPageKey}>

@@ -61,6 +61,11 @@ type Sub = {
   card_token: string;
   card_tokef: string; // YYMM
   charge_attempts: number;
+  next_charge_at: string | null;
+  start_date: string | null;
+  trial_started_at: string | null;
+  // The exact sum the customer authorized at trial start (see hyp-callback).
+  trial_authorized_amount: number | null;
 };
 
 Deno.serve(async (req) => {
@@ -80,9 +85,43 @@ Deno.serve(async (req) => {
   );
 
   const nowIso = new Date().toISOString();
+
+  // ── Lapse sweep: end access for subscriptions whose paid coverage is over
+  //    and nothing will renew them. Two families:
+  //    1. Cancelled subs (any kind) — cancel-subscription froze end_date and
+  //       stopped future charges; once end_date passes, access ends.
+  //    2. Finished non-renewing subs — no HK agreement and no pending token
+  //       charge (upfront season pass, or a token sub after its final
+  //       season charge); end_date is the season end and nothing extends it.
+  //    Uncancelled HK subs are deliberately NOT expired: HYP renews them
+  //    autonomously and our end_date does not advance (no webhook), so
+  //    expiring them by date would cut off paying customers.
+  const { data: lapsedCancelled, error: lapse1Error } = await admin
+    .from('subscriptions')
+    .update({ status: 'inactive' })
+    .in('status', ['active', 'trial'])
+    .not('cancelled_at', 'is', null)
+    .lt('end_date', nowIso)
+    .select('user_id');
+  if (lapse1Error) console.error('Cancelled-lapse sweep failed:', lapse1Error);
+
+  const { data: lapsedFinished, error: lapse2Error } = await admin
+    .from('subscriptions')
+    .update({ status: 'inactive' })
+    .eq('status', 'active')
+    .is('cancelled_at', null)
+    .is('hk_id', null)
+    .is('next_charge_at', null)
+    .lt('end_date', nowIso)
+    .select('user_id');
+  if (lapse2Error) console.error('Finished-lapse sweep failed:', lapse2Error);
+
+  const lapsed = (lapsedCancelled?.length || 0) + (lapsedFinished?.length || 0);
+  if (lapsed > 0) console.log(`Lapsed to inactive: ${lapsed} subscription(s)`);
+
   const { data: due, error: dueError } = await admin
     .from('subscriptions')
-    .select('user_id, billing_key, card_token, card_tokef, charge_attempts')
+    .select('user_id, billing_key, card_token, card_tokef, charge_attempts, next_charge_at, start_date, trial_started_at, trial_authorized_amount')
     .in('status', ['trial', 'active', 'past_due'])
     .is('cancelled_at', null)
     .not('card_token', 'is', null)
@@ -103,7 +142,7 @@ Deno.serve(async (req) => {
       results[sub.user_id] = 'error';
     }
   }
-  return json({ ok: true, processed: (due || []).length, results });
+  return json({ ok: true, processed: (due || []).length, lapsed, results });
 });
 
 async function chargeOne(
@@ -113,12 +152,26 @@ async function chargeOne(
 ): Promise<string> {
   const now = new Date();
 
-  // Amount + coverage for this charge
-  let amount: number;
-  let info: string;
-  let endDate: Date;
-  let nextChargeAt: Date | null;
-  const seasonEnd = seasonEndDate(now);
+  // The SEASON the customer bought is the one that was current when they
+  // subscribed — anchored to trial/subscription start, never to charge time.
+  // Re-deriving it from `now` re-priced trials that crossed June 1st: a
+  // season_full picked in late May (authorized 150₪ for 1 month) was charged
+  // 150×12 when the trial ended in June.
+  const anchor = sub.trial_started_at
+    ? new Date(sub.trial_started_at)
+    : sub.start_date ? new Date(sub.start_date) : now;
+  const seasonEnd = seasonEndDate(anchor);
+
+  // The bought season is already over — there is nothing left to charge for.
+  // Lapse instead of taking money for zero coverage.
+  const seasonOver = seasonEnd <= now;
+
+  // Amount + coverage for this charge (initialized for the season-over path,
+  // which returns before any of these are used)
+  let amount = 0;
+  let info = '';
+  let endDate: Date = now;
+  let nextChargeAt: Date | null = null;
 
   switch (sub.billing_key) {
     case 'monthly':
@@ -128,6 +181,7 @@ async function chargeOne(
       nextChargeAt = addMonths(now, 1);
       break;
     case 'season_monthly': {
+      if (seasonOver) break;
       amount = PRICE_PER_MONTH;
       info = 'TacticanPro - מנוי עונתי (תשלום חודשי)';
       const monthEnd = addDays(addMonths(now, 1), GRACE_DAYS);
@@ -137,8 +191,11 @@ async function chargeOne(
       break;
     }
     case 'season_full': {
-      const n = monthsUntilSeasonEnd(now);
-      amount = PRICE_PER_MONTH * n;
+      if (seasonOver) break;
+      // Charge exactly what the customer authorized at trial start; recompute
+      // from the anchor only for legacy rows that predate the column.
+      amount = sub.trial_authorized_amount || PRICE_PER_MONTH * monthsUntilSeasonEnd(anchor);
+      const n = Math.max(1, Math.round(amount / PRICE_PER_MONTH));
       info = `TacticanPro - מנוי עונתי (תשלום מלא, ${n} חודשים)`;
       endDate = seasonEnd;
       nextChargeAt = null;
@@ -147,6 +204,37 @@ async function chargeOne(
     default:
       console.error(`Unknown billing_key '${sub.billing_key}' for user=${sub.user_id}`);
       return 'bad-billing-key';
+  }
+
+  if (seasonOver && sub.billing_key !== 'monthly') {
+    const { error } = await admin.from('subscriptions').update({
+      status: 'inactive',
+      next_charge_at: null,
+    }).eq('user_id', sub.user_id);
+    if (error) console.error(`Season-over lapse failed for user=${sub.user_id}:`, error);
+    console.log(`Season over — lapsed without charging: user=${sub.user_id} billing=${sub.billing_key} season_end=${seasonEnd.toISOString()}`);
+    return 'season-ended';
+  }
+
+  // ── Pre-charge claim: charging is the irreversible step, so the billing
+  //    period must be claimed BEFORE money moves. Without this, overlapping
+  //    cron runs (pg_net retry, manual invoke) or a charge whose follow-up
+  //    UPDATE failed would bill the same period twice — the audit insert
+  //    after the charge can't protect anything because each HYP charge gets
+  //    a fresh transaction id. The claim key is user+period; a failed charge
+  //    reschedules to a new period (+1 day), so retries mint a new key.
+  const periodKey = (sub.next_charge_at || now.toISOString()).slice(0, 10);
+  const claimId = `cron:${sub.user_id}:${periodKey}`;
+  const { error: claimError } = await admin
+    .from('hyp_processed_transactions')
+    .insert({ transaction_id: claimId, user_id: sub.user_id, billing_key: sub.billing_key, amount });
+  if (claimError) {
+    if ((claimError as { code?: string }).code === '23505') {
+      console.warn(`Period already claimed, skipping: ${claimId}`);
+      return 'already-claimed';
+    }
+    console.error(`Claim insert failed for ${claimId}:`, claimError);
+    return 'claim-failed';
   }
 
   // Token expiry: Tokef is YYMM

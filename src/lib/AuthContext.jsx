@@ -21,6 +21,7 @@ export const AuthProvider = ({ children }) => {
       } else {
         setUser(null);
         setIsAuthenticated(false);
+        setSubscriptionStatus(null); // don't leak the previous account's status
         setIsLoadingAuth(false);
       }
     });
@@ -81,18 +82,25 @@ export const AuthProvider = ({ children }) => {
     try {
       const { data: sub } = await supabase
         .from('subscriptions')
-        .select('status, end_date')
+        .select('status, end_date, cancelled_at, hk_id, next_charge_at')
         .eq('user_id', authUser.id)
         .maybeSingle();
 
       // A trial that passed its end_date no longer grants access (covers a
       // trial cancelled before its first charge — the cron never touches it,
-      // so the stored status stays 'trial' forever). Active subscriptions are
-      // deliberately NOT expired client-side: their renewals extend end_date
-      // server-side, and the biller/HK flow is the authority on lapse.
-      const expiredTrial = sub?.status === 'trial'
-        && sub?.end_date && new Date(sub.end_date) < new Date();
-      setSubscriptionStatus(expiredTrial ? 'inactive' : (sub?.status || 'inactive'));
+      // so the stored status stays 'trial' forever). An 'active' sub also
+      // really ends at end_date when nothing will renew it: it was cancelled,
+      // or it has no renewal instrument (no HK agreement and no pending token
+      // charge — e.g. an upfront season pass after June 1). Uncancelled HK
+      // subs are NOT expired here: HYP renews them autonomously and end_date
+      // in our DB does not advance. Mirrors the charge-due-subscriptions
+      // server sweep — this is only the instant client-side backstop.
+      const now = new Date();
+      const ended = sub?.end_date && new Date(sub.end_date) < now;
+      const expiredTrial = sub?.status === 'trial' && ended;
+      const lapsedActive = sub?.status === 'active' && ended
+        && (sub?.cancelled_at || (!sub?.hk_id && !sub?.next_charge_at));
+      setSubscriptionStatus((expiredTrial || lapsedActive) ? 'inactive' : (sub?.status || 'inactive'));
     } catch (e) {
       console.error('Subscription check failed:', e);
       setSubscriptionStatus('inactive');
@@ -108,6 +116,7 @@ export const AuthProvider = ({ children }) => {
     await supabase.auth.signOut();
     setUser(null);
     setIsAuthenticated(false);
+    setSubscriptionStatus(null); // don't leak this account's status to the next login
   };
 
   const navigateToLogin = () => {
