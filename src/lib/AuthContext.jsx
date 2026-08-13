@@ -82,24 +82,26 @@ export const AuthProvider = ({ children }) => {
     try {
       const { data: sub } = await supabase
         .from('subscriptions')
-        .select('status, end_date, cancelled_at, hk_id, next_charge_at')
+        .select('status, end_date, cancelled_at, billing_key')
         .eq('user_id', authUser.id)
         .maybeSingle();
 
       // A trial that passed its end_date no longer grants access (covers a
       // trial cancelled before its first charge — the cron never touches it,
-      // so the stored status stays 'trial' forever). An 'active' sub also
-      // really ends at end_date when nothing will renew it: it was cancelled,
-      // or it has no renewal instrument (no HK agreement and no pending token
-      // charge — e.g. an upfront season pass after June 1). Uncancelled HK
-      // subs are NOT expired here: HYP renews them autonomously and end_date
-      // in our DB does not advance. Mirrors the charge-due-subscriptions
-      // server sweep — this is only the instant client-side backstop.
+      // so the stored status stays 'trial' forever). An 'active' sub is
+      // expired client-side only when it UNAMBIGUOUSLY will not renew: it was
+      // cancelled, or it is an upfront one-time season pass past its end
+      // (billing_key season_full). Everything else — recurring HK subs (HYP
+      // bills them, our end_date never advances) and token subs the cron is
+      // still working — is left to the server: charge-due-subscriptions flips
+      // it to 'inactive' within the hour and we then read that directly. This
+      // conservative mirror is the instant backstop and must never lock out a
+      // paying customer.
       const now = new Date();
       const ended = sub?.end_date && new Date(sub.end_date) < now;
       const expiredTrial = sub?.status === 'trial' && ended;
       const lapsedActive = sub?.status === 'active' && ended
-        && (sub?.cancelled_at || (!sub?.hk_id && !sub?.next_charge_at));
+        && (sub?.cancelled_at || sub?.billing_key === 'season_full');
       setSubscriptionStatus((expiredTrial || lapsedActive) ? 'inactive' : (sub?.status || 'inactive'));
     } catch (e) {
       console.error('Subscription check failed:', e);

@@ -90,12 +90,17 @@ Deno.serve(async (req) => {
   //    and nothing will renew them. Two families:
   //    1. Cancelled subs (any kind) — cancel-subscription froze end_date and
   //       stopped future charges; once end_date passes, access ends.
-  //    2. Finished non-renewing subs — no HK agreement and no pending token
-  //       charge (upfront season pass, or a token sub after its final
-  //       season charge); end_date is the season end and nothing extends it.
-  //    Uncancelled HK subs are deliberately NOT expired: HYP renews them
-  //    autonomously and our end_date does not advance (no webhook), so
-  //    expiring them by date would cut off paying customers.
+  //    2. Finished non-renewing subs that are UNAMBIGUOUSLY over:
+  //         - an upfront one-time season pass (billing_key season_full), or
+  //         - a token-billed sub the cron already finished (card_token set,
+  //           next_charge_at null → the last season charge is done).
+  //    HK subs (monthly / season_monthly billed by HYP's standing order) are
+  //    NEVER expired here: HYP renews them autonomously and our end_date does
+  //    not advance (no webhook). Crucially we must NOT lean on hk_id being
+  //    present to detect them — legacy rows carry an HK agreement whose id was
+  //    never captured (hk_id null), and expiring those would cut off a paying
+  //    customer while HYP keeps billing them. billing_key + card_token are the
+  //    reliable signals; hk_id is not.
   const { data: lapsedCancelled, error: lapse1Error } = await admin
     .from('subscriptions')
     .update({ status: 'inactive' })
@@ -110,9 +115,9 @@ Deno.serve(async (req) => {
     .update({ status: 'inactive' })
     .eq('status', 'active')
     .is('cancelled_at', null)
-    .is('hk_id', null)
     .is('next_charge_at', null)
     .lt('end_date', nowIso)
+    .or('billing_key.eq.season_full,card_token.not.is.null')
     .select('user_id');
   if (lapse2Error) console.error('Finished-lapse sweep failed:', lapse2Error);
 
@@ -263,8 +268,19 @@ async function chargeOne(
     SendHesh: 'True',
   });
 
-  const res = await fetch(`${HYP_BASE}?${chargeParams.toString()}`);
-  const text = await res.text();
+  // The claim is now held but no money has moved yet. If the charge call
+  // itself throws (network error, HYP outage) the claim MUST be released —
+  // otherwise next_charge_at stays put, every later run re-derives the same
+  // periodKey, hits 'already-claimed', and the card is never charged again
+  // (a trial user then silently loses access when end_date passes).
+  let text: string;
+  try {
+    const res = await fetch(`${HYP_BASE}?${chargeParams.toString()}`);
+    text = await res.text();
+  } catch (e) {
+    await releaseClaim(admin, claimId);
+    throw e; // surfaces as 'error' in the caller; next run retries cleanly
+  }
   const out = new URLSearchParams(text);
   const ccode = out.get('CCode');
   const txId = out.get('Id') || '';
@@ -299,8 +315,22 @@ async function chargeOne(
       ? { status: 'past_due', next_charge_at: null }
       : { next_charge_at: addDays(now, 1).toISOString() }),
   }).eq('user_id', sub.user_id);
-  if (error) console.error(`Failure update failed for user=${sub.user_id}:`, error);
+  if (error) {
+    // No money moved on a decline, but if we couldn't advance next_charge_at
+    // the row keeps the same periodKey and would jam on 'already-claimed'
+    // forever. Release the claim so the next run can re-attempt this period.
+    console.error(`Failure update failed for user=${sub.user_id}:`, error);
+    await releaseClaim(admin, claimId);
+  }
   return givingUp ? 'past-due' : 'retry-scheduled';
+}
+
+// Drop a pre-charge claim after a NO-MONEY-MOVED failure so the period can be
+// retried. Never call this once a charge has succeeded — that would reopen the
+// period to a double charge.
+async function releaseClaim(admin: ReturnType<typeof createClient>, claimId: string): Promise<void> {
+  const { error } = await admin.from('hyp_processed_transactions').delete().eq('transaction_id', claimId);
+  if (error) console.error(`Claim release failed for ${claimId}:`, error);
 }
 
 function json(body: unknown, status = 200) {
