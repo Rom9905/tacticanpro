@@ -45,6 +45,24 @@ export default function ActionHub({ pattern, players, isOpen, onClose, teamId })
   ];
 
   const handleSubmit = async () => {
+    // Tie the action to the open problem it addresses. That link is what lets
+    // the memory engine later say "last time this happened you worked on X and
+    // it went away" — without it the recommendation and the problem it fixed
+    // are two unrelated rows.
+    let linkedGoalId = null;
+    try {
+      if (teamId && pattern?.category) {
+        const goals = await base44.entities.TacticalGoal.filter({ team_id: teamId });
+        const match = goals.find(g =>
+          g.status === 'active' &&
+          ((g.linked_topics || []).includes(pattern.category) ||
+            (g.title || '').toLowerCase() === String(pattern.category).toLowerCase()));
+        linkedGoalId = match?.id || null;
+      }
+    } catch (e) {
+      console.warn('could not link action to a goal:', e);
+    }
+
     // Save to database
     await base44.entities.TrainingAction.create({
       team_id: teamId,
@@ -56,7 +74,8 @@ export default function ActionHub({ pattern, players, isOpen, onClose, teamId })
       scheduled_date: actionForm.scheduledDate,
       priority: actionForm.priority,
       notes: actionForm.notes,
-      status: 'pending'
+      status: 'pending',
+      ...(linkedGoalId ? { linked_goal_id: linkedGoalId } : {}),
     });
 
     setShowSuccess(true);

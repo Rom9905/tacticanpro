@@ -334,6 +334,12 @@ export default function MatchAnalysis() {
       } catch {}
     }
 
+    // Season memory is only useful if it is kept current: recompute goal
+    // progress and player trends after every match, not just after a
+    // professional summary (which is where this used to be the only trigger).
+    base44.functions.invoke('analyzeTeamProgress', { teamId: selectedTeamId })
+      .catch(err => console.warn('post-match progress update failed:', err));
+
     loadAnalyses(selectedTeamId);
     setShowNewAnalysis(false);
     setAnalysisMode(null);

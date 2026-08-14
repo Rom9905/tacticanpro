@@ -4,6 +4,7 @@
  * context) via the LLM and saves it on the MatchAnalysis record.
  */
 import { base44 } from '@/api/base44Client';
+import { buildTeamMemoryBlock } from '@/lib/teamMemory';
 
 function collectIssues(analysis) {
   const issues = [];
@@ -42,6 +43,15 @@ export async function generateDeepAnalysis({ match_analysis_id, fingerprint = nu
 
   const issues = collectIssues(analysis);
   const richness = dataRichness(analysis);
+  // Season memory — lets the deep analysis say "this is the fourth time"
+  // instead of describing the match as if it happened in a vacuum.
+  let memoryCtx = '';
+  if (analysis.team_id) {
+    try {
+      const teams = await base44.entities.Team.filter({ id: analysis.team_id });
+      memoryCtx = await buildTeamMemoryBlock(analysis.team_id, teams?.[0] || null);
+    } catch (e) { console.warn('deep analysis memory load failed:', e); }
+  }
   const trainingTopics = (analysis.training_actions || []).map(a => a.focus).filter(Boolean).length > 0
     ? analysis.training_actions.map(a => a.focus).filter(Boolean)
     : (analysis.report?.recommendations || []).slice(0, 4);
@@ -61,11 +71,11 @@ ${issues.map((i, n) => `${n + 1}. ${i}`).join('\n') || 'לא זוהו בעיות
 
   const result = await base44.integrations.Core.InvokeLLM({
     prompt: `צור ניתוח מעמיק למשחק לפי חלק 5 של ההנחיות שלך.
-
+${memoryCtx}
 נתוני המשחק:${context}
 
 הפק:
-- story: פסקה של 5-8 משפטים שמספרת את רצף המשחק ומחברת בין המסקנות. אל תמציא דקות או מספרים שלא נמסרו.
+- story: פסקה של 5-8 משפטים שמספרת את רצף המשחק ומחברת בין המסקנות. אל תמציא דקות או מספרים שלא נמסרו.${memoryCtx ? ' חבר את הסיפור להיסטוריה: האם זה דפוס חוזר או אירוע חד-פעמי.' : ''}
 - issue_expansions: לכל בעיה מהרשימה — issue (העתק מקורי), explanation (למה קרה + רקע טקטי), supporting_data (מספרים מהנתונים בלבד, או "אין מספרים — הבעיה זוהתה מתיאור המאמן").
 - clarifying_questions: ${richness === 'sparse' ? '1-2 שאלות ממוקדות עם question + reason.' : 'מערך ריק (הנתונים עשירים).'}
 - training_topic_context: לכל נושא אימון — topic + story_link שמקשר אותו למה שקרה במשחק.`,

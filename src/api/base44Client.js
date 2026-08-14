@@ -349,6 +349,30 @@ const integrations = {
 // FUNCTIONS (serverless function invocations)
 // ============================================================
 async function handleAnalyzeMatchFile(params) {
+  // The season memory and the format emphasis are built client-side (the
+  // browser already holds the team and reads history under RLS) and passed
+  // to the function, which has no team context of its own.
+  let teamMemory = '';
+  let formatContext = '';
+  // Callers pass a file, not a team, so fall back to the active AI team the
+  // page already registered (same value every other AI call uses).
+  const teamId = params?.team_id || _activeAITeam?.id || null;
+  // identify_teams just extracts two names from the file — season memory is
+  // useless there and it sits on the upload critical path, so skip the work.
+  const wantsContext = (params?.mode || 'full') !== 'identify_teams';
+  try {
+    if (teamId && wantsContext) {
+      const { buildTeamMemoryBlock } = await import('@/lib/teamMemory');
+      teamMemory = await buildTeamMemoryBlock(teamId, _activeAITeam);
+    }
+    if (_activeAITeam && wantsContext) {
+      const { buildFormatAIContext } = await import('@/lib/teamFormats');
+      formatContext = buildFormatAIContext(_activeAITeam);
+    }
+  } catch (e) {
+    console.warn('analyzeMatchFile context build failed:', e);
+  }
+
   const { data, error } = await supabase.functions.invoke('analyze-match-file', {
     body: {
       mode: params?.mode || 'full',
@@ -357,6 +381,8 @@ async function handleAnalyzeMatchFile(params) {
       our_team_name: params?.our_team_name || '',
       opponent_name: params?.opponent_name || '',
       question: params?.question || '',
+      team_memory: teamMemory,
+      format_context: formatContext,
     },
   });
 

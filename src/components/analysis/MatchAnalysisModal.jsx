@@ -10,6 +10,7 @@ import BottomLine from '@/components/ui/BottomLine';
 import { buildGameStyleContext } from '@/hooks/useGameStyle';
 import { generateTacticalProblems } from '@/lib/tacticalProblemsEngine';
 import { syncTacticalProblemsToGoals } from '@/lib/tacticalGoalsSync';
+import { buildTeamMemoryBlock } from '@/lib/teamMemory';
 import { matchFingerprint } from '@/lib/analysisFingerprint';
 import { useIsMobile } from '@/hooks/use-mobile';
 import { isKidsTeam, isYouthFormat } from '@/lib/teamFormats';
@@ -163,6 +164,9 @@ export default function MatchAnalysisModal({ open, onClose, analysis, teamName, 
   const generateAISummary = async () => {
     setLoading(true);
     let gameStyleCtx = '';
+    // Season memory: what this team has done before. Without it the analysis
+    // can only mirror back what the coach just typed.
+    let memoryCtx = '';
     if (analysis.team_id) {
       try {
         const teams = await base44.entities.Team.filter({ id: analysis.team_id });
@@ -172,7 +176,8 @@ export default function MatchAnalysisModal({ open, onClose, analysis, teamName, 
           setTeamGameStyleNotes(team.game_style_notes || '');
           gameStyleCtx = buildGameStyleContext(team.game_style, team.game_style_notes);
         }
-      } catch (e) { console.error('Failed to load team for game style', e); }
+        memoryCtx = await buildTeamMemoryBlock(analysis.team_id, team || null);
+      } catch (e) { console.error('Failed to load team context', e); }
     }
 
     try {
@@ -186,10 +191,10 @@ ${analysis.free_notes ? `הערות: ${analysis.free_notes}` : ''}
 ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.phase_analysis)}` : ''}${gameStyleCtx}`;
 
       const prompt = `אתה מנתח משחקי כדורגל מקצועי. התמקד אך ורק בנושאי כדורגל - טקטיקה, ביצועים על המגרש, שלבי משחק, שחקנים. אל תתייחס לנושאים שאינם קשורים לכדורגל.
-
+${memoryCtx}
 נתוני המשחק:${matchContext}
 
-צור תמונה מקצועית של המשחק — פסקה רצופה אחת של 3-5 משפטים בלבד, לא יותר. בלי כותרות, בלי רשימות, בלי חלוקה לנושאים. רק טקסט רצוף קצר על הביצועים הכדורגליים.${gameStyleCtx ? '\nאם זיהית פערים בין השיטה שהוגדרה לביצוע — ציין אותם.' : ''}`;
+צור תמונה מקצועית של המשחק — פסקה רצופה אחת של 3-5 משפטים בלבד, לא יותר. בלי כותרות, בלי רשימות, בלי חלוקה לנושאים. רק טקסט רצוף קצר על הביצועים הכדורגליים.${memoryCtx ? '\nאם המשחק ממשיך דפוס מוכר מזיכרון הקבוצה — אמור זאת במפורש (כולל כמה פעמים).' : ''}${gameStyleCtx ? '\nאם זיהית פערים בין השיטה שהוגדרה לביצוע — ציין אותם.' : ''}`;
 
       const summaryRes = await base44.integrations.Core.InvokeLLM({
         prompt,
@@ -203,13 +208,13 @@ ${analysis.phase_analysis ? `ניתוח שלבים: ${JSON.stringify(analysis.ph
       const summary = summaryRes?.__ai_error ? summaryRes : (summaryRes?.match_picture || '');
 
       const insightsPrompt = `אתה מנתח משחקי כדורגל מקצועי. התמקד אך ורק בנושאי כדורגל.
-
+${memoryCtx}
 נתוני המשחק:${matchContext}
 
 זהה בדיוק 3 תובנות כדורגליות מרכזיות מהמשחק:
-1. בעיה טקטית/כדורגלית מרכזית אחת שצריך לטפל בה${gameStyleCtx ? ' — אם קשורה לשיטת המשחק, התחל ב"על בסיס שיטת המשחק שהגדרת —"' : ''}
+1. בעיה טקטית/כדורגלית מרכזית אחת שצריך לטפל בה${gameStyleCtx ? ' — אם קשורה לשיטת המשחק, התחל ב"על בסיס שיטת המשחק שהגדרת —"' : ''}${memoryCtx ? '\n   אם הבעיה כבר מוכרת מזיכרון הקבוצה — פתח בציון מספר הפעמים שהיא הופיעה.' : ''}
 2. נקודת שיפור כדורגלית אחת
-3. נקודה חיובית כדורגלית אחת
+3. נקודה חיובית כדורגלית אחת${memoryCtx ? ' — אם בעיה מהעבר נעלמה, זו הנקודה החיובית המועדפת.' : ''}
 
 כל תובנה - משפט קצר וממוקד בנושאי כדורגל בלבד (טקטיקה, ביצועים, מבנה משחק, שחקנים).`;
 

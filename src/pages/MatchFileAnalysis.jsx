@@ -1,5 +1,5 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
-import { base44 } from '@/api/base44Client';
+import { base44, setActiveAITeam } from '@/api/base44Client';
 import { useTeam } from '@/components/TeamContext';
 import { Loader2, Upload, FileText, CheckCircle2, PlusCircle, AlertCircle, ShieldCheck, Zap, Target, Swords, Users, Lightbulb, ArrowRight, ArrowLeft, ChevronDown, ChevronUp, X, BarChart3, Search, Send, Lock, Save } from 'lucide-react';
 import PageHero from '@/components/ui/PageHero';
@@ -301,12 +301,16 @@ export default function MatchFileAnalysis() {
   // default to it.
   useEffect(() => {
     let cancelled = false;
-    if (!selectedTeamId) { setActiveTeamName(''); return; }
+    if (!selectedTeamId) { setActiveTeamName(''); setActiveAITeam(null); return; }
     (async () => {
       try {
         const userTeams = await base44.entities.Team.list();
         const activeTeam = userTeams.find(t => t.id === selectedTeamId);
-        if (!cancelled) setActiveTeamName(activeTeam?.name || '');
+        if (cancelled) return; // a newer team selection already won
+        setActiveTeamName(activeTeam?.name || '');
+        // Registers the team for the AI layer, so file analyses carry the
+        // same season memory and format emphasis as every other prompt.
+        setActiveAITeam(activeTeam || null);
       } catch (e) {
         console.error('Failed to resolve active team name:', e);
       }

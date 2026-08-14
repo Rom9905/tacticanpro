@@ -154,9 +154,28 @@ ${hints.opponent_name ? `רמז: היריבה היא "${hints.opponent_name}"` :
 ${fileContent}`;
 }
 
-function buildFullAnalysisPrompt(fileContent: string, ourTeam: string, opponent: string) {
+// The season memory and format emphasis are assembled by the browser (it
+// holds the team row and reads history under RLS) and passed in. They are
+// prompt context only — never used to look anything up or to authorise
+// anything — and are length-capped so a large history cannot crowd out the
+// match data itself.
+const MAX_CONTEXT_CHARS = 6000;
+function contextBlock(teamMemory?: string, formatContext?: string) {
+  const parts = [formatContext, teamMemory].filter((p) => typeof p === "string" && p.trim());
+  if (parts.length === 0) return "";
+  return `\n${parts.join("\n").slice(0, MAX_CONTEXT_CHARS)}\n`;
+}
+
+function buildFullAnalysisPrompt(
+  fileContent: string,
+  ourTeam: string,
+  opponent: string,
+  teamMemory?: string,
+  formatContext?: string,
+) {
   return `נתח את קובץ נתוני המשחק הבא. הקבוצה שלנו: "${ourTeam}". היריבה: "${opponent}".
 תמיד השתמש בשמות "${ourTeam}" ו-"${opponent}" — אף פעם לא השמות מהקובץ.
+${contextBlock(teamMemory, formatContext)}
 
 קביעת עומק הנתונים (analysis_type):
 - "summary" = קובץ קצר (תוצאה, סטטיסטיקות בודדות, סיכום קצר)
@@ -217,12 +236,19 @@ function buildFullAnalysisPrompt(fileContent: string, ourTeam: string, opponent:
 ${fileContent}`;
 }
 
-function buildDeepDivePrompt(fileContent: string, question: string, ourTeam: string, opponent: string) {
+function buildDeepDivePrompt(
+  fileContent: string,
+  question: string,
+  ourTeam: string,
+  opponent: string,
+  teamMemory?: string,
+  formatContext?: string,
+) {
   return `בהתבסס אך ורק על הנתונים מקובץ המשחק של ${ourTeam} מול ${opponent}, ענה על השאלה הבאה:
 
 "${question}"
-
-פלט אך ורק על סמך מה שיש בקובץ — אל תמציא, אל תשער.
+${contextBlock(teamMemory, formatContext)}
+פלט אך ורק על סמך מה שיש בקובץ — אל תמציא, אל תשער. אם זיכרון הקבוצה מספק הקשר היסטורי רלוונטי לשאלה, השתמש בו כדי להבחין בין דפוס חוזר לאירוע חד-פעמי.
 תמיד השתמש בשמות "${ourTeam}" ו-"${opponent}" — אף פעם לא השמות מהקובץ.
 שמות שחקנים: באנגלית כמו בקובץ.
 אל תשתמש ב-markdown.
@@ -279,7 +305,7 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: "Unauthorized" }), { status: 401, headers: CORS_HEADERS });
     }
 
-    const { mode, file_url, file_content, our_team_name, opponent_name, question } = await req.json();
+    const { mode, file_url, file_content, our_team_name, opponent_name, question, team_memory, format_context } = await req.json();
     const apiKey = Deno.env.get("GEMINI_API_KEY");
     if (!apiKey) {
       return new Response(JSON.stringify({ error: "GEMINI_API_KEY not configured" }), {
@@ -325,9 +351,9 @@ serve(async (req) => {
             if (mode === "identify_teams") {
               userPrompt = buildIdentifyTeamsPrompt("(הקובץ מצורף כקובץ בינארי)", { our_team_name, opponent_name });
             } else if (mode === "deep_dive") {
-              userPrompt = buildDeepDivePrompt("(הקובץ מצורף כקובץ בינארי)", question, our_team_name || "", opponent_name || "");
+              userPrompt = buildDeepDivePrompt("(הקובץ מצורף כקובץ בינארי)", question, our_team_name || "", opponent_name || "", team_memory, format_context);
             } else {
-              userPrompt = buildFullAnalysisPrompt("(הקובץ מצורף כקובץ בינארי)", our_team_name || "הקבוצה שלנו", opponent_name || "היריבה");
+              userPrompt = buildFullAnalysisPrompt("(הקובץ מצורף כקובץ בינארי)", our_team_name || "הקבוצה שלנו", opponent_name || "היריבה", team_memory, format_context);
             }
 
             const mimeType = contentType.split(";")[0].trim() || "application/pdf";
@@ -376,9 +402,9 @@ serve(async (req) => {
     if (mode === "identify_teams") {
       userPrompt = buildIdentifyTeamsPrompt(resolvedContent, { our_team_name, opponent_name });
     } else if (mode === "deep_dive") {
-      userPrompt = buildDeepDivePrompt(resolvedContent, question, our_team_name || "", opponent_name || "");
+      userPrompt = buildDeepDivePrompt(resolvedContent, question, our_team_name || "", opponent_name || "", team_memory, format_context);
     } else {
-      userPrompt = buildFullAnalysisPrompt(resolvedContent, our_team_name || "הקבוצה שלנו", opponent_name || "היריבה");
+      userPrompt = buildFullAnalysisPrompt(resolvedContent, our_team_name || "הקבוצה שלנו", opponent_name || "היריבה", team_memory, format_context);
     }
 
     const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {

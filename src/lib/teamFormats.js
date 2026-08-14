@@ -265,9 +265,13 @@ export function formatBadgeLabel(team) {
 }
 
 /**
- * Hebrew context block appended to AI prompts. Kids teams get an
- * explicit development-first instruction; senior teams keep the
- * full tactical depth.
+ * Hebrew context block appended to AI prompts.
+ *
+ * The emphasis is chosen by the match format, because the same observation
+ * means different things at different formats. In 11v11 the collective
+ * structure is the subject; in 7v7 the subject is the individual child, and
+ * imposing adult tactical demands there is pedagogically wrong. 9v9 sits
+ * between the two. A team with no format set defaults to 11v11 (getFormat).
  */
 export function buildFormatAIContext(team) {
   if (!team) return '';
@@ -278,16 +282,32 @@ export function buildFormatAIContext(team) {
     `--- הקשר קבוצה ---`,
     `פורמט משחק: ${fmt.label} (${fmt.lineupSize} שחקנים בהרכב, שני חצאים של ${fmt.halfMinutes} דקות)${age ? ` | קבוצת גיל: ${age}` : ''}`,
   ];
-  if (isKidsTeam(team)) {
+
+  if (fmt.key === '7v7') {
     lines.push(
-      `זו קבוצת ילדים/נוער צעיר בפורמט קטן. הניתוח חייב להתמקד בפיתוח ולא בתוצאה:`,
-      `- עקרונות בסיס בלבד: מיצוב, רוחב, אומץ עם הכדור, מגעים בכדור, הצלחות 1 על 1.`,
-      `- טון של מנטור חם ומעודד. הדגש הצלחות לפני בעיות.`,
-      `- זכור מודעות לזמן משחק שווה לכל הילדים.`,
-      `- אל תשתמש במושגים של כדורגל בוגרים: בלוק נמוך, PPDA, xG, מבני לחץ מורכבים.`
+      'דגש הניתוח: פיתוח אישי מובהק. בגיל הזה פיתוח השחקן הוא המטרה — לא התוצאה ולא המבנה הקבוצתי.',
+      '- התמקד כמעט לחלוטין ביכולת האישית: טכניקה, נגיעה ראשונה, קבלת החלטות, ביטחון עם הכדור, 1 על 1, מיצוב בסיסי.',
+      '- טקטיקה קבוצתית — בקצרה ובעקרונות בסיס בלבד (רוחב, מיצוב, אומץ עם הכדור).',
+      '- נושאי העבודה שתפיק חייבים להיות אישיים ומכוונים לשחקן ספציפי, לא תרגילי מבנה קבוצתי.',
+      '- נסח בעיות כשלב בהתפתחות, לעולם לא ככישלון. טון של מנטור חם ומעודד, הצלחות לפני בעיות.',
+      '- זכור מודעות לזמן משחק שווה לכל הילדים.',
+      '- אל תשתמש במושגים של כדורגל בוגרים: בלוק נמוך, PPDA, xG, מבני לחץ מורכבים.'
+    );
+  } else if (fmt.key === '9v9') {
+    lines.push(
+      'דגש הניתוח: מאוזן, עם נטייה לפיתוח. מבנה טקטי כבר רלוונטי, אך פיתוח השחקן מוביל.',
+      '- הקדם את ההתייחסות האישית (התקדמות, נקודות חוזק, מה כל שחקן צריך לפתח) לפני המבנה הקבוצתי.',
+      '- טקטיקה קבוצתית בעקרונות פשוטים: מרחקים, רוחב, תמיכה, מעברים — בלי מודלים מורכבים.',
+      '- שלב נושאי עבודה אישיים לצד נושא קבוצתי אחד לכל היותר.',
+      '- נסח בעיות באופן התפתחותי ובונה, לא כביקורת.'
     );
   } else {
-    lines.push(`קבוצה בוגרת/נוער — שמור על עומק טקטי מלא (לחץ, בנייה, בלוקים, מעברים).`);
+    lines.push(
+      'דגש הניתוח: טקטי-קולקטיבי. שמור על עומק טקטי מלא.',
+      '- מקד את הניתוח במבנה הקבוצתי: שלבי משחק, מרחקים בין הקווים, תיאום לחץ, מעברים, קומפקטיות.',
+      '- נסח בעיות ברמת הקבוצה, ונושאי עבודה בנושאים קולקטיביים.',
+      '- התייחסות אישית לשחקנים היא משנית ותומכת בתמונה הקבוצתית.'
+    );
   }
   return lines.join('\n');
 }
