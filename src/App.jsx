@@ -33,11 +33,23 @@ const LayoutWrapper = ({ children, currentPageName }) => Layout ?
   : <>{children}</>;
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, isAuthenticated, authError, navigateToLogin, subscriptionStatus, user } = useAuth();
+  const { isLoadingAuth, isLoadingPublicSettings, isAuthenticated, authError, navigateToLogin, subscriptionStatus, user, isPasswordRecovery } = useAuth();
 
   // Dev-only, no-auth preview of the game-prep screens (mobile review).
   if (typeof window !== 'undefined' && window.location.pathname === '/preview-gameprep') {
     return <GamePrepPreview />;
+  }
+
+  // A password-recovery link creates a real session, so the normal routing
+  // would treat the user as logged in and show the dashboard. While recovery
+  // is in progress, force the reset-password screen regardless of the path
+  // the link happened to land on.
+  if (isPasswordRecovery) {
+    return (
+      <Routes>
+        <Route path="*" element={<ResetPassword />} />
+      </Routes>
+    );
   }
 
   // Show loading spinner while checking auth

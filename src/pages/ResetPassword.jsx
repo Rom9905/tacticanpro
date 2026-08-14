@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabaseClient';
+import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Loader2 } from 'lucide-react';
@@ -8,6 +9,7 @@ import { Loader2 } from 'lucide-react';
 // with a recovery token in the URL hash; supabase-js exchanges it for a
 // session automatically, after which updateUser({ password }) is allowed.
 export default function ResetPassword() {
+  const { endPasswordRecovery } = useAuth();
   const [password, setPassword] = useState('');
   const [confirm, setConfirm] = useState('');
   const [loading, setLoading] = useState(false);
@@ -50,6 +52,9 @@ export default function ResetPassword() {
       else setError('עדכון הסיסמה נכשל — נסה שוב או בקש קישור איפוס חדש');
     } else {
       setDone(true);
+      // Recovery is over — let the app route normally into the (now
+      // authenticated) session after the confirmation message.
+      endPasswordRecovery?.();
       setTimeout(() => { window.location.href = '/'; }, 2500);
     }
     setLoading(false);

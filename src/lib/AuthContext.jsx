@@ -11,11 +11,21 @@ export const AuthProvider = ({ children }) => {
   const [authError, setAuthError] = useState(null);
   const [appPublicSettings, setAppPublicSettings] = useState({ id: 'local', public_settings: {} });
   const [subscriptionStatus, setSubscriptionStatus] = useState(null);
+  // A password-recovery email link lands here with a real session in the URL.
+  // Without this flag the app would treat that session as a normal login and
+  // drop the user straight into the dashboard instead of the reset-password
+  // screen. Seed it from the URL hash (the token carries `type=recovery`) so
+  // the very first render already knows, and confirm it via the
+  // PASSWORD_RECOVERY auth event below.
+  const [isPasswordRecovery, setIsPasswordRecovery] = useState(
+    () => typeof window !== 'undefined' && window.location.hash.includes('type=recovery'),
+  );
 
   useEffect(() => {
     checkSession();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'PASSWORD_RECOVERY') setIsPasswordRecovery(true);
       if (session?.user) {
         loadProfile(session.user);
       } else {
@@ -134,6 +144,8 @@ export const AuthProvider = ({ children }) => {
       authError,
       appPublicSettings,
       subscriptionStatus,
+      isPasswordRecovery,
+      endPasswordRecovery: () => setIsPasswordRecovery(false),
       logout,
       navigateToLogin,
       checkAppState: checkSession
