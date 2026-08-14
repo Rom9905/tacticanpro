@@ -163,7 +163,19 @@ const MAX_CONTEXT_CHARS = 6000;
 function contextBlock(teamMemory?: string, formatContext?: string) {
   const parts = [formatContext, teamMemory].filter((p) => typeof p === "string" && p.trim());
   if (parts.length === 0) return "";
-  return `\n${parts.join("\n").slice(0, MAX_CONTEXT_CHARS)}\n`;
+  // Truncate the context, then append the reconciliation — the system prompt
+  // forbids emitting any number that is not in the file, while the memory
+  // block is by construction full of numbers that are not (occurrence counts,
+  // past scores, dates). Without this the two instructions contradict each
+  // other and history either gets ignored or leaks into the statistics fields.
+  const reconcile = [
+    "",
+    "כללי שימוש בהקשר שלמעלה:",
+    "- ההקשר הזה אינו חלק מהקובץ. הוא היסטוריה מאומתת מהמערכת.",
+    "- כלל \"כל מספר חייב להופיע בקובץ\" חל על נתוני המשחק בלבד. מספרי היסטוריה (כמה פעמים בעיה חזרה, תוצאות עבר) מותרים אך ורק בשדות הטקסט החופשי, ורק אם הם מופיעים בהקשר.",
+    "- אסור להכניס מספרים מההיסטוריה לשדות הסטטיסטיקה או המדדים של המשחק הנוכחי.",
+  ].join("\n");
+  return `\n${parts.join("\n").slice(0, MAX_CONTEXT_CHARS)}\n${reconcile}\n`;
 }
 
 function buildFullAnalysisPrompt(

@@ -31,6 +31,7 @@ import ProblemHeatmap from '../components/analysis/ProblemHeatmap';
 import TrendsTab from '../components/analysis/TrendsTab';
 import MatchAnalysisModal from '../components/analysis/MatchAnalysisModal';
 import { syncMatchRatingsToPlayers } from '@/lib/playerRatingSync';
+import { clearTeamMemoryCache } from '@/lib/teamMemory';
 
 // Score can come from the linked ProfessionalSummary or the analysis itself.
 const scoreOur = a => a._summary?.result_our ?? a.result?.our_score ?? null;
@@ -334,6 +335,8 @@ export default function MatchAnalysis() {
       } catch {}
     }
 
+    // A new match invalidates any memory block built before it existed.
+    clearTeamMemoryCache(selectedTeamId);
     // Season memory is only useful if it is kept current: recompute goal
     // progress and player trends after every match, not just after a
     // professional summary (which is where this used to be the only trigger).

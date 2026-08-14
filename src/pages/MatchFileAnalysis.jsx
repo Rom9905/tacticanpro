@@ -1,5 +1,6 @@
 import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { base44, setActiveAITeam } from '@/api/base44Client';
+import { clearTeamMemoryCache } from '@/lib/teamMemory';
 import { useTeam } from '@/components/TeamContext';
 import { Loader2, Upload, FileText, CheckCircle2, PlusCircle, AlertCircle, ShieldCheck, Zap, Target, Swords, Users, Lightbulb, ArrowRight, ArrowLeft, ChevronDown, ChevronUp, X, BarChart3, Search, Send, Lock, Save } from 'lucide-react';
 import PageHero from '@/components/ui/PageHero';
@@ -520,6 +521,13 @@ export default function MatchFileAnalysis() {
           });
         } catch {}
       }
+      // This path writes a match and new goals without going through the match
+      // modal, so nothing else would refresh the season memory: a question
+      // asked right afterwards would be answered from a block built before
+      // this match existed.
+      clearTeamMemoryCache(teamId);
+      base44.functions.invoke('analyzeTeamProgress', { teamId })
+        .catch(err => console.warn('post-save progress update failed:', err));
       setSaveDone(true); setStep('saving');
     } catch (e) {
       setError('שגיאה בשמירה: ' + (e.message || ''));

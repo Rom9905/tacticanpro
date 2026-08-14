@@ -4,7 +4,7 @@
  * Idempotent: a match/summary is never counted twice for the same goal.
  */
 import { base44 } from '@/api/base44Client';
-import { decayOpenProblems, refreshPlayerTrends } from '@/lib/teamMemory';
+import { decayOpenProblems, refreshPlayerTrends, clearTeamMemoryCache } from '@/lib/teamMemory';
 
 /**
  * Asks the LLM which of the newly detected problems are the SAME problem the
@@ -212,6 +212,10 @@ async function syncProblems(analysis, problems) {
     console.warn('problem decay failed:', err));
   await refreshPlayerTrends(analysis.team_id).catch(err =>
     console.warn('player trend refresh failed:', err));
+  // Occurrence counts, trends and resolutions just moved — the cached block
+  // describes the world before this match, and the deep analysis that runs
+  // moments later would otherwise be handed it.
+  clearTeamMemoryCache(analysis.team_id);
 }
 
 /**
@@ -244,8 +248,11 @@ export async function analyzeTeamProgress(teamId) {
 
   // create/update goals for topics appearing 2+ times
   for (const [topic, hits] of topicIssues) {
+    // Active only — same rule as the match path. Bumping a paused goal would
+    // hide the recurrence (the memory block lists active goals) while decay,
+    // which is also active-only, never maintains it.
     const existing = goals.find(g =>
-      g.status !== 'resolved' &&
+      g.status === 'active' &&
       ((g.linked_topics || []).includes(topic) ||
         (g.title || '').toLowerCase().includes(topic.toLowerCase()))
     );
@@ -255,12 +262,23 @@ export async function analyzeTeamProgress(teamId) {
       const newIds = hits.map(h => h.id).filter(id => !(existing.source_summaries || []).includes(id));
       if (newIds.length === 0) continue;
       const count = (existing.occurrence_count || 0) + newIds.length;
+      // last_seen_date may only move FORWARD. The newest matching summary can
+      // be older than the last match this problem appeared in, and writing it
+      // back would make decay count every match since then and resolve a
+      // problem that recurred days ago.
+      const newest = [lastDate, existing.last_seen_date]
+        .filter(Boolean)
+        .sort((a, b) => String(b).localeCompare(String(a)))[0] || null;
       await base44.entities.TacticalGoal.update(existing.id, {
         occurrence_count: count,
         priority: priorityFromCount(count),
         description: `זוהתה אוטומטית — הופיעה ${count} פעמים בסיכומים`,
-        last_seen_date: lastDate,
+        last_seen_date: newest,
         source_summaries: [...(existing.source_summaries || []), ...newIds],
+        // The problem just recurred — clear any fading state so the block
+        // cannot claim "last seen today" and "hasn't recurred in 3 matches".
+        matches_since_seen: 0,
+        fading_since: null,
       }).catch(() => {});
     } else if (hits.length >= 2) {
       await base44.entities.TacticalGoal.create({
@@ -307,6 +325,7 @@ export async function analyzeTeamProgress(teamId) {
   // Player trajectories are memory too — refresh them whenever progress runs.
   await refreshPlayerTrends(teamId).catch(err =>
     console.warn('player trend refresh failed:', err));
+  clearTeamMemoryCache(teamId);
 
   return { success: true };
 }

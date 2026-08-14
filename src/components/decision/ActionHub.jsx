@@ -53,18 +53,26 @@ export default function ActionHub({ pattern, players, isOpen, onClose, teamId })
     try {
       if (teamId && pattern?.category) {
         const goals = await base44.entities.TacticalGoal.filter({ team_id: teamId });
-        const match = goals.find(g =>
+        // The two vocabularies were typed separately and disagree on spelling
+        // ("בניה מאחור" vs "בנייה מאחור"), so a literal compare silently never
+        // links the most common category. Normalise before comparing.
+        const norm = (s) => String(s || '').replace(/[י\s"'׳״-]/g, '').toLowerCase();
+        const target = norm(pattern.category);
+        const candidates = goals.filter(g =>
           g.status === 'active' &&
-          ((g.linked_topics || []).includes(pattern.category) ||
-            (g.title || '').toLowerCase() === String(pattern.category).toLowerCase()));
-        linkedGoalId = match?.id || null;
+          ((g.linked_topics || []).some(t => norm(t) === target) || norm(g.title) === target));
+        // Prefer the problem this action is really aimed at: the one seen most
+        // recently, then the most recurring — not whatever PostgREST returned first.
+        candidates.sort((a, b) =>
+          String(b.last_seen_date || '').localeCompare(String(a.last_seen_date || '')) ||
+          (b.occurrence_count || 0) - (a.occurrence_count || 0));
+        linkedGoalId = candidates[0]?.id || null;
       }
     } catch (e) {
       console.warn('could not link action to a goal:', e);
     }
 
-    // Save to database
-    await base44.entities.TrainingAction.create({
+    const payload = {
       team_id: teamId,
       action_type: actionType,
       pattern_situation: pattern.situation,
@@ -76,7 +84,28 @@ export default function ActionHub({ pattern, players, isOpen, onClose, teamId })
       notes: actionForm.notes,
       status: 'pending',
       ...(linkedGoalId ? { linked_goal_id: linkedGoalId } : {}),
-    });
+    };
+
+    try {
+      await base44.entities.TrainingAction.create(payload);
+    } catch (e) {
+      // The goal link is an enhancement; losing the coach's action because the
+      // column isn't there yet is not acceptable. Retry without it.
+      if (linkedGoalId) {
+        const { linked_goal_id: _drop, ...withoutLink } = payload;
+        try {
+          await base44.entities.TrainingAction.create(withoutLink);
+        } catch (e2) {
+          console.error('failed to save training action:', e2);
+          alert('שמירת הפעולה נכשלה. נסה שוב.');
+          return;
+        }
+      } else {
+        console.error('failed to save training action:', e);
+        alert('שמירת הפעולה נכשלה. נסה שוב.');
+        return;
+      }
+    }
 
     setShowSuccess(true);
     setTimeout(() => {

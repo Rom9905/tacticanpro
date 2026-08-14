@@ -16,7 +16,7 @@
  *    with collective problems (see Part Two of the spec).
  */
 import { base44 } from '@/api/base44Client';
-import { getFormat, isYouthFormat } from '@/lib/teamFormats';
+import { isYouthFormat } from '@/lib/teamFormats';
 
 // How many recent matches feed the memory block.
 export const RECENT_MATCH_WINDOW = 8;
@@ -137,15 +137,24 @@ export async function decayOpenProblems(teamId, seenGoalIds = []) {
     base44.entities.TacticalGoal.filter({ team_id: teamId }),
     base44.entities.MatchAnalysis.filter({ team_id: teamId }, '-date', RECENT_MATCH_WINDOW * 2),
   ]);
-  // Only auto-resolve problems the engine detected itself. A goal the coach
-  // created by hand (or one raised from a professional summary) must never
-  // disappear from the Training Center without the coach doing anything.
-  const open = goals.filter((g) => g.status === 'active' && g.source === 'match');
+  // Only auto-resolve problems the engine detected itself FROM A MATCH
+  // ANALYSIS. source alone is not enough: analyzeTeamProgress also writes
+  // source:'match' for goals raised from professional summaries, and those
+  // must not vanish on their own. source_match_id is set only by the match
+  // problem sync, so it is the precise marker.
+  const open = goals.filter((g) => g.status === 'active' && g.source === 'match' && g.source_match_id);
   const today = new Date().toISOString().split('T')[0];
   const seen = new Set(seenGoalIds.filter(Boolean));
-  // Distinct match DATES — two analyses of the same fixture must not count as
-  // two matches, or a problem ages twice as fast as it should.
-  const matchDates = [...new Set((matches || []).map((m) => m.date).filter(Boolean))];
+  // Only matches whose problems were actually examined may age a problem.
+  // A match is examined when the problems engine has run over it, which is
+  // exactly when tactical_problems is populated. Counting unexamined matches
+  // would let five unopened saves silently "resolve" every open problem and
+  // then report it to the coach as an improvement that never happened.
+  // Distinct DATES, so two analyses of one fixture count once.
+  const matchDates = [...new Set((matches || [])
+    .filter((m) => Array.isArray(m.tactical_problems) && m.tactical_problems.length > 0)
+    .map((m) => m.date)
+    .filter(Boolean))];
 
   await Promise.all(open.map(async (goal) => {
     if (seen.has(goal.id)) {
@@ -166,10 +175,17 @@ export async function decayOpenProblems(teamId, seenGoalIds = []) {
 
     if (since >= PROBLEM_DECAY_WINDOW) {
       // Credit the recommendation that was open against this problem.
+      // Credit only work that was actually carried out. A cancelled action, or
+      // one still scheduled for the future, did not fix anything — crediting it
+      // would state a causal claim to the coach that never happened.
       let resolvedBy = null;
       try {
         const actions = await base44.entities.TrainingAction.filter({ linked_goal_id: goal.id });
-        resolvedBy = actions?.[0]?.id || null;
+        const done = (actions || [])
+          .filter((a) => a.status === 'completed'
+            || (a.status !== 'cancelled' && a.scheduled_date && String(a.scheduled_date) <= today))
+          .sort((a, b) => String(b.scheduled_date || '').localeCompare(String(a.scheduled_date || '')));
+        resolvedBy = done[0]?.id || null;
       } catch { /* linkage is optional */ }
       await base44.entities.TacticalGoal.update(goal.id, {
         status: 'resolved',
@@ -201,7 +217,7 @@ function resultsSection(matches) {
   const losses = withScore.filter((m) => outcomeLabel(m) === 'הפסד').length;
   return [
     `תוצאות ${he(withScore.length)} המשחקים האחרונים (מהאחרון לראשון): ${parts.join(' | ')}`,
-    `מאזן בחלון זה: ${he(wins)} ניצחונות, ${he(draws)} תיקו, ${he(losses)} הפסדים.`,
+    `מאזן בחלון זה: ${wins === 1 ? 'ניצחון אחד' : `${he(wins)} ניצחונות`}, ${draws === 1 ? 'תיקו אחד' : `${he(draws)} תיקואים`}, ${losses === 1 ? 'הפסד אחד' : `${he(losses)} הפסדים`}.`,
   ].join('\n');
 }
 
