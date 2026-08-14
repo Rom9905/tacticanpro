@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { Navigate } from 'react-router-dom';
 import { supabase } from '@/lib/supabaseClient';
 import { useAuth } from '@/lib/AuthContext';
-import { Loader2, Search, ShieldCheck, KeyRound, Trash2, UserCheck, UserX } from 'lucide-react';
+import { Loader2, Search, ShieldCheck, KeyRound, Trash2, UserCheck, UserX, UserPlus, Mail } from 'lucide-react';
 import InfoPageHeader from '@/components/InfoPageHeader';
 import SiteFooter from '@/components/SiteFooter';
 
@@ -38,6 +38,12 @@ export default function UserManagement() {
   const [pwValue, setPwValue] = useState('');
   const [delFor, setDelFor] = useState(null); // userId pending delete confirm
   const [delConfirm, setDelConfirm] = useState('');
+  // Quick grant-by-email: naming the account explicitly removes any chance of
+  // granting one lookalike address and then testing with the other.
+  const [quickEmail, setQuickEmail] = useState('');
+  const [quickPassword, setQuickPassword] = useState('');
+  const [quickBusy, setQuickBusy] = useState(false);
+  const [quickNote, setQuickNote] = useState(null);
 
   const isAdmin = user?.role === 'admin' || user?.email === 'romfranko99@gmail.com';
 
@@ -92,6 +98,41 @@ export default function UserManagement() {
     finally { setBusyId(null); }
   };
 
+  // Grant by email. If the address has no account yet, create one (a password
+  // is required for that case) — "give access to whoever I want" has to cover
+  // people who never signed up.
+  const quickGrant = async () => {
+    const email = quickEmail.trim().toLowerCase();
+    if (!email.includes('@')) { flash('err', 'הזן כתובת אימייל תקינה'); return; }
+    setQuickBusy(true);
+    setQuickNote(null);
+    try {
+      const existing = users.find(u => (u.email || '').toLowerCase() === email);
+      if (existing) {
+        await callAdmin({ action: 'set_access', email, grant: true });
+        setUsers(prev => prev.map(x => x.id === existing.id
+          ? { ...x, status: 'active', billing_key: 'manual', email_confirmed: true } : x));
+        flash('ok', `ניתנה גישה ל-${email}`);
+        setQuickNote({ kind: 'ok', text: `החשבון ${email} כבר היה קיים — הגישה הופעלה והאימייל אומת.` });
+        setQuickEmail(''); setQuickPassword('');
+      } else {
+        if (quickPassword.length < 6) {
+          setQuickNote({ kind: 'err', text: 'לאימייל הזה אין עדיין חשבון. הזן סיסמה (6 תווים לפחות) ואצור אותו עם גישה.' });
+          return;
+        }
+        await callAdmin({ action: 'create_user', email, password: quickPassword, grant: true });
+        flash('ok', `נוצר חשבון עם גישה ל-${email}`);
+        setQuickNote({ kind: 'ok', text: `נוצר חשבון חדש ל-${email} עם גישה מלאה. מסור לו את הסיסמה שהזנת.` });
+        setQuickEmail(''); setQuickPassword('');
+        load();
+      }
+    } catch (e) {
+      setQuickNote({ kind: 'err', text: e.message });
+    } finally {
+      setQuickBusy(false);
+    }
+  };
+
   const filtered = users.filter(u => {
     const q = search.toLowerCase();
     return (u.full_name || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q);
@@ -120,6 +161,52 @@ export default function UserManagement() {
           <p style={{ fontSize: 15, color: '#6B7280', marginBottom: 20 }}>
             מתן גישה ידנית, שינוי סיסמה ומחיקת משתמשים · סה"כ {users.length} משתמשים
           </p>
+
+          {/* Quick grant by email — the reliable path: name the account instead
+              of hunting for its row among lookalike addresses. */}
+          <div style={{ backgroundColor: '#FFF', border: '2px solid #16A34A', borderRadius: 14, padding: 18, marginBottom: 22 }}>
+            <div className="flex items-center gap-2 mb-1">
+              <UserPlus style={{ width: 18, height: 18, color: '#16A34A' }} />
+              <h2 style={{ fontFamily: 'Heebo, sans-serif', fontWeight: 700, fontSize: 17, color: '#111827', margin: 0 }}>
+                מתן גישה לפי אימייל
+              </h2>
+            </div>
+            <p style={{ fontSize: 13, color: '#6B7280', marginBottom: 12 }}>
+              הקלד את האימייל המדויק של מי שצריך גישה. אם אין לו חשבון — הזן גם סיסמה ואפתח לו אחד עם גישה מלאה.
+            </p>
+            <div className="flex items-center gap-2 flex-wrap">
+              <div className="relative" style={{ flex: 2, minWidth: 220 }}>
+                <Mail style={{ position: 'absolute', right: 10, top: '50%', transform: 'translateY(-50%)', width: 15, height: 15, color: '#9CA3AF' }} />
+                <input
+                  value={quickEmail}
+                  onChange={e => { setQuickEmail(e.target.value); setQuickNote(null); }}
+                  placeholder="coach@example.com"
+                  dir="ltr"
+                  style={{ width: '100%', padding: '10px 34px 10px 12px', borderRadius: 9, border: '1px solid #D1D5DB', fontSize: 14, outline: 'none', textAlign: 'left', fontFamily: 'Assistant, sans-serif' }}
+                />
+              </div>
+              <input
+                value={quickPassword}
+                onChange={e => setQuickPassword(e.target.value)}
+                placeholder="סיסמה (רק לחשבון חדש)"
+                style={{ flex: 1, minWidth: 170, padding: '10px 12px', borderRadius: 9, border: '1px solid #D1D5DB', fontSize: 14, outline: 'none', fontFamily: 'Assistant, sans-serif' }}
+              />
+              <button
+                onClick={quickGrant}
+                disabled={quickBusy}
+                className="inline-flex items-center gap-2"
+                style={{ padding: '10px 20px', borderRadius: 9, border: 'none', backgroundColor: '#16A34A', color: '#fff', fontWeight: 700, fontSize: 14, cursor: quickBusy ? 'wait' : 'pointer', opacity: quickBusy ? 0.7 : 1, fontFamily: 'Heebo, sans-serif' }}
+              >
+                {quickBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <UserCheck className="w-4 h-4" />}
+                תן גישה
+              </button>
+            </div>
+            {quickNote && (
+              <p style={{ marginTop: 10, fontSize: 13, fontWeight: 600, color: quickNote.kind === 'ok' ? '#15803D' : '#B91C1C' }}>
+                {quickNote.text}
+              </p>
+            )}
+          </div>
 
           <div className="relative mb-6">
             <Search style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', width: 16, height: 16, color: '#9CA3AF' }} />
