@@ -96,6 +96,14 @@ Deno.serve(async (req) => {
     if (action === 'set_access') {
       const grant = body?.grant === true;
       if (grant) {
+        // A manual grant means the admin is vouching for this user, so also
+        // confirm their email — users who signed up before custom SMTP was
+        // configured never received a confirmation link and are otherwise
+        // stuck at the login wall ("email not confirmed"), which no
+        // subscription can fix. Idempotent for already-confirmed users.
+        const { error: confirmErr } = await admin.auth.admin.updateUserById(userId, { email_confirm: true });
+        if (confirmErr) console.error('email_confirm on grant failed:', confirmErr);
+
         // Manual grant: an 'active' row with no end_date and no billing
         // instrument, so the cron biller and both lapse sweeps skip it forever.
         const { error } = await admin.from('subscriptions').upsert({
