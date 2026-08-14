@@ -285,7 +285,7 @@ export default function Home() {
       />
 
       {/* Quick links row — admin only (match analysis moved to header) */}
-      {user?.role === 'admin' && (
+      {(user?.role === 'admin' || user?.email === 'romfranko99@gmail.com') && (
         <div className="px-4 lg:px-8 pt-20 w-full flex flex-wrap gap-2">
           <a
             href="/user-management"
@@ -293,7 +293,7 @@ export default function Home() {
             style={{ backgroundColor: 'rgba(22,163,74,0.08)', color: '#16A34A', border: '1px solid rgba(22,163,74,0.22)' }}
           >
             <ShieldCheck className="w-3.5 h-3.5" />
-            ניהול גישות משתמשים
+            ניהול משתמשים
           </a>
           <a
             href="/admin-analytics"

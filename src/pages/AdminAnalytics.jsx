@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
-import { Loader2, Users, Activity, Trophy, AlertTriangle, TrendingUp, Star, Calendar, CheckCircle2, XCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { Loader2, Users, Activity, Trophy, AlertTriangle, TrendingUp, Star, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
 
 const EVENT_LABELS = {
   login: 'כניסה למערכת',
@@ -39,7 +39,6 @@ export default function AdminAnalytics() {
   const [events, setEvents] = useState([]);
   const [users, setUsers] = useState([]);
   const [expandedUser, setExpandedUser] = useState(null);
-  const [saving, setSaving] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -59,13 +58,6 @@ export default function AdminAnalytics() {
       }
     })();
   }, []);
-
-  const handleUserUpdate = async (userId, updates) => {
-    setSaving(userId);
-    await base44.entities.User.update(userId, updates);
-    setUsers(prev => prev.map(u => u.id === userId ? { ...u, ...updates } : u));
-    setSaving(null);
-  };
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center" style={{ backgroundColor: '#F4EFE6' }}>
@@ -178,7 +170,7 @@ export default function AdminAnalytics() {
             <Activity className="w-5 h-5" style={{ color: '#2A7050' }} />
           </div>
           <div>
-            <h1 className="text-2xl font-bold" style={{ color: '#2C2416' }}>Analytics Dashboard</h1>
+            <h1 className="text-2xl font-bold" style={{ color: '#2C2416' }}>לוח אנליטיקס</h1>
             <p className="text-sm" style={{ color: '#7A6B57' }}>מעקב שימוש ו-Retention — אדמין בלבד</p>
           </div>
         </div>
@@ -262,7 +254,7 @@ export default function AdminAnalytics() {
         {/* Users Management - Mobile Friendly */}
         <S>
           <h3 className="font-bold text-sm mb-4 flex items-center gap-2" style={{ color: '#2C2416' }}>
-            <Users className="w-4 h-4" style={{ color: '#2A5FA8' }} /> ניהול משתמשים ({users.length})
+            <Users className="w-4 h-4" style={{ color: '#2A5FA8' }} /> פעילות משתמשים ({users.length})
           </h3>
           <div className="space-y-3">
             {users.map(user => {
@@ -302,25 +294,6 @@ export default function AdminAnalytics() {
                         >
                           {user.role === 'admin' ? 'אדמין' : 'משתמש'}
                         </span>
-                        {user.plan && (
-                          <span 
-                            className="px-2 py-0.5 rounded-full text-[10px] font-bold"
-                            style={{ 
-                              backgroundColor: user.plan === 'club' ? 'rgba(154,106,16,0.15)' : user.plan === 'pro' ? 'rgba(42,112,80,0.12)' : 'rgba(139,115,85,0.12)',
-                              color: user.plan === 'club' ? '#9A6A10' : user.plan === 'pro' ? '#2A7050' : '#7A6B57'
-                            }}
-                          >
-                            {user.plan}
-                          </span>
-                        )}
-                        {user.is_approved === false && (
-                          <span 
-                            className="px-2 py-0.5 rounded-full text-[10px] font-bold"
-                            style={{ backgroundColor: 'rgba(185,64,64,0.12)', color: '#B94040' }}
-                          >
-                            לא מאושר
-                          </span>
-                        )}
                       </div>
                       <p className="text-xs mt-1 truncate" style={{ color: '#7A6B57' }}>{user.email}</p>
                     </div>
@@ -352,90 +325,6 @@ export default function AdminAnalytics() {
                         </div>
                       </div>
                       
-                      {/* Controls */}
-                      <div className="space-y-3">
-                        {/* Role */}
-                        <div>
-                          <label className="text-xs font-semibold mb-1.5 block" style={{ color: '#5C4E38' }}>תפקיד</label>
-                          <div className="flex gap-2">
-                            {['user', 'admin'].map(role => (
-                              <button
-                                key={role}
-                                onClick={() => handleUserUpdate(user.id, { role })}
-                                disabled={saving === user.id}
-                                className="flex-1 py-2.5 rounded-lg text-sm font-medium transition-all"
-                                style={{
-                                  backgroundColor: user.role === role ? (role === 'admin' ? '#7A4FA0' : '#2A5FA8') : 'rgba(139,115,85,0.08)',
-                                  color: user.role === role ? '#fff' : '#7A6B57',
-                                  border: `1px solid ${user.role === role ? 'transparent' : 'rgba(139,115,85,0.2)'}`,
-                                  opacity: saving === user.id ? 0.6 : 1
-                                }}
-                              >
-                                {role === 'admin' ? 'אדמין' : 'משתמש'}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                        
-                        {/* Plan */}
-                        <div>
-                          <label className="text-xs font-semibold mb-1.5 block" style={{ color: '#5C4E38' }}>תוכנית</label>
-                          <div className="flex gap-2">
-                            {['starter', 'pro', 'club'].map(plan => (
-                              <button
-                                key={plan}
-                                onClick={() => handleUserUpdate(user.id, { plan })}
-                                disabled={saving === user.id}
-                                className="flex-1 py-2.5 rounded-lg text-sm font-medium transition-all"
-                                style={{
-                                  backgroundColor: user.plan === plan 
-                                    ? (plan === 'club' ? '#9A6A10' : plan === 'pro' ? '#2A7050' : '#7A6B57') 
-                                    : 'rgba(139,115,85,0.08)',
-                                  color: user.plan === plan ? '#fff' : '#7A6B57',
-                                  border: `1px solid ${user.plan === plan ? 'transparent' : 'rgba(139,115,85,0.2)'}`,
-                                  opacity: saving === user.id ? 0.6 : 1
-                                }}
-                              >
-                                {plan}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-                        
-                        {/* Approval */}
-                        <div>
-                          <label className="text-xs font-semibold mb-1.5 block" style={{ color: '#5C4E38' }}>אישור גישה</label>
-                          <div className="flex gap-2">
-                            <button
-                              onClick={() => handleUserUpdate(user.id, { is_approved: true })}
-                              disabled={saving === user.id}
-                              className="flex-1 py-2.5 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-all"
-                              style={{
-                                backgroundColor: user.is_approved !== false ? '#2A7050' : 'rgba(139,115,85,0.08)',
-                                color: user.is_approved !== false ? '#fff' : '#7A6B57',
-                                border: `1px solid ${user.is_approved !== false ? 'transparent' : 'rgba(139,115,85,0.2)'}`,
-                                opacity: saving === user.id ? 0.6 : 1
-                              }}
-                            >
-                              <CheckCircle2 className="w-4 h-4" /> מאושר
-                            </button>
-                            <button
-                              onClick={() => handleUserUpdate(user.id, { is_approved: false })}
-                              disabled={saving === user.id}
-                              className="flex-1 py-2.5 rounded-lg text-sm font-medium flex items-center justify-center gap-2 transition-all"
-                              style={{
-                                backgroundColor: user.is_approved === false ? '#B94040' : 'rgba(139,115,85,0.08)',
-                                color: user.is_approved === false ? '#fff' : '#7A6B57',
-                                border: `1px solid ${user.is_approved === false ? 'transparent' : 'rgba(139,115,85,0.2)'}`,
-                                opacity: saving === user.id ? 0.6 : 1
-                              }}
-                            >
-                              <XCircle className="w-4 h-4" /> חסום
-                            </button>
-                          </div>
-                        </div>
-                      </div>
-                      
                       {/* Extra info */}
                       <div className="text-xs space-y-1 pt-2" style={{ color: '#9A8672', borderTop: '1px solid rgba(139,115,85,0.10)' }}>
                         <div>נרשם: {user.created_date ? new Date(user.created_date).toLocaleDateString('he-IL') : '—'}</div>
@@ -448,7 +337,7 @@ export default function AdminAnalytics() {
             })}
           </div>
           <p className="text-xs mt-4" style={{ color: '#9A8672' }}>
-            ● אדום = לא נכנס יותר מ-7 ימים • לחץ על משתמש לעריכה
+            ● אדום = לא נכנס יותר מ-7 ימים • לחץ על משתמש לפירוט פעילות • לניהול גישות עבור לעמוד ניהול המשתמשים
           </p>
         </S>
       </div>

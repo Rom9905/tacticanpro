@@ -4,7 +4,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
 import NavigationTracker from '@/lib/NavigationTracker'
 import { pagesConfig } from './pages.config'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
@@ -15,7 +15,6 @@ import Terms from '@/pages/Terms';
 import CancellationPolicy from '@/pages/CancellationPolicy';
 import AccessibilityStatement from '@/pages/AccessibilityStatement';
 import UserManagement from '@/pages/UserManagement';
-import Admin from '@/pages/Admin';
 import SubscriptionBlocked from '@/pages/SubscriptionBlocked';
 import Login from '@/pages/Login';
 import ResetPassword from '@/pages/ResetPassword';
@@ -91,7 +90,7 @@ const AuthenticatedApp = () => {
   if (!isAdmin && subscriptionStatus !== 'active' && subscriptionStatus !== 'trial') {
     return (
       <Routes>
-        <Route path="/admin" element={<Admin />} />
+        <Route path="/admin" element={<Navigate to="/user-management" replace />} />
         <Route path="/reset-password" element={<ResetPassword />} />
         <Route path="/payment" element={<Payment />} />
         <Route path="/payment-success" element={<PaymentSuccess />} />
@@ -111,7 +110,7 @@ const AuthenticatedApp = () => {
     <Routes>
       <Route path="/login" element={<Login />} />
       <Route path="/reset-password" element={<ResetPassword />} />
-      <Route path="/admin" element={<Admin />} />
+      <Route path="/admin" element={<Navigate to="/user-management" replace />} />
       <Route path="/" element={
         <LayoutWrapper currentPageName={mainPageKey}>
           <MainPage />
