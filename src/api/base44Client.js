@@ -283,7 +283,10 @@ export function setActiveAITeam(team) { _activeAITeam = team || null; }
 
 const integrations = {
   Core: {
-    async InvokeLLM({ prompt, response_json_schema } = {}) {
+    // skipTeamContext: for prompts that are pure machine tasks (id matching,
+    // classification) rather than coaching output. Appending the format
+    // pedagogy there is irrelevant at best and biases the answer at worst.
+    async InvokeLLM({ prompt, response_json_schema, skipTeamContext = false } = {}) {
       const errorResult = (message) => {
         if (response_json_schema) {
           return { ...buildStubFromSchema(response_json_schema), __ai_error: message };
@@ -294,7 +297,9 @@ const integrations = {
         // Lazy import avoids a static cycle (teamFormats has no deps, but
         // keeps base44Client's module graph flat).
         const { buildFormatAIContext } = await import('@/lib/teamFormats');
-        const fullPrompt = `${prompt}${buildFormatAIContext(_activeAITeam)}`;
+        const fullPrompt = skipTeamContext
+          ? prompt
+          : `${prompt}${buildFormatAIContext(_activeAITeam)}`;
         const { data, error } = await supabase.functions.invoke('invoke-llm', {
           body: { prompt: fullPrompt, response_json_schema: response_json_schema || null },
         });
@@ -362,12 +367,20 @@ async function handleAnalyzeMatchFile(params) {
   const wantsContext = (params?.mode || 'full') !== 'identify_teams';
   try {
     if (teamId && wantsContext) {
-      const { buildTeamMemoryBlock } = await import('@/lib/teamMemory');
-      teamMemory = await buildTeamMemoryBlock(teamId, _activeAITeam);
-    }
-    if (_activeAITeam && wantsContext) {
-      const { buildFormatAIContext } = await import('@/lib/teamFormats');
-      formatContext = buildFormatAIContext(_activeAITeam);
+      // The team row must be the one the history belongs to. If a caller names
+      // a different team than the page registered, load that one — otherwise
+      // team A's season would be rendered under team B's format rules.
+      let teamRow = _activeAITeam;
+      if (teamRow?.id !== teamId) {
+        const rows = await entitiesProxy.Team.filter({ id: teamId });
+        teamRow = rows?.[0] || null;
+      }
+      const [{ buildTeamMemoryBlock }, { buildFormatAIContext }] = await Promise.all([
+        import('@/lib/teamMemory'),
+        import('@/lib/teamFormats'),
+      ]);
+      teamMemory = await buildTeamMemoryBlock(teamId, teamRow);
+      if (teamRow) formatContext = buildFormatAIContext(teamRow);
     }
   } catch (e) {
     console.warn('analyzeMatchFile context build failed:', e);

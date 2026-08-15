@@ -38,9 +38,25 @@ const MAX_BLOCK_CHARS = 4000;
 // the same modal open; this keeps that from becoming 15 unbounded queries.
 const CACHE_TTL_MS = 30_000;
 const blockCache = new Map(); // teamId -> { at, block }
+// Callers that arrive while a build is already running share that build, so
+// the match summary and the deep analysis of the same match are guaranteed to
+// quote the same history instead of "3 times" and "4 times".
+const inFlight = new Map(); // teamId -> Promise<string>
+// Bumped on every invalidation. A build that started before the data changed
+// must not write its now-stale result into the cache when it finally resolves.
+const epochs = new Map(); // teamId -> number
+const epochOf = (teamId) => epochs.get(teamId) || 0;
 
 export function clearTeamMemoryCache(teamId) {
-  if (teamId) blockCache.delete(teamId); else blockCache.clear();
+  if (teamId) {
+    blockCache.delete(teamId);
+    inFlight.delete(teamId);
+    epochs.set(teamId, epochOf(teamId) + 1);
+  } else {
+    blockCache.clear();
+    inFlight.clear();
+    for (const key of [...epochs.keys()]) epochs.set(key, epochOf(key) + 1);
+  }
 }
 
 const he = (n) => new Intl.NumberFormat('he-IL').format(n);
@@ -297,6 +313,27 @@ export async function buildTeamMemoryBlock(teamId, team = null) {
   const cached = blockCache.get(teamId);
   if (cached && Date.now() - cached.at < CACHE_TTL_MS) return cached.block;
 
+  // Join a build already in progress rather than starting a second one.
+  const pending = inFlight.get(teamId);
+  if (pending) return pending;
+
+  const startedAtEpoch = epochOf(teamId);
+  const build = buildBlock(teamId, team)
+    .then((block) => {
+      // Only cache if nothing invalidated the team while we were building.
+      if (epochOf(teamId) === startedAtEpoch) {
+        blockCache.set(teamId, { at: Date.now(), block });
+      }
+      return block;
+    })
+    .finally(() => {
+      if (inFlight.get(teamId) === build) inFlight.delete(teamId);
+    });
+  inFlight.set(teamId, build);
+  return build;
+}
+
+async function buildBlock(teamId, team) {
   let matches = [];
   let goals = [];
   let situations = [];
@@ -330,10 +367,9 @@ export async function buildTeamMemoryBlock(teamId, team = null) {
     ? [...individual, ...shared, ...collective]
     : [...collective, ...shared, ...individual];
 
-  const remember = (block) => {
-    blockCache.set(teamId, { at: Date.now(), block });
-    return block;
-  };
+  // Caching is decided by the caller (buildTeamMemoryBlock), which knows
+  // whether the data changed while this build was running.
+  const remember = (block) => block;
 
   if (body.length === 0) {
     if ((matches || []).length <= 1) {

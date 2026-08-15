@@ -38,6 +38,8 @@ ${problemList}
 
 לכל בעיה מהמשחק הנוכחי החזר התאמה: אם היא במהותה אותה בעיה כמו אחת הבעיות הפתוחות — החזר את ה-id שלה. אם היא באמת חדשה — החזר null.
 התאם לפי המשמעות הכדורגלית, לא לפי מילים זהות. אל תתאים בכוח: בספק — null.`,
+      // Pure id-matching: the coaching/format instructions have no bearing here.
+      skipTeamContext: true,
       response_json_schema: {
         type: 'object',
         properties: {
